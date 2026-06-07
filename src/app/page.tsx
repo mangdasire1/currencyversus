@@ -2,10 +2,27 @@
 
 import dynamic from "next/dynamic"
 import { useState } from "react"
+import Link from "next/link"
 import { Header } from "@/components/Header"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HistoricalTable } from "@/components/HistoricalTable"
 import { useExchangeRate } from "@/hooks/useExchangeRate"
+import { CURRENCY_MAP } from "@/lib/currencies"
+
+const POPULAR_PAIRS = [
+  { base: "USD", target: "EUR" },
+  { base: "USD", target: "TRY" },
+  { base: "EUR", target: "GBP" },
+  { base: "USD", target: "JPY" },
+  { base: "EUR", target: "TRY" },
+  { base: "USD", target: "CNY" },
+  { base: "GBP", target: "USD" },
+  { base: "USD", target: "INR" },
+  { base: "EUR", target: "CHF" },
+  { base: "USD", target: "KRW" },
+  { base: "AUD", target: "USD" },
+  { base: "USD", target: "BRL" },
+]
 
 const ShaderBackground = dynamic(
   () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
@@ -88,6 +105,38 @@ function PageContent() {
             </section>
 
             <HistoricalTable base={base} target={target} currentRate={currentRate} />
+
+            {/* Popular pairs */}
+            <section className="flex flex-col gap-4">
+              <h2
+                className="text-lg font-semibold text-slate-300"
+                style={{ fontFamily: "var(--font-space-grotesk)" }}
+              >
+                Popular Pairs
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {POPULAR_PAIRS.map(({ base: b, target: t }) => {
+                  const bc = CURRENCY_MAP[b]
+                  const tc = CURRENCY_MAP[t]
+                  return (
+                    <Link
+                      key={`${b}-${t}`}
+                      href={`/${b.toLowerCase()}-vs-${t.toLowerCase()}`}
+                      className="glass-card p-3 flex flex-col gap-1 hover:border-[#6366f1]/30 hover:bg-[#6366f1]/5 transition-all group"
+                    >
+                      <div className="flex items-center gap-1 text-sm font-mono font-bold text-white group-hover:text-[#6366f1] transition-colors">
+                        <span>{bc?.flag}</span>
+                        <span className="text-slate-500 mx-0.5">/</span>
+                        <span>{tc?.flag}</span>
+                      </div>
+                      <div className="text-xs text-slate-400 font-mono">
+                        {b} → {t}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </section>
           </div>
         </main>
 
