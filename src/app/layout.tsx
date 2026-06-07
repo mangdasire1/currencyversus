@@ -32,6 +32,20 @@ export const metadata: Metadata = {
     url: "https://currencyversus.com",
     siteName: "CurrencyVersus",
     type: "website",
+    images: [
+      {
+        url: "https://currencyversus.com/logo.png",
+        width: 1200,
+        height: 630,
+        alt: "CurrencyVersus — Compare World Currencies",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CurrencyVersus — Compare World Currencies",
+    description: "Real-time currency comparison with historical data.",
+    images: ["https://currencyversus.com/logo.png"],
   },
 };
 

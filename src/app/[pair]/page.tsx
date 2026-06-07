@@ -41,6 +41,20 @@ export async function generateMetadata({
       title: `${base} vs ${target} — Exchange Rate Comparison`,
       description: `Real-time ${base} to ${target} conversion with historical data.`,
       url: `https://currencyversus.com/${base.toLowerCase()}-vs-${target.toLowerCase()}`,
+      images: [
+        {
+          url: "https://currencyversus.com/logo.png",
+          width: 1200,
+          height: 630,
+          alt: `${base} vs ${target} Exchange Rate`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${base} vs ${target} — Exchange Rate Comparison`,
+      description: `Real-time ${base} to ${target} conversion with historical data.`,
+      images: ["https://currencyversus.com/logo.png"],
     },
   }
 }

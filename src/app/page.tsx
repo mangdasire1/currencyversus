@@ -42,13 +42,10 @@ function PageContent() {
         <Header />
         <main className="flex-1 container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex flex-col gap-6">
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start animate-fade-in-up">
               <div className="flex flex-col gap-4">
                 <div>
-                  <h1
-                    className="text-3xl md:text-4xl font-bold text-white leading-tight"
-                    style={{ fontFamily: "var(--font-space-grotesk)" }}
-                  >
+                  <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight font-heading">
                     Currency{" "}
                     <span className="text-[#6366f1]">Comparison</span>
                   </h1>
@@ -65,10 +62,7 @@ function PageContent() {
               </div>
 
               <div className="glass-card p-6 flex flex-col gap-4">
-                <h2
-                  className="text-base font-semibold text-slate-300"
-                  style={{ fontFamily: "var(--font-space-grotesk)" }}
-                >
+                <h2 className="text-base font-semibold text-slate-300 font-heading">
                   Quick Stats
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
@@ -104,33 +98,38 @@ function PageContent() {
               </div>
             </section>
 
-            <HistoricalTable base={base} target={target} currentRate={currentRate} />
+            <div className="animate-fade-in-up" style={{ animationDelay: "100ms" }}>
+              <HistoricalTable base={base} target={target} currentRate={currentRate} />
+            </div>
 
             {/* Popular pairs */}
-            <section className="flex flex-col gap-4">
-              <h2
-                className="text-lg font-semibold text-slate-300"
-                style={{ fontFamily: "var(--font-space-grotesk)" }}
-              >
+            <section className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+              <h2 className="text-lg font-semibold text-slate-300 font-heading">
                 Popular Pairs
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {POPULAR_PAIRS.map(({ base: b, target: t }) => {
+                {POPULAR_PAIRS.map(({ base: b, target: t }, i) => {
                   const bc = CURRENCY_MAP[b]
                   const tc = CURRENCY_MAP[t]
                   return (
                     <Link
                       key={`${b}-${t}`}
                       href={`/${b.toLowerCase()}-vs-${t.toLowerCase()}`}
-                      className="glass-card p-3 flex flex-col gap-1 hover:border-[#6366f1]/30 hover:bg-[#6366f1]/5 transition-all group"
+                      className="glass-card p-4 flex flex-col gap-2 hover:border-[#6366f1]/40 hover:scale-[1.02] transition-all group cursor-pointer"
+                      style={{ animationDelay: `${i * 40}ms` }}
                     >
-                      <div className="flex items-center gap-1 text-sm font-mono font-bold text-white group-hover:text-[#6366f1] transition-colors">
-                        <span>{bc?.flag}</span>
-                        <span className="text-slate-500 mx-0.5">/</span>
-                        <span>{tc?.flag}</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-2xl">
+                          <span>{bc?.flag}</span>
+                          <span className="text-slate-600 text-sm mx-0.5">/</span>
+                          <span>{tc?.flag}</span>
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-400 font-mono">
+                      <div className="text-xs font-mono font-semibold text-white group-hover:text-[#6366f1] transition-colors">
                         {b} → {t}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-body">
+                        {bc?.name.split(" ")[0]} / {tc?.name.split(" ")[0]}
                       </div>
                     </Link>
                   )
@@ -140,8 +139,21 @@ function PageContent() {
           </div>
         </main>
 
-        <footer className="text-center py-4 text-xs text-slate-600 font-mono">
-          CurrencyVersus · Data from ECB via Frankfurter API · For educational purposes only
+        <footer className="text-center py-6 flex flex-col gap-1">
+          <p className="text-xs text-slate-500 font-mono">
+            Data from European Central Bank via{" "}
+            <a
+              href="https://www.frankfurter.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#6366f1] hover:underline"
+            >
+              Frankfurter API
+            </a>
+          </p>
+          <p className="text-xs text-slate-600 font-body">
+            Built for learning · Not financial advice
+          </p>
         </footer>
       </div>
     </>

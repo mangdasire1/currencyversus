@@ -21,10 +21,7 @@ export function HistoricalTable({ base, target, currentRate }: HistoricalTablePr
   return (
     <div className="glass-card p-6 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2
-          className="text-lg font-semibold text-white"
-          style={{ fontFamily: "var(--font-space-grotesk)" }}
-        >
+        <h2 className="text-lg font-semibold text-white font-heading">
           Historical Comparison
         </h2>
         <span className="text-xs text-slate-500 font-mono">

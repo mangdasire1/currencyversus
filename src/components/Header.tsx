@@ -9,10 +9,7 @@ export function Header() {
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#6366f1]/20 border border-[#6366f1]/30">
           <TrendingUp className="w-4 h-4 text-[#6366f1]" />
         </div>
-        <span
-          className="text-xl font-bold tracking-tight text-white"
-          style={{ fontFamily: "var(--font-space-grotesk)" }}
-        >
+        <span className="text-xl font-bold tracking-tight text-white font-heading">
           Currency<span className="text-[#6366f1]">Versus</span>
         </span>
       </div>

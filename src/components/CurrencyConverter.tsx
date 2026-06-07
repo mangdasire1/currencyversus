@@ -45,7 +45,7 @@ export function CurrencyConverter({
         <button
           type="button"
           onClick={handleSwap}
-          className="mt-6 p-2.5 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20 hover:bg-[#6366f1]/20 hover:border-[#6366f1]/40 transition-all text-[#6366f1]"
+          className="swap-btn mt-6 p-2.5 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20 hover:bg-[#6366f1]/20 hover:border-[#6366f1]/40 text-[#6366f1]"
           title="Swap currencies"
         >
           <ArrowLeftRight className="w-4 h-4" />
@@ -85,10 +85,7 @@ export function CurrencyConverter({
           <p className="text-red-400 text-sm">Failed to load rates</p>
         ) : (
           <div className="flex flex-col gap-1">
-            <div
-              className="text-4xl font-bold text-white font-mono tracking-tight"
-              style={{ fontFamily: "var(--font-jetbrains-mono)" }}
-            >
+            <div className="rate-value text-4xl font-bold text-white font-mono tracking-tight">
               {converted !== null && targetCurrency
                 ? `${targetCurrency.flag} ${new Intl.NumberFormat("en-US", {
                     minimumFractionDigits: targetCurrency.decimals,

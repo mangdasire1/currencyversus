@@ -24,8 +24,8 @@ export function PercentChange({ value }: PercentChangeProps) {
     <span
       className={`inline-flex items-center gap-1 text-sm font-mono font-semibold px-2 py-0.5 rounded-md ${
         positive
-          ? "text-emerald-400 bg-emerald-400/10"
-          : "text-red-400 bg-red-400/10"
+          ? "text-emerald-400 bg-emerald-400/10 positive-change"
+          : "text-red-400 bg-red-400/10 negative-change"
       }`}
     >
       {positive ? (
