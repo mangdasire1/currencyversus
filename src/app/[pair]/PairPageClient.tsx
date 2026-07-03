@@ -127,6 +127,7 @@ export function PairPageClient({ base, target }: PairPageClientProps) {
                 target={target}
                 onBaseChange={handleBaseChange}
                 onTargetChange={handleTargetChange}
+                onSwap={handleSwapNav}
               />
 
               <div className="glass-card p-6 flex flex-col gap-4">

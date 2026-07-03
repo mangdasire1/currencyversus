@@ -13,6 +13,7 @@ interface CurrencyConverterProps {
   target: string
   onBaseChange: (code: string) => void
   onTargetChange: (code: string) => void
+  onSwap?: () => void
 }
 
 export function CurrencyConverter({
@@ -20,6 +21,7 @@ export function CurrencyConverter({
   target,
   onBaseChange,
   onTargetChange,
+  onSwap,
 }: CurrencyConverterProps) {
   const [amount, setAmount] = useState("1")
   const { data, loading, error, stale } = useExchangeRate(base, target)
@@ -31,9 +33,13 @@ export function CurrencyConverter({
   const converted = rate !== null ? numericAmount * rate : null
 
   const handleSwap = useCallback(() => {
-    onBaseChange(target)
-    onTargetChange(base)
-  }, [base, target, onBaseChange, onTargetChange])
+    if (onSwap) {
+      onSwap()
+    } else {
+      onBaseChange(target)
+      onTargetChange(base)
+    }
+  }, [base, target, onBaseChange, onTargetChange, onSwap])
 
   return (
     <div className="glass-card p-6 flex flex-col gap-6">
