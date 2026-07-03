@@ -26,6 +26,9 @@ export const metadata: Metadata = {
     "Compare exchange rates between 15 major world currencies. View current rates and historical trends over 10 years.",
   keywords:
     "currency converter, exchange rate, forex, USD, EUR, TRY, currency comparison",
+  alternates: {
+    canonical: "https://currencyversus.com",
+  },
   openGraph: {
     title: "CurrencyVersus — Compare World Currencies",
     description: "Real-time currency comparison with historical data.",

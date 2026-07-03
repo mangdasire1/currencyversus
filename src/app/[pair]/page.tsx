@@ -37,6 +37,9 @@ export async function generateMetadata({
   return {
     title: `${base} to ${target} Exchange Rate — Convert ${base} to ${target} | CurrencyVersus`,
     description: `Convert ${base} to ${target}. View current exchange rate and historical trends over 10 years. Free currency comparison tool.`,
+    alternates: {
+      canonical: `https://currencyversus.com/${base.toLowerCase()}-vs-${target.toLowerCase()}/`,
+    },
     openGraph: {
       title: `${base} vs ${target} — Exchange Rate Comparison`,
       description: `Real-time ${base} to ${target} conversion with historical data.`,
