@@ -136,6 +136,58 @@ function PageContent() {
                 })}
               </div>
             </section>
+
+            {/* What is CurrencyVersus? */}
+            <section className="flex flex-col gap-6 animate-fade-in-up" style={{ animationDelay: "300ms" }}>
+              <div className="glass-card p-6 md:p-8 flex flex-col gap-4">
+                <h2 className="text-xl font-bold text-white font-heading">
+                  What is CurrencyVersus?
+                </h2>
+                <div className="flex flex-col gap-3 text-sm text-slate-300 leading-relaxed font-body">
+                  <p>
+                    CurrencyVersus is a free tool for comparing exchange rates between 15 major world currencies — including USD, EUR, GBP, JPY, TRY, CNY, INR, and more.
+                  </p>
+                  <p>
+                    Track real-time rates and explore how currencies have performed over the past decade. Historical data spans 7 time periods — from 1 month to 10 years — so you can spot long-term trends at a glance.
+                  </p>
+                  <p>
+                    Whether you{"'"}re a traveler planning a trip, an investor monitoring forex markets, or a student learning about global economics, CurrencyVersus makes it easy to understand currency trends without any sign-up or fees.
+                  </p>
+                </div>
+              </div>
+
+              {/* How It Works */}
+              <div className="glass-card p-6 md:p-8 flex flex-col gap-5">
+                <h2 className="text-xl font-bold text-white font-heading">
+                  How It Works
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    {
+                      step: "01",
+                      title: "Select two currencies",
+                      desc: "Choose any two of 15 major world currencies to compare — from US Dollar to Turkish Lira and beyond.",
+                    },
+                    {
+                      step: "02",
+                      title: "View the live rate",
+                      desc: "See the current exchange rate updated from the European Central Bank, plus an instant converter for any amount.",
+                    },
+                    {
+                      step: "03",
+                      title: "Explore historical trends",
+                      desc: "Analyze performance over 7 time periods — 1 month, 3 months, 6 months, 1 year, 3 years, 5 years, and 10 years.",
+                    },
+                  ].map(({ step, title, desc }) => (
+                    <div key={step} className="flex flex-col gap-3 p-4 rounded-xl bg-white/5 border border-white/5">
+                      <span className="text-2xl font-bold font-mono text-[#6366f1]">{step}</span>
+                      <p className="text-sm font-semibold text-white font-heading">{title}</p>
+                      <p className="text-xs text-slate-400 leading-relaxed font-body">{desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
           </div>
         </main>
 

@@ -11,6 +11,7 @@ import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HistoricalTable } from "@/components/HistoricalTable"
 import { useExchangeRate } from "@/hooks/useExchangeRate"
 import { CURRENCY_MAP } from "@/lib/currencies"
+import { CURRENCY_INFO } from "@/lib/currency-info"
 import { formatRate } from "@/lib/utils"
 
 const ShaderBackground = dynamic(
@@ -171,6 +172,127 @@ export function PairPageClient({ base, target }: PairPageClientProps) {
             </section>
 
             <HistoricalTable base={base} target={target} currentRate={currentRate} />
+
+            {/* Content sections */}
+            {(() => {
+              const baseInfo = CURRENCY_INFO[base]
+              const targetInfo = CURRENCY_INFO[target]
+              if (!baseInfo || !targetInfo) return null
+              return (
+                <>
+                  {/* A: About this currency pair */}
+                  <section className="glass-card p-6 flex flex-col gap-4">
+                    <h2
+                      className="text-lg font-semibold text-white"
+                      style={{ fontFamily: "var(--font-space-grotesk)" }}
+                    >
+                      About {base} / {target}
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col gap-2">
+                        <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
+                          {baseCurrency?.flag} {base} — {baseInfo.name}
+                        </p>
+                        <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
+                          {baseInfo.description}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
+                          {targetCurrency?.flag} {target} — {targetInfo.name}
+                        </p>
+                        <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
+                          {targetInfo.description}
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* B: Key Factors */}
+                  <section className="glass-card p-6 flex flex-col gap-4">
+                    <h2
+                      className="text-lg font-semibold text-white"
+                      style={{ fontFamily: "var(--font-space-grotesk)" }}
+                    >
+                      Key Factors Affecting {base}/{target}
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col gap-3">
+                        <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
+                          {baseCurrency?.flag} {base} Drivers
+                        </p>
+                        <ul className="flex flex-col gap-2">
+                          {baseInfo.factors.map((f) => (
+                            <li key={f} className="flex items-start gap-2 text-sm text-slate-300" style={{ fontFamily: "var(--font-dm-sans)" }}>
+                              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#6366f1] flex-shrink-0" />
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
+                          {targetCurrency?.flag} {target} Drivers
+                        </p>
+                        <ul className="flex flex-col gap-2">
+                          {targetInfo.factors.map((f) => (
+                            <li key={f} className="flex items-start gap-2 text-sm text-slate-300" style={{ fontFamily: "var(--font-dm-sans)" }}>
+                              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#6366f1] flex-shrink-0" />
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* C: Did You Know? */}
+                  <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[baseInfo, targetInfo].map((info) => (
+                      <div
+                        key={info.code}
+                        className="glass-card p-5 flex flex-col gap-3 border border-[#6366f1]/20 bg-[#6366f1]/5"
+                      >
+                        <p className="text-xs font-mono uppercase tracking-wider text-[#6366f1]">
+                          💡 Did You Know? — {info.code}
+                        </p>
+                        <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
+                          {info.funFact}
+                        </p>
+                      </div>
+                    ))}
+                  </section>
+
+                  {/* D: Economy Overview */}
+                  <section className="glass-card p-6 flex flex-col gap-4">
+                    <h2
+                      className="text-lg font-semibold text-white"
+                      style={{ fontFamily: "var(--font-space-grotesk)" }}
+                    >
+                      Economy Overview
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col gap-2 p-4 rounded-xl bg-white/5 border border-white/5">
+                        <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
+                          {baseCurrency?.flag} {baseInfo.country}
+                        </p>
+                        <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
+                          {baseInfo.economy}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 p-4 rounded-xl bg-white/5 border border-white/5">
+                        <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
+                          {targetCurrency?.flag} {targetInfo.country}
+                        </p>
+                        <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
+                          {targetInfo.economy}
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+                </>
+              )
+            })()}
           </div>
         </main>
 

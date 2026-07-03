@@ -23,7 +23,7 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "CurrencyVersus — Compare World Currencies",
   description:
-    "Compare exchange rates between 15 major world currencies. View current rates and historical trends over 10 years.",
+    "Compare exchange rates between 15 major world currencies including USD, EUR, GBP, TRY, and more. View real-time rates and historical trends spanning up to 10 years.",
   keywords:
     "currency converter, exchange rate, forex, USD, EUR, TRY, currency comparison",
   alternates: {
