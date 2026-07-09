@@ -17,11 +17,13 @@ for (const base of CODES) {
   }
 }
 
+const today = new Date().toISOString().split("T")[0]
+
 const urls = [
-  `  <url>\n    <loc>${BASE_URL}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>`,
+  `  <url>\n    <loc>${BASE_URL}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>`,
   ...pairs.map(
     (pair) =>
-      `  <url>\n    <loc>${BASE_URL}/${pair}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>`
+      `  <url>\n    <loc>${BASE_URL}/${pair}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>`
   ),
 ]
 
