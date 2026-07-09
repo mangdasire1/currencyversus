@@ -13,6 +13,7 @@ import { useExchangeRate } from "@/hooks/useExchangeRate"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { CURRENCY_INFO } from "@/lib/currency-info"
 import { formatRate } from "@/lib/utils"
+import type { ExchangeRate } from "@/lib/types"
 
 const ShaderBackground = dynamic(
   () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
@@ -28,10 +29,15 @@ interface PairPageClientProps {
 
 export function PairPageClient({ base, target, initialRate, initialDate }: PairPageClientProps) {
   const router = useRouter()
-  const initialData = initialRate !== null && initialDate !== null
-    ? { rate: initialRate, date: initialDate }
-    : null
-  const { data } = useExchangeRate(base, target, initialData)
+
+  // Build a full ExchangeRate object from server-provided props so useState in
+  // useExchangeRate can initialise directly — no lazy initialiser, no closure.
+  const serverRate: ExchangeRate | null =
+    initialRate !== null && initialDate !== null
+      ? { base, date: initialDate, rates: { [target]: initialRate } }
+      : null
+
+  const { data } = useExchangeRate(base, target, serverRate)
   const currentRate = data?.rates[target] ?? null
   const baseCurrency = CURRENCY_MAP[base]
   const targetCurrency = CURRENCY_MAP[target]

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { fetchLatestRates } from "@/lib/api"
 import { cacheGet, cacheSet, cacheGetStale } from "@/lib/cache"
 import type { ExchangeRate } from "@/lib/types"
@@ -12,21 +12,18 @@ interface UseExchangeRateResult {
   stale: boolean
 }
 
+// initialData: pass a pre-built ExchangeRate for SSR hydration (pair pages).
+// When provided, the component renders with real data immediately (no skeleton)
+// and the effect revalidates silently in the background.
 export function useExchangeRate(
   base: string,
   target: string,
-  initialData?: { rate: number; date: string } | null
+  initialData?: ExchangeRate | null
 ): UseExchangeRateResult {
-  const [data, setData] = useState<ExchangeRate | null>(() =>
-    initialData
-      ? { base, date: initialData.date, rates: { [target]: initialData.rate } }
-      : null
-  )
-  const [loading, setLoading] = useState(!initialData)
+  const [data, setData] = useState<ExchangeRate | null>(initialData ?? null)
+  const [loading, setLoading] = useState(initialData == null)
   const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
-  // On first mount with SSR data, revalidate silently without showing loading spinner.
-  const ssrHydrated = useRef(!!initialData)
 
   useEffect(() => {
     if (!base || !target || base === target) {
@@ -42,14 +39,13 @@ export function useExchangeRate(
       setData(cached)
       setLoading(false)
       setStale(false)
-      ssrHydrated.current = false
       return
     }
 
-    const silent = ssrHydrated.current
-    ssrHydrated.current = false
-
-    if (!silent) {
+    // No cached data — fetch fresh. If we already have initial data, revalidate
+    // silently (loading stays false). Otherwise show a loading indicator.
+    const hasData = initialData != null
+    if (!hasData) {
       setLoading(true)
       setError(null)
     }
@@ -68,7 +64,7 @@ export function useExchangeRate(
         if (staleData) {
           setData(staleData)
           setStale(true)
-        } else if (!silent) {
+        } else if (!hasData) {
           setError(err.message)
         } else {
           setStale(true)
@@ -81,7 +77,7 @@ export function useExchangeRate(
     return () => {
       cancelled = true
     }
-  }, [base, target])
+  }, [base, target]) // initialData intentionally excluded: used only as useState seed
 
   return { data, loading, error, stale }
 }
