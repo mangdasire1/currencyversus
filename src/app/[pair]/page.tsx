@@ -74,6 +74,9 @@ export default async function PairPage({
   if (!parsed) notFound()
   const { base, target } = parsed
   const rateData = await getInitialRateData(base, target)
+  if (rateData === null) {
+    console.warn(`[pair/page] No build-time rate for ${base}/${target} — rendering without initial data`)
+  }
   const faqSchema = getFAQSchema(base, target, rateData?.rate ?? null, rateData?.date ?? null)
   return (
     <>

@@ -8,7 +8,16 @@ jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
+      - name: Check secret is set
+        run: |
+          if [ -z "$DEPLOY_HOOK_URL" ]; then
+            echo "CF_PAGES_DEPLOY_HOOK secret is missing"
+            exit 1
+          fi
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.CF_PAGES_DEPLOY_HOOK }}
+
       - name: Trigger Cloudflare Pages deploy hook
-        run: curl -X POST "$DEPLOY_HOOK_URL"
+        run: curl --fail --silent --show-error --retry 3 -X POST "$DEPLOY_HOOK_URL"
         env:
           DEPLOY_HOOK_URL: ${{ secrets.CF_PAGES_DEPLOY_HOOK }}
