@@ -129,7 +129,7 @@ function PageContent() {
                         {b} → {t}
                       </div>
                       <div className="text-[10px] text-slate-500 font-body">
-                        {bc?.name.split(" ")[0]} / {tc?.name.split(" ")[0]}
+                        {bc?.shortName} / {tc?.shortName}
                       </div>
                     </Link>
                   )

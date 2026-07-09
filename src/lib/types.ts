@@ -1,6 +1,7 @@
 export interface Currency {
   code: string
   name: string
+  shortName: string
   flag: string
   decimals: number
 }
