@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { getWebApplicationSchema } from "@/lib/structured-data";
+import { CacheJanitor } from "@/components/CacheJanitor";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -70,7 +71,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppSchema) }}
         />
       </head>
-      <body className="min-h-full antialiased">{children}</body>
+      <body className="min-h-full antialiased">
+        <CacheJanitor />
+        {children}
+      </body>
     </html>
   );
 }

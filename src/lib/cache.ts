@@ -26,11 +26,18 @@ export function cacheGet<T>(key: string): T | null {
 
 export function cacheSet<T>(key: string, data: T, ttl: number): void {
   if (typeof window === "undefined") return
+  const entry: CacheEntry<T> = { data, timestamp: Date.now(), ttl }
+  const value = JSON.stringify(entry)
   try {
-    const entry: CacheEntry<T> = { data, timestamp: Date.now(), ttl }
-    localStorage.setItem(`cv_${key}`, JSON.stringify(entry))
+    localStorage.setItem(`cv_${key}`, value)
   } catch {
-    // localStorage quota exceeded — skip caching
+    // Quota exceeded — purge expired entries and retry once
+    cachePurgeExpired()
+    try {
+      localStorage.setItem(`cv_${key}`, value)
+    } catch {
+      // Still no space — skip caching
+    }
   }
 }
 
@@ -43,5 +50,26 @@ export function cacheGetStale<T>(key: string): T | null {
     return entry.data
   } catch {
     return null
+  }
+}
+
+export function cachePurgeExpired(): void {
+  if (typeof window === "undefined") return
+  try {
+    const now = Date.now()
+    const toRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (!key?.startsWith("cv_")) continue
+      try {
+        const entry = JSON.parse(localStorage.getItem(key) ?? "") as CacheEntry<unknown>
+        if (now - entry.timestamp > entry.ttl) toRemove.push(key)
+      } catch {
+        toRemove.push(key)
+      }
+    }
+    toRemove.forEach((k) => localStorage.removeItem(k))
+  } catch {
+    // localStorage unavailable — skip silently
   }
 }
