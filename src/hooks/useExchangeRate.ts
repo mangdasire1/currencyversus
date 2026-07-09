@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { fetchLatestRates } from "@/lib/api"
 import { cacheGet, cacheSet, cacheGetStale } from "@/lib/cache"
 import type { ExchangeRate } from "@/lib/types"
@@ -14,12 +14,19 @@ interface UseExchangeRateResult {
 
 export function useExchangeRate(
   base: string,
-  target: string
+  target: string,
+  initialData?: { rate: number; date: string } | null
 ): UseExchangeRateResult {
-  const [data, setData] = useState<ExchangeRate | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<ExchangeRate | null>(() =>
+    initialData
+      ? { base, date: initialData.date, rates: { [target]: initialData.rate } }
+      : null
+  )
+  const [loading, setLoading] = useState(!initialData)
   const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
+  // On first mount with SSR data, revalidate silently without showing loading spinner.
+  const ssrHydrated = useRef(!!initialData)
 
   useEffect(() => {
     if (!base || !target || base === target) {
@@ -35,28 +42,45 @@ export function useExchangeRate(
       setData(cached)
       setLoading(false)
       setStale(false)
+      ssrHydrated.current = false
       return
     }
 
-    setLoading(true)
-    setError(null)
+    const silent = ssrHydrated.current
+    ssrHydrated.current = false
 
+    if (!silent) {
+      setLoading(true)
+      setError(null)
+    }
+
+    let cancelled = false
     fetchLatestRates(base, [target])
       .then((result) => {
+        if (cancelled) return
         setData(result)
         setStale(false)
         cacheSet(cacheKey, result, TTL)
       })
-      .catch((err) => {
+      .catch((err: Error) => {
+        if (cancelled) return
         const staleData = cacheGetStale<ExchangeRate>(cacheKey)
         if (staleData) {
           setData(staleData)
           setStale(true)
-        } else {
+        } else if (!silent) {
           setError(err.message)
+        } else {
+          setStale(true)
         }
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [base, target])
 
   return { data, loading, error, stale }

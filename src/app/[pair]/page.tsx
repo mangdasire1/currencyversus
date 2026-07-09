@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { CURRENCIES } from "@/lib/currencies"
+import { getInitialRateData } from "@/lib/build-data"
 import { PairPageClient } from "./PairPageClient"
 
 const CODES = CURRENCIES.map((c) => c.code)
@@ -70,5 +71,14 @@ export default async function PairPage({
   const { pair } = await params
   const parsed = parsePair(pair)
   if (!parsed) notFound()
-  return <PairPageClient base={parsed.base} target={parsed.target} />
+  const { base, target } = parsed
+  const rateData = await getInitialRateData(base, target)
+  return (
+    <PairPageClient
+      base={base}
+      target={target}
+      initialRate={rateData?.rate ?? null}
+      initialDate={rateData?.date ?? null}
+    />
+  )
 }
