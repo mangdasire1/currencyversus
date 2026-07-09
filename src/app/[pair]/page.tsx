@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { CURRENCIES } from "@/lib/currencies"
 import { getInitialRateData } from "@/lib/build-data"
+import { getFAQSchema } from "@/lib/structured-data"
 import { PairPageClient } from "./PairPageClient"
 
 const CODES = CURRENCIES.map((c) => c.code)
@@ -73,12 +74,19 @@ export default async function PairPage({
   if (!parsed) notFound()
   const { base, target } = parsed
   const rateData = await getInitialRateData(base, target)
+  const faqSchema = getFAQSchema(base, target, rateData?.rate ?? null, rateData?.date ?? null)
   return (
-    <PairPageClient
-      base={base}
-      target={target}
-      initialRate={rateData?.rate ?? null}
-      initialDate={rateData?.date ?? null}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <PairPageClient
+        base={base}
+        target={target}
+        initialRate={rateData?.rate ?? null}
+        initialDate={rateData?.date ?? null}
+      />
+    </>
   )
 }
