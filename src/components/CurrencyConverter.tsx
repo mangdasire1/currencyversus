@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { ArrowLeftRight, RefreshCw } from "lucide-react"
+import { ArrowLeftRight, ArrowUpDown, RefreshCw } from "lucide-react"
 import { CurrencySelect } from "./CurrencySelect"
 import { SkeletonConverter } from "./SkeletonLoaders"
 import { useExchangeRate } from "@/hooks/useExchangeRate"
@@ -43,21 +43,23 @@ export function CurrencyConverter({
 
   return (
     <div className="glass-card p-6 flex flex-col gap-6">
-      <div className="flex items-start gap-3">
-        <div className="relative flex-1">
+      {/* Single column on mobile, row on sm+ */}
+      <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+        <div className="relative flex-1 min-w-0">
           <CurrencySelect value={base} onChange={onBaseChange} label="From" />
         </div>
 
         <button
           type="button"
           onClick={handleSwap}
-          className="swap-btn mt-6 p-2.5 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20 hover:bg-[#6366f1]/20 hover:border-[#6366f1]/40 text-[#6366f1]"
+          className="swap-btn self-center sm:mt-6 p-2.5 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20 hover:bg-[#6366f1]/20 hover:border-[#6366f1]/40 text-[#6366f1]"
           title="Swap currencies"
         >
-          <ArrowLeftRight className="w-4 h-4" />
+          <ArrowUpDown className="w-4 h-4 sm:hidden" />
+          <ArrowLeftRight className="w-4 h-4 hidden sm:block" />
         </button>
 
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <CurrencySelect value={target} onChange={onTargetChange} label="To" />
         </div>
       </div>
@@ -66,18 +68,18 @@ export function CurrencyConverter({
         <label className="text-xs text-slate-400 uppercase tracking-widest font-mono">
           Amount
         </label>
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus-within:border-[#6366f1]/50 transition-colors">
-          <span className="text-slate-400 font-mono text-sm">{baseCurrency?.flag}</span>
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus-within:border-[#6366f1]/50 transition-colors min-w-0">
+          <span className="text-slate-400 font-mono text-sm flex-shrink-0">{baseCurrency?.flag}</span>
           <input
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             min="0"
             step="any"
-            className="flex-1 bg-transparent text-white font-mono text-lg focus:outline-none"
+            className="flex-1 min-w-0 bg-transparent text-white font-mono text-lg focus:outline-none"
             placeholder="1"
           />
-          <span className="text-slate-500 font-mono text-sm">{base}</span>
+          <span className="text-slate-500 font-mono text-sm flex-shrink-0">{base}</span>
         </div>
       </div>
 

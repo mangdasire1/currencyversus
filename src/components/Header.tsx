@@ -13,7 +13,7 @@ export function Header() {
           Currency<span className="text-[#6366f1]">Versus</span>
         </span>
       </div>
-      <div className="text-xs text-slate-500 font-mono">
+      <div className="hidden sm:block text-xs text-slate-500 font-mono">
         Powered by ECB data
       </div>
     </header>

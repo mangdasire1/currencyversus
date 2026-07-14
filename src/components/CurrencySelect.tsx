@@ -44,7 +44,7 @@ export function CurrencySelect({ value, onChange, label }: CurrencySelectProps) 
         type="button"
         onClick={() => setOpen(!open)}
         className={cn(
-          "flex items-center gap-2 px-4 py-3 rounded-xl text-left transition-all",
+          "w-full flex items-center gap-2 px-4 py-3 rounded-xl text-left transition-all",
           "bg-white/5 border border-white/10 hover:border-[#6366f1]/50",
           "focus:outline-none focus:border-[#6366f1]",
           open && "border-[#6366f1]/50"
