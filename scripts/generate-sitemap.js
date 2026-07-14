@@ -17,11 +17,24 @@ for (const base of CODES) {
   }
 }
 
+// Commodity pages: gold/silver vs 15 currencies + gold-vs-silver ratio = 31
+const metalPairs = []
+for (const metal of ["gold", "silver"]) {
+  for (const code of CODES) {
+    metalPairs.push(`${metal}-vs-${code.toLowerCase()}`)
+  }
+}
+metalPairs.push("gold-vs-silver")
+
 const today = new Date().toISOString().split("T")[0]
 
 const urls = [
   `  <url>\n    <loc>${BASE_URL}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>`,
   ...pairs.map(
+    (pair) =>
+      `  <url>\n    <loc>${BASE_URL}/${pair}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>`
+  ),
+  ...metalPairs.map(
     (pair) =>
       `  <url>\n    <loc>${BASE_URL}/${pair}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>`
   ),
@@ -34,4 +47,4 @@ ${urls.join("\n")}
 
 const outPath = path.join(__dirname, "..", "out", "sitemap.xml")
 fs.writeFileSync(outPath, sitemap, "utf-8")
-console.log(`✓ sitemap.xml generated with ${pairs.length + 1} URLs`)
+console.log(`✓ sitemap.xml generated with ${pairs.length + metalPairs.length + 1} URLs`)

@@ -46,7 +46,7 @@ export interface MetalPrice {
 }
 
 export async function fetchMetalPrice(metal: MetalCode): Promise<MetalPrice> {
-  const cacheKey = `cv_metal_${metal}`
+  const cacheKey = `metal_${metal}` // cacheGet/cacheSet add the cv_ prefix
   const cached = cacheGet<MetalPrice>(cacheKey)
   if (cached) return cached
 
