@@ -13,16 +13,23 @@ interface UseMetalRateResult {
 }
 
 // initialPriceUsd: pass the build-time USD oz price for SSR hydration (no skeleton flicker).
+// enabled: set false to skip fetching (useful when metal hook is called unconditionally
+//          but the current converter pair does not involve this metal).
 export function useMetalRate(
   metal: MetalCode,
-  initialPriceUsd?: number | null
+  initialPriceUsd?: number | null,
+  enabled = true
 ): UseMetalRateResult {
   const [price, setPrice] = useState<number | null>(initialPriceUsd ?? null)
   const [date, setDate] = useState<string | null>(null)
-  const [loading, setLoading] = useState(initialPriceUsd == null)
+  const [loading, setLoading] = useState(enabled && initialPriceUsd == null)
   const [stale, setStale] = useState(false)
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false)
+      return
+    }
     const hasData = initialPriceUsd != null
     if (!hasData) { setLoading(true); setStale(false) }
 
@@ -49,7 +56,7 @@ export function useMetalRate(
       .finally(() => { if (!cancelled) setLoading(false) })
 
     return () => { cancelled = true }
-  }, [metal]) // initialPriceUsd intentionally excluded: used only as useState seed
+  }, [metal, enabled]) // initialPriceUsd intentionally excluded: used only as useState seed
 
   return { price, date, loading, stale }
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { fetchLatestRates } from "@/lib/api"
 import { cacheGet, cacheSet, cacheGetStale } from "@/lib/cache"
+import { isMetal } from "@/lib/metals"
 import type { ExchangeRate } from "@/lib/types"
 
 interface UseExchangeRateResult {
@@ -26,7 +27,7 @@ export function useExchangeRate(
   const [stale, setStale] = useState(false)
 
   useEffect(() => {
-    if (!base || !target || base === target) {
+    if (!base || !target || base === target || isMetal(base) || isMetal(target)) {
       setLoading(false)
       return
     }

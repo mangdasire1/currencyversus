@@ -8,6 +8,7 @@ import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HistoricalTable } from "@/components/HistoricalTable"
 import { useExchangeRate } from "@/hooks/useExchangeRate"
 import { CURRENCY_MAP } from "@/lib/currencies"
+import { isMetal } from "@/lib/metals"
 
 const POPULAR_PAIRS = [
   { base: "USD", target: "EUR" },
@@ -58,6 +59,7 @@ function PageContent() {
                   target={target}
                   onBaseChange={setBase}
                   onTargetChange={setTarget}
+                  includeMetals={true}
                 />
               </div>
 
@@ -98,9 +100,11 @@ function PageContent() {
               </div>
             </section>
 
-            <div className="animate-fade-in-up" style={{ animationDelay: "100ms" }}>
-              <HistoricalTable base={base} target={target} currentRate={currentRate} />
-            </div>
+            {!isMetal(base) && !isMetal(target) && (
+              <div className="animate-fade-in-up" style={{ animationDelay: "100ms" }}>
+                <HistoricalTable base={base} target={target} currentRate={currentRate} />
+              </div>
+            )}
 
             {/* Popular pairs */}
             <section className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: "200ms" }}>

@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { TrendingUp, ArrowLeft, RefreshCw } from "lucide-react"
 import { useMetalRate } from "@/hooks/useMetalRate"
+import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { METAL_INFO } from "@/lib/metal-info"
 import { OZ_TO_GRAM } from "@/lib/metals"
@@ -43,6 +45,10 @@ export function MetalPageClient({
   initialUsdToTargetRate,
   initialDate,
 }: MetalPageClientProps) {
+  // Local converter state (pre-set to this metal/currency pair)
+  const [convBase, setConvBase] = useState<string>(metal)
+  const [convTarget, setConvTarget] = useState<string>(target)
+
   const { price: livePriceUsd, date, stale } = useMetalRate(metal, initialOzPriceUsd)
   const info = METAL_INFO[metal]
   const targetCurrency = CURRENCY_MAP[target]
@@ -222,6 +228,22 @@ export function MetalPageClient({
               ) : (
                 <p className="text-slate-500 font-mono text-sm">Loading…</p>
               )}
+            </section>
+
+            {/* Converter pre-set to this metal/currency pair */}
+            <section className="flex flex-col gap-3">
+              <h2 className="text-lg font-semibold text-white font-heading">
+                {info.name} Converter
+              </h2>
+              <CurrencyConverter
+                base={convBase}
+                target={convTarget}
+                onBaseChange={setConvBase}
+                onTargetChange={setConvTarget}
+                includeMetals={true}
+                initialOzPriceBaseUsd={metal === convBase ? initialOzPriceUsd : undefined}
+                initialOzPriceTargetUsd={metal === convTarget ? initialOzPriceUsd : undefined}
+              />
             </section>
 
             {/* About + Key Factors */}
