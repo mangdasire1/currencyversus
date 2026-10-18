@@ -13,6 +13,7 @@ import { CURRENCY_MAP } from "@/lib/currencies"
 import { CURRENCY_INFO } from "@/lib/currency-info"
 import type { ExchangeRate } from "@/lib/types"
 import { formatUtcTime } from "@/lib/utils"
+import { getFAQItems } from "@/lib/structured-data"
 import { navigateSelection, navigateSwap, pairPath } from "@/lib/routes"
 import type { PairNavigation } from "@/lib/routes"
 
@@ -210,6 +211,35 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
             </section>
 
             <HistoricalTable base={base} target={target} current={conv} />
+
+            {/* FAQ — same items as the FAQPage JSON-LD (src/lib/structured-data.ts).
+                At build time both render from the embedded rate, so the HTML
+                text matches the schema; after load the answers follow the
+                live rate the page shows. */}
+            <section className="glass-card p-6 flex flex-col gap-4" aria-labelledby="faq-heading">
+              <h2
+                id="faq-heading"
+                className="text-lg font-semibold text-white"
+                style={{ fontFamily: "var(--font-space-grotesk)" }}
+              >
+                Frequently Asked Questions
+              </h2>
+              <div className="flex flex-col gap-4">
+                {getFAQItems(
+                  base,
+                  target,
+                  forThisPair && conv.rate !== null ? conv.rate : initialRate,
+                  forThisPair && conv.fxDate ? conv.fxDate : initialDate
+                ).map((item) => (
+                  <div key={item.question} className="flex flex-col gap-1">
+                    <h3 className="text-sm font-semibold text-slate-200">{item.question}</h3>
+                    <p className="text-sm text-slate-400 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
+                      {item.answer}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
 
             {/* Content sections */}
             {(() => {
