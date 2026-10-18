@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useId } from "react"
 import { ArrowLeftRight, ArrowUpDown } from "lucide-react"
 import { CurrencySelect } from "./CurrencySelect"
 import { SkeletonConverter } from "./SkeletonLoaders"
@@ -12,6 +12,7 @@ import { isMetal } from "@/lib/metals"
 import type { MetalCode } from "@/lib/metals"
 import type { MetalUnit } from "@/lib/conversion"
 import { formatMetalAmount, formatMoney } from "@/lib/format"
+import { parseAmount, amountErrorMessage } from "@/lib/amount"
 
 interface CurrencyConverterProps {
   base: string
@@ -43,7 +44,12 @@ export function CurrencyConverter({
   const targetIsMetal = isMetal(target)
   const anyMetal = baseIsMetal || targetIsMetal
 
-  const numericAmount = parseFloat(amount) || 0
+  // Input policy lives in lib/amount.ts: no negatives, empty is neutral,
+  // finite and ≤ 1e15 only, "." as decimal separator.
+  const parsedAmount = parseAmount(amount)
+  const numericAmount = parsedAmount.ok ? parsedAmount.value : null
+  const amountError = parsedAmount.ok ? null : amountErrorMessage(parsedAmount.reason)
+  const amountErrorId = `${useId()}-amount-error`
 
   const initialMetalUsd: Partial<Record<MetalCode, number | null>> = {}
   const initialMetalTime: Partial<Record<MetalCode, string | null>> = {}
@@ -84,8 +90,17 @@ export function CurrencyConverter({
   // --- Result formatting ---
   function renderResult() {
     if (!forThisPair || conv.status === "loading") return <SkeletonConverter />
-    if (conv.status === "error" || conv.status === "partial" || conv.amount === null) {
+    if (conv.status === "error" || conv.status === "partial") {
       return <p className="text-red-400 text-sm">{missingMessage()}</p>
+    }
+    if (numericAmount === null || conv.amount === null || !Number.isFinite(conv.amount)) {
+      // Empty or rejected input: neutral placeholder, no number is computed.
+      return (
+        <div className="flex flex-col gap-1">
+          <div className="rate-value text-4xl font-bold text-slate-500 font-mono tracking-tight">—</div>
+          <div className="text-sm text-slate-400 font-mono">{conv.rateLabel}</div>
+        </div>
+      )
     }
 
     const prefix = targetIsMetal ? targetMetalInfo?.icon : targetCurrency?.flag
@@ -184,12 +199,16 @@ export function CurrencyConverter({
           <span className="text-slate-400 font-mono text-sm flex-shrink-0">
             {baseIsMetal ? baseMetalInfo?.icon : baseCurrency?.flag}
           </span>
+          {/* type="text" + inputMode="decimal": with type="number" the browser
+              turns invalid input into "" and we could not tell "abc" from empty. */}
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            min="0"
-            step="any"
+            aria-invalid={amountError !== null}
+            aria-describedby={amountError !== null ? amountErrorId : undefined}
             className="flex-1 min-w-0 bg-transparent text-white font-mono text-lg focus:outline-none"
             placeholder="1"
           />
@@ -197,6 +216,11 @@ export function CurrencyConverter({
             {baseIsMetal ? metalUnit : base}
           </span>
         </div>
+        {amountError !== null && (
+          <p id={amountErrorId} role="alert" className="text-xs text-amber-400 font-mono">
+            {amountError}
+          </p>
+        )}
       </div>
 
       {/* Result */}
