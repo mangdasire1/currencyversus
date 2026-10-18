@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { CURRENCIES } from "@/lib/currencies"
 import { getInitialRateData, getBuildTimeMetalPrice } from "@/lib/build-data"
 import { getFAQSchema } from "@/lib/structured-data"
+import { routeCatalog } from "@/lib/routes"
 import { PairPageClient } from "./PairPageClient"
 import { MetalPageClient } from "./MetalPageClient"
 import { MetalRatioPageClient } from "./MetalRatioPageClient"
@@ -45,29 +46,10 @@ function parseMetalPair(pair: string): MetalPair | null {
   return null
 }
 
+// Same catalog the selectors navigate with (src/lib/routes.ts): 210 currency
+// pairs + 30 metal pages + gold-vs-silver.
 export async function generateStaticParams() {
-  const params: { pair: string }[] = []
-
-  // Currency pairs: 15 × 14 = 210
-  for (const base of CODES) {
-    for (const target of CODES) {
-      if (base !== target) {
-        params.push({ pair: `${base.toLowerCase()}-vs-${target.toLowerCase()}` })
-      }
-    }
-  }
-
-  // Metal vs currency: gold/silver × 15 currencies = 30
-  for (const metalSlug of ["gold", "silver"]) {
-    for (const currency of CODES) {
-      params.push({ pair: `${metalSlug}-vs-${currency.toLowerCase()}` })
-    }
-  }
-
-  // Gold vs silver ratio: 1
-  params.push({ pair: "gold-vs-silver" })
-
-  return params
+  return routeCatalog().map((pair) => ({ pair }))
 }
 
 export async function generateMetadata({

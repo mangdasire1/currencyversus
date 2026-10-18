@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
-import { useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { TrendingUp } from "lucide-react"
@@ -13,6 +13,37 @@ import { CURRENCY_MAP } from "@/lib/currencies"
 import { CURRENCY_INFO } from "@/lib/currency-info"
 import type { ExchangeRate } from "@/lib/types"
 import { formatUtcTime } from "@/lib/utils"
+import { navigateSelection, navigateSwap, pairPath } from "@/lib/routes"
+import type { PairNavigation } from "@/lib/routes"
+
+// One-line notice carried across the navigation when a same-currency pick was
+// turned into a swap. sessionStorage, read once on the next page.
+const SWAP_NOTICE_KEY = "cv_swap_notice"
+const NOTICE_MS = 6000
+
+function rememberSwapNotice(nav: PairNavigation, picked: string) {
+  if (!nav.swapped) return
+  try {
+    sessionStorage.setItem(
+      SWAP_NOTICE_KEY,
+      JSON.stringify({ path: nav.path, text: `${picked} was already selected on the other side, so the two were swapped.` })
+    )
+  } catch {
+    // storage unavailable — navigation still works, only the notice is lost
+  }
+}
+
+function takeSwapNotice(path: string): string | null {
+  try {
+    const raw = sessionStorage.getItem(SWAP_NOTICE_KEY)
+    if (!raw) return null
+    sessionStorage.removeItem(SWAP_NOTICE_KEY)
+    const notice = JSON.parse(raw) as { path?: unknown; text?: unknown }
+    return notice.path === path && typeof notice.text === "string" ? notice.text : null
+  } catch {
+    return null
+  }
+}
 
 const ShaderBackground = dynamic(
   () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
@@ -42,23 +73,38 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
   const baseCurrency = CURRENCY_MAP[base]
   const targetCurrency = CURRENCY_MAP[target]
 
-  const handleBaseChange = useCallback(
-    (code: string) => {
-      router.push(`/${code.toLowerCase()}-vs-${target.toLowerCase()}`)
+  // All navigation goes through the route catalog: picking the code that is
+  // already on the other side swaps the sides, and no selection can lead to
+  // a page the build did not generate.
+  const go = useCallback(
+    (nav: PairNavigation | null, picked?: string) => {
+      if (!nav) return
+      if (picked) rememberSwapNotice(nav, picked)
+      router.push(nav.path)
     },
-    [target, router]
+    [router]
+  )
+
+  const handleBaseChange = useCallback(
+    (code: string) => go(navigateSelection({ base, target }, "base", code), code),
+    [base, target, go]
   )
 
   const handleTargetChange = useCallback(
-    (code: string) => {
-      router.push(`/${base.toLowerCase()}-vs-${code.toLowerCase()}`)
-    },
-    [base, router]
+    (code: string) => go(navigateSelection({ base, target }, "target", code), code),
+    [base, target, go]
   )
 
-  const handleSwapNav = useCallback(() => {
-    router.push(`/${target.toLowerCase()}-vs-${base.toLowerCase()}`)
-  }, [base, target, router])
+  const handleSwapNav = useCallback(() => go(navigateSwap({ base, target })), [base, target, go])
+
+  const [swapNotice, setSwapNotice] = useState<string | null>(null)
+  useEffect(() => {
+    const text = takeSwapNotice(pairPath(base, target))
+    if (!text) return
+    setSwapNotice(text)
+    const t = setTimeout(() => setSwapNotice(null), NOTICE_MS)
+    return () => clearTimeout(t)
+  }, [base, target])
 
   return (
     <>
@@ -105,6 +151,9 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
               {currentRate !== null && (
                 <p className="text-white font-semibold font-mono text-sm">{conv.rateLabel}</p>
               )}
+              <p role="status" className="text-xs text-amber-400 font-mono min-h-0">
+                {swapNotice}
+              </p>
               {forThisPair && conv.fxDate && (
                 <p className="text-xs text-slate-600 font-mono">
                   ECB reference rate of {conv.fxDate} (published business days ~16:00 CET)
