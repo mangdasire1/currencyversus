@@ -78,13 +78,16 @@ export function HistoricalTable({ base, target, current }: HistoricalTableProps)
                     <td className="py-3 px-4 text-right">
                       <PercentChange value={c.percentChange} />
                     </td>
-                    <td className="py-3 pl-4 flex justify-end">
-                      <Sparkline
-                        data={c.sparklineData}
-                        title={`${base}/${target}, last ${c.period.label.toLowerCase()}, ${
-                          c.percentChange !== null ? formatPercentChange(c.percentChange) : "change unavailable"
-                        }`}
-                      />
+                    <td className="py-3 pl-4">
+                      {/* Flex on the wrapper, not the <td>: a flex table cell breaks table layout. */}
+                      <div className="flex justify-end">
+                        <Sparkline
+                          data={c.sparklineData}
+                          title={`${base}/${target}, last ${c.period.label.toLowerCase()}, ${
+                            c.percentChange !== null ? formatPercentChange(c.percentChange) : "change unavailable"
+                          }`}
+                        />
+                      </div>
                     </td>
                   </tr>
                 )
