@@ -68,10 +68,7 @@ export function HistoricalTable({ base, target, current }: HistoricalTableProps)
                       <PercentChange value={c.percentChange} />
                     </td>
                     <td className="py-3 pl-4 flex justify-end">
-                      <Sparkline
-                        data={c.sparklineData}
-                        positive={(c.percentChange ?? 0) >= 0}
-                      />
+                      <Sparkline data={c.sparklineData} />
                     </td>
                   </tr>
                 ))}

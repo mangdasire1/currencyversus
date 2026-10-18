@@ -5,6 +5,7 @@ import { fetchHistoricalRate, fetchTimeSeries } from "@/lib/api"
 import { cacheGet, cacheSet, cacheGetStale, getCacheTTL } from "@/lib/cache"
 import { subtractMonths, toISODate } from "@/lib/utils"
 import { TIME_PERIODS } from "@/lib/currencies"
+import { samplePoints, sampleFrequencyFor } from "@/lib/history"
 import type { HistoricalComparison, HistoricalPoint } from "@/lib/types"
 
 interface UseHistoricalRatesResult {
@@ -60,7 +61,8 @@ export function useHistoricalRates(
         const startDate = subtractMonths(today, period.months)
         const startStr = toISODate(startDate)
         const endStr = toISODate(today)
-        const cacheKey = `${base}_${target}_${period.key}`
+        // v2: sparklines now span the full period (older entries were capped at 12 months)
+        const cacheKey = `${base}_${target}_${period.key}_v2`
         const ttl = getCacheTTL(period.key)
 
         try {
@@ -80,19 +82,13 @@ export function useHistoricalRates(
             const historical = await fetchHistoricalRate(startStr, base, [target])
             historicalRate = historical.rates[target]
 
-            // Fetch sparkline time series (sampled)
-            const sampleMonths = Math.min(period.months, 12)
-            const sampleStart = toISODate(subtractMonths(today, sampleMonths))
-            const timeSeries = await fetchTimeSeries(sampleStart, endStr, base, [target])
-
-            sparklineData = Object.entries(timeSeries.rates)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([date, rates]) => ({ date, rate: rates[target] }))
-              .filter((_, i, arr) => {
-                // Sample down to ~20 points for sparkline
-                const step = Math.max(1, Math.floor(arr.length / 20))
-                return i % step === 0
-              })
+            // Sparkline covers the period's own range; long ranges are thinned
+            // by sampling frequency (daily/weekly/monthly), endpoints kept.
+            const timeSeries = await fetchTimeSeries(startStr, endStr, base, [target])
+            sparklineData = samplePoints(
+              Object.entries(timeSeries.rates).map(([date, rates]) => ({ date, rate: rates[target] })),
+              sampleFrequencyFor(period.months)
+            )
 
             cacheSet(cacheKey, { historicalRate, sparklineData }, ttl)
           }
