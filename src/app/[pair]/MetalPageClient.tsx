@@ -153,6 +153,23 @@ export function MetalPageClient({
               {perOz.status === "stale" && <DataFreshness conv={perOz} />}
             </div>
 
+            {/* Converter pre-set to this metal/currency pair */}
+            <section className="flex flex-col gap-3">
+              <h2 className="text-lg font-semibold text-white font-heading">
+                {info.name} Converter
+              </h2>
+              <CurrencyConverter
+                base={convBase}
+                target={convTarget}
+                onBaseChange={setConvBase}
+                onTargetChange={setConvTarget}
+                includeMetals={true}
+                initialOzPriceBaseUsd={metal === convBase ? initialOzPriceUsd : undefined}
+                initialOzPriceTargetUsd={metal === convTarget ? initialOzPriceUsd : undefined}
+                initialMetalPriceTime={initialPriceTime}
+              />
+            </section>
+
             {/* Quick Stats */}
             <div className="glass-card p-6 flex flex-col gap-4">
               <h2 className="text-base font-semibold text-slate-300 font-heading">Quick Stats</h2>
@@ -245,23 +262,6 @@ export function MetalPageClient({
               ) : (
                 <p className="text-slate-500 font-mono text-sm">Loading…</p>
               )}
-            </section>
-
-            {/* Converter pre-set to this metal/currency pair */}
-            <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold text-white font-heading">
-                {info.name} Converter
-              </h2>
-              <CurrencyConverter
-                base={convBase}
-                target={convTarget}
-                onBaseChange={setConvBase}
-                onTargetChange={setConvTarget}
-                includeMetals={true}
-                initialOzPriceBaseUsd={metal === convBase ? initialOzPriceUsd : undefined}
-                initialOzPriceTargetUsd={metal === convTarget ? initialOzPriceUsd : undefined}
-                initialMetalPriceTime={initialPriceTime}
-              />
             </section>
 
             {/* About + Key Factors */}

@@ -6,7 +6,6 @@ import { useCallback } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { TrendingUp } from "lucide-react"
-import { CurrencySelect } from "@/components/CurrencySelect"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HistoricalTable } from "@/components/HistoricalTable"
 import { useConversion } from "@/hooks/useConversion"
@@ -115,26 +114,7 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
               )}
             </div>
 
-            {/* Currency selectors with routing */}
-            <div className="glass-card p-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="relative">
-                  <CurrencySelect value={base} onChange={handleBaseChange} label="From" />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSwapNav}
-                  className="mt-6 px-3 py-2 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20 hover:bg-[#6366f1]/20 transition-all text-[#6366f1] text-xs font-mono"
-                >
-                  ⇄ Swap
-                </button>
-                <div className="relative">
-                  <CurrencySelect value={target} onChange={handleTargetChange} label="To" />
-                </div>
-              </div>
-            </div>
-
-            {/* Converter + stats */}
+            {/* Single control set (converter navigates between pair pages) + stats */}
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               <CurrencyConverter
                 base={base}
