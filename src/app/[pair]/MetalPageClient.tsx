@@ -10,6 +10,7 @@ import { DataFreshness } from "@/components/DataFreshness"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { METAL_INFO } from "@/lib/metal-info"
 import { computeConversion } from "@/lib/conversion"
+import { formatMoney } from "@/lib/format"
 import type { MetalCode } from "@/lib/metals"
 import type { ExchangeRate } from "@/lib/types"
 import { formatUtcTime } from "@/lib/utils"
@@ -28,12 +29,8 @@ interface MetalPageClientProps {
   initialFxDate: string | null
 }
 
-function formatMetal(value: number, decimals: number): string {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value)
-}
+// Prices here are money amounts in the target currency → currency decimals.
+const formatMetal = formatMoney
 
 function getDecimals(target: string): number {
   const c = CURRENCY_MAP[target]

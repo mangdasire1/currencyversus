@@ -1,5 +1,5 @@
 import { TrendingUp, TrendingDown, Minus } from "lucide-react"
-import { formatPercent } from "@/lib/utils"
+import { formatPercentChange, PERCENT_EPSILON } from "@/lib/format"
 
 interface PercentChangeProps {
   value: number | null
@@ -10,11 +10,14 @@ export function PercentChange({ value }: PercentChangeProps) {
     return <span className="text-slate-500 text-sm font-mono">—</span>
   }
 
-  if (Math.abs(value) < 0.01) {
+  if (Math.abs(value) < PERCENT_EPSILON) {
     return (
-      <span className="inline-flex items-center gap-1 text-sm font-mono text-slate-400">
+      <span
+        className="inline-flex items-center gap-1 text-sm font-mono text-slate-400"
+        title={`${value.toFixed(4)}%`}
+      >
         <Minus className="w-3 h-3" />
-        {formatPercent(value)}
+        {formatPercentChange(value)}
       </span>
     )
   }
@@ -33,7 +36,7 @@ export function PercentChange({ value }: PercentChangeProps) {
       ) : (
         <TrendingDown className="w-3 h-3" />
       )}
-      {formatPercent(value)}
+      {formatPercentChange(value)}
     </span>
   )
 }

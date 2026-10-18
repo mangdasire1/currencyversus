@@ -6,13 +6,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatRate(rate: number, currency: Currency): string {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: currency.decimals,
-    maximumFractionDigits: currency.decimals,
-  }).format(rate)
-}
-
 export function formatAmount(amount: number, currency: Currency): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -20,11 +13,6 @@ export function formatAmount(amount: number, currency: Currency): string {
     minimumFractionDigits: currency.decimals,
     maximumFractionDigits: currency.decimals,
   }).format(amount)
-}
-
-export function formatPercent(value: number): string {
-  const sign = value >= 0 ? "+" : ""
-  return `${sign}${value.toFixed(2)}%`
 }
 
 // Calendar-month subtraction in UTC (all API dates are UTC calendar days).

@@ -4,8 +4,7 @@ import { useHistoricalRates } from "@/hooks/useHistoricalRates"
 import { PercentChange } from "./PercentChange"
 import { Sparkline } from "./Sparkline"
 import { SkeletonTableRow } from "./SkeletonLoaders"
-import { CURRENCY_MAP } from "@/lib/currencies"
-import { formatRate } from "@/lib/utils"
+import { formatRateValue } from "@/lib/format"
 import { TIME_PERIODS } from "@/lib/currencies"
 import type { ConversionResult } from "@/lib/conversion"
 
@@ -19,7 +18,6 @@ export function HistoricalTable({ base, target, current }: HistoricalTableProps)
   // Pair identity: a "now" rate for another pair is never compared against this history.
   const currentRate = current.base === base && current.quote === target ? current.rate : null
   const { comparisons, loading } = useHistoricalRates(base, target, currentRate)
-  const targetCurrency = CURRENCY_MAP[target]
 
   return (
     <div className="glass-card p-6 flex flex-col gap-4">
@@ -56,23 +54,23 @@ export function HistoricalTable({ base, target, current }: HistoricalTableProps)
                     </td>
                     <td
                       className="py-3 px-4 text-right text-slate-400 font-mono text-xs"
-                      title={
+                      title={[
+                        c.historicalRate !== null ? `Rate ${c.historicalRate}` : null,
                         c.historicalDate && c.historicalDate !== c.requestedDate
                           ? `Requested ${c.requestedDate}; nearest ECB business day ${c.historicalDate}`
-                          : undefined
-                      }
+                          : null,
+                      ].filter(Boolean).join(" · ") || undefined}
                     >
-                      {c.historicalRate !== null && targetCurrency
-                        ? formatRate(c.historicalRate, targetCurrency)
-                        : "—"}
+                      {c.historicalRate !== null ? formatRateValue(c.historicalRate) : "—"}
                       {c.historicalDate && (
                         <div className="text-[10px] text-slate-600">{c.historicalDate}</div>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-right text-white font-mono text-xs font-semibold">
-                      {c.currentRate !== null && targetCurrency
-                        ? formatRate(c.currentRate, targetCurrency)
-                        : "—"}
+                    <td
+                      className="py-3 px-4 text-right text-white font-mono text-xs font-semibold"
+                      title={c.currentRate !== null ? `Rate ${c.currentRate}` : undefined}
+                    >
+                      {c.currentRate !== null ? formatRateValue(c.currentRate) : "—"}
                     </td>
                     <td className="py-3 px-4 text-right">
                       <PercentChange value={c.percentChange} />

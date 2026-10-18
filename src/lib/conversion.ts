@@ -7,6 +7,7 @@
 // assembling its own numbers and strings.
 
 import { METALS, OZ_TO_GRAM } from "./metals.ts"
+import { formatRateValue } from "./format.ts"
 
 export type MetalUnit = "oz" | "g"
 export type Unit = "currency" | MetalUnit
@@ -91,16 +92,12 @@ export function unitLabel(code: string, unit: Unit): string {
   return unit === "currency" ? code : `${unit} ${metalName(code)}`
 }
 
-// Label number formatting: integers stay bare ("1 EUR = 1 EUR"), values ≥ 1
-// get 2–4 decimals, values < 1 keep 4 significant digits so small metal
-// quantities never collapse to 0.00.
+// Label number formatting: integers stay bare ("1 EUR = 1 EUR"); everything
+// else uses the adaptive rate precision from format.ts.
 export function formatLabelNumber(n: number): string {
   if (!Number.isFinite(n)) return "—"
   if (Number.isInteger(n)) return n.toLocaleString("en-US")
-  if (Math.abs(n) >= 1) {
-    return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })
-  }
-  return n.toLocaleString("en-US", { maximumSignificantDigits: 4 })
+  return formatRateValue(n)
 }
 
 function buildLabel(base: string, baseUnit: Unit, quote: string, quoteUnit: Unit, rate: number | null): string {

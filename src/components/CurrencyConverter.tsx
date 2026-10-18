@@ -11,6 +11,7 @@ import { METAL_INFO } from "@/lib/metal-info"
 import { isMetal } from "@/lib/metals"
 import type { MetalCode } from "@/lib/metals"
 import type { MetalUnit } from "@/lib/conversion"
+import { formatMetalAmount, formatMoney } from "@/lib/format"
 
 interface CurrencyConverterProps {
   base: string
@@ -22,13 +23,6 @@ interface CurrencyConverterProps {
   initialOzPriceBaseUsd?: number | null
   initialOzPriceTargetUsd?: number | null
   initialMetalPriceTime?: string | null // provider time of the seeded metal price
-}
-
-function fmtNum(value: number, decimals: number): string {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value)
 }
 
 export function CurrencyConverter({
@@ -74,12 +68,8 @@ export function CurrencyConverter({
   const forThisPair = conv.base === base && conv.quote === target
 
   function formatResult(value: number): string {
-    if (targetIsMetal) {
-      return value !== 0 && Math.abs(value) < 1
-        ? value.toLocaleString("en-US", { maximumSignificantDigits: 4 })
-        : fmtNum(value, metalUnit === "oz" ? 4 : 2)
-    }
-    return fmtNum(value, targetCurrency?.decimals ?? 2)
+    if (targetIsMetal) return formatMetalAmount(value, metalUnit)
+    return formatMoney(value, targetCurrency?.decimals ?? 2)
   }
 
   function missingMessage(): string {
