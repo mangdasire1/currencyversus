@@ -18,7 +18,7 @@ export function DataFreshness({ conv, onRefresh, refreshing = false }: DataFresh
   const lines: string[] = []
 
   if (usesMetal && conv.base !== conv.quote) {
-    lines.push(`Metal price: ${metalTime ?? "time not provided"} · gold-api.com`)
+    lines.push(`Metal price — provider's last update: ${metalTime ?? "time not provided"} · gold-api.com`)
   }
   if (conv.fxDate) {
     lines.push(`Exchange rate: ECB reference rate of ${conv.fxDate} (published business days ~16:00 CET)`)

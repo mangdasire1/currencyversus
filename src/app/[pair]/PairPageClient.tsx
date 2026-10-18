@@ -14,6 +14,7 @@ import { CURRENCY_INFO } from "@/lib/currency-info"
 import type { ExchangeRate } from "@/lib/types"
 import { formatUtcTime } from "@/lib/utils"
 import { getFAQItems } from "@/lib/structured-data"
+import { editorialReviewLabel } from "@/lib/editorial"
 import { navigateSelection, navigateSwap, pairPath } from "@/lib/routes"
 import type { PairNavigation } from "@/lib/routes"
 
@@ -358,6 +359,8 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
                       </div>
                     </div>
                   </section>
+
+                  <p className="text-xs text-slate-600 font-mono">{editorialReviewLabel([base, target])}</p>
                 </>
               )
             })()}

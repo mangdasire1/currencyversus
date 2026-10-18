@@ -14,6 +14,7 @@ import { formatMoney } from "@/lib/format"
 import type { MetalCode } from "@/lib/metals"
 import type { ExchangeRate } from "@/lib/types"
 import { formatUtcTime } from "@/lib/utils"
+import { editorialReviewLabel } from "@/lib/editorial"
 
 const ShaderBackground = dynamic(
   () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
@@ -142,7 +143,8 @@ export function MetalPageClient({
               )}
 
               <p className="text-xs text-slate-600 font-mono">
-                Price as of {priceTimeLabel ?? "— (time not provided by source)"} · Source: gold-api.com
+                Provider{"'"}s last update: {priceTimeLabel ?? "— (time not provided by source)"} · Source: gold-api.com
+                {" "}(time reported by the provider; it may be when the provider last checked the price, not the last market trade)
                 {perOz.fetchedAt ? ` · Last checked ${formatUtcTime(perOz.fetchedAt)}` : ""}
               </p>
               {perOz.fxDate && (
@@ -196,7 +198,7 @@ export function MetalPageClient({
                       : "—",
                   },
                   {
-                    label: "Price time",
+                    label: "Provider update",
                     value: priceTimeLabel ?? "—",
                   },
                 ].map(({ label, value }) => (
@@ -297,6 +299,8 @@ export function MetalPageClient({
                 </ul>
               </section>
             </div>
+
+            <p className="text-xs text-slate-600 font-mono">{editorialReviewLabel([metal])}</p>
 
             {/* Local context */}
             {localCtx && (

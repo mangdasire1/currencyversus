@@ -34,7 +34,7 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "€",
     country: "European Union",
     description:
-      "The Euro is the official currency of the Eurozone, used by 20 of the 27 European Union member states. It is the second most traded currency in the world after the US Dollar.",
+      "The Euro is the official currency of the Eurozone, used by 21 of the 27 European Union member states. It is the second most traded currency in the world after the US Dollar.",
     economy:
       "The Eurozone represents one of the largest economic blocs globally, with Germany and France as its largest economies. The European Central Bank (ECB) sets monetary policy for all Eurozone members.",
     factors: [

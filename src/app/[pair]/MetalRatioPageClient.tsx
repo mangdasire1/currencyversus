@@ -7,6 +7,7 @@ import { useMetalRate } from "@/hooks/useMetalRate"
 import { GOLD_SILVER_RATIO_INFO } from "@/lib/metal-info"
 import { formatUtcTime } from "@/lib/utils"
 import { formatAge } from "@/lib/format"
+import { editorialReviewLabel } from "@/lib/editorial"
 
 const ShaderBackground = dynamic(
   () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
@@ -103,7 +104,7 @@ export function MetalRatioPageClient({
                     Showing cached data{staleAge !== null ? ` (${formatAge(staleAge)})` : ""} ·
                   </span>
                 )}
-                Gold price time: {goldTimeLabel ?? "not provided"} · Silver price time:{" "}
+                Provider{"'"}s last update — gold: {goldTimeLabel ?? "not provided"} · silver:{" "}
                 {silverTimeLabel ?? "not provided"} · Source: gold-api.com
                 <button
                   type="button"
@@ -205,6 +206,8 @@ export function MetalRatioPageClient({
                 ))}
               </div>
             </section>
+
+            <p className="text-xs text-slate-600 font-mono">{editorialReviewLabel(["GOLD_SILVER_RATIO"])}</p>
           </div>
         </main>
 
