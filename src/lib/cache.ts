@@ -99,7 +99,9 @@ function read<T>(key: string, validate: Validator<T>): { entry: CacheEntry<T>; a
 // Fresh entries only.
 export function cacheGet<T>(key: string, validate: Validator<T>): T | null {
   const hit = read(key, validate)
-  return hit && hit.ageMs <= hit.entry.freshTtl ? hit.entry.data : null
+  // Fresh means strictly younger than freshTtl: at exactly the TTL the entry is
+  // stale, so a refresh scheduled for that moment reaches the provider.
+  return hit && hit.ageMs < hit.entry.freshTtl ? hit.entry.data : null
 }
 
 // Any retained entry (fresh or past fresh), with its age, for fallback use.
@@ -108,7 +110,36 @@ export function cacheGetStale<T>(key: string, validate: Validator<T>): StaleHit<
   return hit ? { data: hit.entry.data, ageMs: hit.ageMs } : null
 }
 
+// Same-tab notification when an entry is written, so every surface showing
+// that data (converter, Quick Stats, metal cards…) picks up a refresh made by
+// any one of them.
+const listeners = new Map<string, Set<() => void>>()
+
+export function onCacheUpdated(key: string, listener: () => void): () => void {
+  let set = listeners.get(key)
+  if (!set) listeners.set(key, (set = new Set()))
+  set.add(listener)
+  return () => {
+    set!.delete(listener)
+  }
+}
+
+function notifyAfter(key: string): void {
+  queueMicrotask(() => notifyCacheUpdated(key))
+}
+
+function notifyCacheUpdated(key: string): void {
+  listeners.get(key)?.forEach((l) => {
+    try {
+      l()
+    } catch {
+      // a failing listener must not break the writer
+    }
+  })
+}
+
 export function cacheSet<T>(key: string, data: T, freshTtl: number, kind: CacheKind): void {
+  notifyAfter(key)
   const ls = storage()
   if (!ls) return
   const entry: CacheEntry<T> = {

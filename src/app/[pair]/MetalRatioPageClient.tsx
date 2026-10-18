@@ -26,10 +26,11 @@ export function MetalRatioPageClient({
   initialGoldTime,
   initialSilverTime,
 }: MetalRatioPageClientProps) {
-  const { price: goldUsd, priceTime: goldTime, stale: goldStale, staleAgeMs: goldAge } =
-    useMetalRate("XAU", initialGoldUsd, true, initialGoldTime)
-  const { price: silverUsd, priceTime: silverTime, stale: silverStale, staleAgeMs: silverAge } =
-    useMetalRate("XAG", initialSilverUsd, true, initialSilverTime)
+  const gold = useMetalRate("XAU", initialGoldUsd, true, initialGoldTime)
+  const silver = useMetalRate("XAG", initialSilverUsd, true, initialSilverTime)
+  const { price: goldUsd, priceTime: goldTime, stale: goldStale, staleAgeMs: goldAge } = gold
+  const { price: silverUsd, priceTime: silverTime, stale: silverStale, staleAgeMs: silverAge } = silver
+  const refreshing = gold.refreshing || silver.refreshing
 
   const ratio =
     goldUsd !== null && silverUsd !== null && silverUsd > 0
@@ -97,10 +98,27 @@ export function MetalRatioPageClient({
                 <p className="text-slate-500 font-mono text-sm">Loading ratio…</p>
               )}
               <p className="text-xs text-slate-600 font-mono flex items-center gap-1.5 flex-wrap">
-                {isStale && <RefreshCw className="w-3 h-3 text-amber-400" />}
-                {isStale ? `Showing cached data${staleAge !== null ? ` (${formatAge(staleAge)})` : ""} · ` : ""}
+                {isStale && (
+                  <span className="text-amber-400">
+                    Showing cached data{staleAge !== null ? ` (${formatAge(staleAge)})` : ""} ·
+                  </span>
+                )}
                 Gold price time: {goldTimeLabel ?? "not provided"} · Silver price time:{" "}
                 {silverTimeLabel ?? "not provided"} · Source: gold-api.com
+                <button
+                  type="button"
+                  onClick={() => {
+                    gold.refresh()
+                    silver.refresh()
+                  }}
+                  disabled={refreshing}
+                  aria-label="Check for updated prices now"
+                  className="inline-flex items-center gap-1 text-[#6366f1] hover:underline disabled:opacity-60"
+                >
+                  <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+                  Refresh
+                </button>
+                <span role="status">{refreshing ? "Updating…" : ""}</span>
               </p>
             </div>
 

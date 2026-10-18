@@ -15,10 +15,20 @@ interface UseConversionOptions {
   initialMetalTime?: Partial<Record<"XAU" | "XAG", string | null>>
 }
 
+// Data-layer controls that travel with the inputs.
+export interface RefreshControls {
+  refresh: () => void // manual "check now" for every source this pair uses
+  refreshing: boolean // a request is in flight while values are shown
+}
+
+export type ConversionInputsWithRefresh = ConversionInput & RefreshControls
+export type ConversionWithRefresh = ConversionResult & RefreshControls
+
 // Wires the data hooks into the pure conversion model. Every UI surface that
 // shows a rate for (base, quote) goes through this, so they all agree.
-export function useConversion(base: string, quote: string, options: UseConversionOptions = {}): ConversionResult {
-  return computeConversion(useConversionInputs(base, quote, options))
+export function useConversion(base: string, quote: string, options: UseConversionOptions = {}): ConversionWithRefresh {
+  const { refresh, refreshing, ...inputs } = useConversionInputs(base, quote, options)
+  return { ...computeConversion(inputs), refresh, refreshing }
 }
 
 // The fetched inputs for (base, quote). Use directly when one page needs the
@@ -27,7 +37,7 @@ export function useConversionInputs(
   base: string,
   quote: string,
   { amount = 1, metalUnit = "g", initialFx, initialMetalUsd, initialMetalTime }: UseConversionOptions = {}
-): ConversionInput {
+): ConversionInputsWithRefresh {
   const baseIsMetal = isMetalCode(base)
   const quoteIsMetal = isMetalCode(quote)
   const identity = base === quote
@@ -86,5 +96,11 @@ export function useConversionInputs(
     metals,
     fxLoading: needsFx && fx.loading,
     metalLoading: (wantGold && gold.loading) || (wantSilver && silver.loading),
+    refresh: () => {
+      if (needsFx) fx.refresh()
+      if (wantGold) gold.refresh()
+      if (wantSilver) silver.refresh()
+    },
+    refreshing: (needsFx && fx.refreshing) || (wantGold && gold.refreshing) || (wantSilver && silver.refreshing),
   }
 }

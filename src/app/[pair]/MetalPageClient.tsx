@@ -150,7 +150,9 @@ export function MetalPageClient({
                   USD→{target} conversion: ECB reference rate of {perOz.fxDate}
                 </p>
               )}
-              {perOz.status === "stale" && <DataFreshness conv={perOz} />}
+              {perOz.status === "stale" && (
+                <DataFreshness conv={perOz} onRefresh={inputs.refresh} refreshing={inputs.refreshing} />
+              )}
             </div>
 
             {/* Converter pre-set to this metal/currency pair */}

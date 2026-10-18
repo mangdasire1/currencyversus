@@ -106,7 +106,19 @@ export function CurrencyConverter({
   function renderResult() {
     if (!forThisPair || conv.status === "loading") return <SkeletonConverter />
     if (conv.status === "error" || conv.status === "partial") {
-      return <p className="text-red-400 text-sm">{missingMessage()}</p>
+      return (
+        <div className="flex flex-col gap-1">
+          <p className="text-red-400 text-sm">{missingMessage()}</p>
+          <button
+            type="button"
+            onClick={conv.refresh}
+            disabled={conv.refreshing}
+            className="self-start inline-flex items-center gap-1 text-xs font-mono text-[#6366f1] hover:underline disabled:opacity-60"
+          >
+            {conv.refreshing ? "Retrying…" : "Retry"}
+          </button>
+        </div>
+      )
     }
     if (numericAmount === null || conv.amount === null || !Number.isFinite(conv.amount)) {
       // Empty or rejected input: neutral placeholder, no number is computed.
@@ -127,7 +139,7 @@ export function CurrencyConverter({
           {`${prefix ?? ""} ${formatResult(conv.amount)}${suffix}`}
         </div>
         <div className="text-sm text-slate-400 font-mono">{conv.rateLabel}</div>
-        <DataFreshness conv={conv} />
+        <DataFreshness conv={conv} onRefresh={base !== target ? conv.refresh : undefined} refreshing={conv.refreshing} />
         {base !== target && (
           <p className="text-[11px] text-slate-600 font-body mt-1">
             Mid-market reference value. Bank buy/sell spreads and fees are not included.
