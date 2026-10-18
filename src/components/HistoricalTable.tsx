@@ -4,7 +4,7 @@ import { useHistoricalRates } from "@/hooks/useHistoricalRates"
 import { PercentChange } from "./PercentChange"
 import { Sparkline } from "./Sparkline"
 import { SkeletonTableRow } from "./SkeletonLoaders"
-import { formatRateValue } from "@/lib/format"
+import { formatRateValue, formatPercentChange } from "@/lib/format"
 import { TIME_PERIODS } from "@/lib/currencies"
 import type { ConversionResult } from "@/lib/conversion"
 
@@ -79,7 +79,12 @@ export function HistoricalTable({ base, target, current }: HistoricalTableProps)
                       <PercentChange value={c.percentChange} />
                     </td>
                     <td className="py-3 pl-4 flex justify-end">
-                      <Sparkline data={c.sparklineData} />
+                      <Sparkline
+                        data={c.sparklineData}
+                        title={`${base}/${target}, last ${c.period.label.toLowerCase()}, ${
+                          c.percentChange !== null ? formatPercentChange(c.percentChange) : "change unavailable"
+                        }`}
+                      />
                     </td>
                   </tr>
                 )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useId } from "react"
+import { useState, useCallback, useEffect, useId } from "react"
 import { ArrowLeftRight, ArrowUpDown } from "lucide-react"
 import { CurrencySelect } from "./CurrencySelect"
 import { SkeletonConverter } from "./SkeletonLoaders"
@@ -49,7 +49,10 @@ export function CurrencyConverter({
   const parsedAmount = parseAmount(amount)
   const numericAmount = parsedAmount.ok ? parsedAmount.value : null
   const amountError = parsedAmount.ok ? null : amountErrorMessage(parsedAmount.reason)
-  const amountErrorId = `${useId()}-amount-error`
+  const idBase = useId()
+  const amountInputId = `${idBase}-amount`
+  const amountErrorId = `${idBase}-amount-error`
+  const resultLabelId = `${idBase}-result-label`
 
   const initialMetalUsd: Partial<Record<MetalCode, number | null>> = {}
   const initialMetalTime: Partial<Record<MetalCode, string | null>> = {}
@@ -86,6 +89,18 @@ export function CurrencyConverter({
     if (fxMissing) return "Exchange rate unavailable right now — cannot convert"
     return "Failed to load rates"
   }
+
+  // Screen-reader announcement of the result, only once it has settled (not on
+  // every keystroke): the text is published to the live region after a pause.
+  const resultText =
+    forThisPair && (conv.status === "ready" || conv.status === "stale") && conv.amount !== null && Number.isFinite(conv.amount)
+      ? `${formatResult(conv.amount)} ${targetIsMetal ? `${metalUnit} ${targetMetalInfo?.name ?? target}` : target}`
+      : ""
+  const [announced, setAnnounced] = useState("")
+  useEffect(() => {
+    const t = setTimeout(() => setAnnounced(resultText), 700)
+    return () => clearTimeout(t)
+  }, [resultText])
 
   // --- Result formatting ---
   function renderResult() {
@@ -149,6 +164,7 @@ export function CurrencyConverter({
           onClick={handleSwap}
           className="swap-btn self-center sm:mt-6 p-2.5 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20 hover:bg-[#6366f1]/20 hover:border-[#6366f1]/40 text-[#6366f1]"
           title="Swap"
+          aria-label="Swap currencies"
         >
           <ArrowUpDown className="w-4 h-4 sm:hidden" />
           <ArrowLeftRight className="w-4 h-4 hidden sm:block" />
@@ -167,15 +183,17 @@ export function CurrencyConverter({
       {/* Amount input */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <label className="text-xs text-slate-400 uppercase tracking-widest font-mono">
+          <label htmlFor={amountInputId} className="text-xs text-slate-400 uppercase tracking-widest font-mono">
             Amount
           </label>
           {anyMetal && (
-            <div className="flex items-center gap-1 text-xs font-mono">
+            <div className="flex items-center gap-1 text-xs font-mono" role="group" aria-label="Metal unit">
               {(["g", "oz"] as MetalUnit[]).map((u) => (
                 <button
                   key={u}
                   type="button"
+                  aria-pressed={metalUnit === u}
+                  aria-label={u === "g" ? "grams" : "troy ounces"}
                   onClick={() => setMetalUnit(u)}
                   className={`px-2 py-0.5 rounded-md transition-colors ${
                     metalUnit === u
@@ -202,6 +220,7 @@ export function CurrencyConverter({
           {/* type="text" + inputMode="decimal": with type="number" the browser
               turns invalid input into "" and we could not tell "abc" from empty. */}
           <input
+            id={amountInputId}
             type="text"
             inputMode="decimal"
             autoComplete="off"
@@ -224,11 +243,14 @@ export function CurrencyConverter({
       </div>
 
       {/* Result */}
-      <div className="flex flex-col gap-1">
-        <label className="text-xs text-slate-400 uppercase tracking-widest font-mono">
+      <div className="flex flex-col gap-1" role="group" aria-labelledby={resultLabelId}>
+        <span id={resultLabelId} className="text-xs text-slate-400 uppercase tracking-widest font-mono">
           Result
-        </label>
+        </span>
         {renderResult()}
+        <div className="sr-only" aria-live="polite" aria-atomic="true">
+          {announced}
+        </div>
       </div>
     </div>
   )

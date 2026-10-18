@@ -6,9 +6,13 @@ import type { HistoricalPoint } from "@/lib/types"
 
 interface SparklineProps {
   data: HistoricalPoint[]
+  // Accessible description, e.g. "USD/TRY, last 10 years, +212.35%". The
+  // chart carries information, so it gets an SVG <title> rather than being
+  // hidden as decoration.
+  title: string
 }
 
-export function Sparkline({ data }: SparklineProps) {
+export function Sparkline({ data, title }: SparklineProps) {
   if (!data || data.length < 2) {
     return <div className="w-28 h-10 rounded bg-white/5 animate-pulse" />
   }
@@ -19,7 +23,7 @@ export function Sparkline({ data }: SparklineProps) {
   return (
     <div className="w-28 h-10">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
+        <LineChart data={data} title={title} role="img" accessibilityLayer={false}>
           <Line
             type="monotone"
             dataKey="rate"
