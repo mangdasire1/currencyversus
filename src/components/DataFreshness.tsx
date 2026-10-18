@@ -1,6 +1,7 @@
 import { RefreshCw } from "lucide-react"
 import type { ConversionResult } from "@/lib/conversion"
 import { formatUtcTime } from "@/lib/utils"
+import { formatAge } from "@/lib/format"
 
 // Shows where each number came from and how old it is. When a metal price is
 // combined with an FX rate both timestamps are shown: they come from two
@@ -28,7 +29,7 @@ export function DataFreshness({ conv }: { conv: ConversionResult }) {
       {conv.status === "stale" && (
         <span className="flex items-center gap-1 text-amber-400">
           <RefreshCw className="w-3 h-3" />
-          Showing cached data
+          Showing cached data{conv.staleAgeMs !== null ? ` (${formatAge(conv.staleAgeMs)})` : ""}
         </span>
       )}
       {lines.map((l) => (

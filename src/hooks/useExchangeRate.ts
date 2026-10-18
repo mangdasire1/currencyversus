@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { fetchLatestRates } from "@/lib/api"
-import { cacheGet, cacheSet, cacheGetStale } from "@/lib/cache"
+import { cacheGet, cacheSet, cacheGetStale, FRESH_TTL } from "@/lib/cache"
+import { isExchangeRateFor } from "@/lib/cache-schemas"
 import { isMetal } from "@/lib/metals"
 import type { ExchangeRate } from "@/lib/types"
 
@@ -11,6 +12,7 @@ interface UseExchangeRateResult {
   loading: boolean
   error: string | null
   stale: boolean
+  staleAgeMs: number | null // age of the cached fallback, when known
 }
 
 function isForPair(data: ExchangeRate | null, base: string, target: string): data is ExchangeRate {
@@ -29,6 +31,7 @@ export function useExchangeRate(
   const [loading, setLoading] = useState(initialData == null)
   const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
+  const [staleAgeMs, setStaleAgeMs] = useState<number | null>(null)
 
   const applicable = !!base && !!target && base !== target && !isMetal(base) && !isMetal(target)
 
@@ -44,9 +47,9 @@ export function useExchangeRate(
     }
 
     const cacheKey = `${base}_${target}_latest`
-    const TTL = 60 * 60 * 1000
+    const validate = isExchangeRateFor(base, target)
 
-    const cached = cacheGet<ExchangeRate>(cacheKey)
+    const cached = cacheGet(cacheKey, validate)
     if (cached) {
       setData(cached)
       setLoading(false)
@@ -72,18 +75,20 @@ export function useExchangeRate(
         setData(withMeta)
         setStale(false)
         setError(null)
-        cacheSet(cacheKey, withMeta, TTL)
+        cacheSet(cacheKey, withMeta, FRESH_TTL.latest, "fx")
       })
       .catch((err: Error) => {
         if (cancelled) return
-        const staleData = cacheGetStale<ExchangeRate>(cacheKey)
-        if (staleData) {
-          setData(staleData)
+        const staleHit = cacheGetStale(cacheKey, validate)
+        if (staleHit) {
+          setData(staleHit.data)
           setStale(true)
+          setStaleAgeMs(staleHit.ageMs)
         } else if (!hasData) {
           setError(err.message)
         } else {
           setStale(true)
+          setStaleAgeMs(null)
         }
       })
       .finally(() => {
@@ -102,5 +107,6 @@ export function useExchangeRate(
     loading: applicable && (loading || (matching === null && error === null)),
     error: applicable ? error : null,
     stale: matching !== null && stale,
+    staleAgeMs: matching !== null && stale ? staleAgeMs : null,
   }
 }

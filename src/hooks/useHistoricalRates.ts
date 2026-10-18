@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { fetchHistoricalRate, fetchTimeSeries } from "@/lib/api"
 import { cacheGet, cacheSet, cacheGetStale, getCacheTTL } from "@/lib/cache"
+import { isCachedPeriod } from "@/lib/cache-schemas"
+import type { CachedPeriod } from "@/lib/cache-schemas"
 import { subtractMonths, toISODate } from "@/lib/utils"
 import { TIME_PERIODS } from "@/lib/currencies"
 import { samplePoints, sampleFrequencyFor } from "@/lib/history"
@@ -19,12 +21,6 @@ interface PeriodHistory {
   requestedDate: string // date we asked for (today − period, UTC)
   historicalDate: string | null // business day the provider actually returned
   historicalRate: number | null
-  sparklineData: HistoricalPoint[]
-}
-
-interface CachedPeriod {
-  historicalRate: number
-  historicalDate?: string | null
   sparklineData: HistoricalPoint[]
 }
 
@@ -86,7 +82,7 @@ export function useHistoricalRates(
         const ttl = getCacheTTL(period.key)
 
         try {
-          let entry = cacheGet<CachedPeriod>(cacheKey)
+          let entry: CachedPeriod | null = cacheGet(cacheKey, isCachedPeriod)
           if (!entry) {
             // Rate on the requested date; the provider answers with the
             // nearest preceding business day, which we keep separately.
@@ -105,7 +101,7 @@ export function useHistoricalRates(
                 sampleFrequencyFor(period.months)
               ),
             }
-            cacheSet(cacheKey, entry, ttl)
+            cacheSet(cacheKey, entry, ttl, "history")
           }
           rows.push({
             period,
@@ -116,7 +112,7 @@ export function useHistoricalRates(
           })
         } catch {
           if (cancelled) return
-          const stale = cacheGetStale<CachedPeriod>(cacheKey)
+          const stale = cacheGetStale(cacheKey, isCachedPeriod)?.data
           rows.push({
             period,
             requestedDate,

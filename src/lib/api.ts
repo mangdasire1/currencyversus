@@ -1,11 +1,11 @@
 import type { ExchangeRate, TimeSeriesRates } from "./types"
 import { METAL_API_BASE } from "./metals"
 import type { MetalCode } from "./metals"
-import { cacheGet, cacheSet } from "./cache"
+import { cacheGet, cacheSet, FRESH_TTL } from "./cache"
+import { isMetalPriceFor } from "./cache-schemas"
 import { parseGoldApiPrice } from "./gold-api"
 
 const BASE_URL = "https://api.frankfurter.dev/v1"
-const METAL_TTL = 15 * 60 * 1000 // 15 min — metals are more volatile than FX
 
 export async function fetchLatestRates(
   base: string,
@@ -57,8 +57,8 @@ export function metalCacheKey(metal: MetalCode): string {
 
 export async function fetchMetalPrice(metal: MetalCode): Promise<MetalPrice> {
   const cacheKey = metalCacheKey(metal)
-  const cached = cacheGet<MetalPrice>(cacheKey)
-  if (cached) return cached
+  const cached = cacheGet(cacheKey, isMetalPriceFor(metal))
+  if (cached) return cached as MetalPrice // validator checked metal === requested metal
 
   const res = await fetch(`${METAL_API_BASE}/price/${metal}`)
   if (!res.ok) throw new Error(`gold-api error: ${res.status}`)
@@ -71,6 +71,6 @@ export async function fetchMetalPrice(metal: MetalCode): Promise<MetalPrice> {
     priceTime: parsed.priceTime,
     fetchedAt: new Date().toISOString(),
   }
-  cacheSet(cacheKey, result, METAL_TTL)
+  cacheSet(cacheKey, result, FRESH_TTL.metal, "metal")
   return result
 }

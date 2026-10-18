@@ -54,3 +54,11 @@ test("percent threshold: |p| < 0.01 → ~0%, boundary 0.01 shown", () => {
   assert.equal(formatPercentChange(-0.02), "-0.02%")
   assert.equal(formatPercentChange(212.346), "+212.35%")
 })
+
+test("formatAge for cached-data notice", async () => {
+  const { formatAge } = await import("./format.ts")
+  assert.equal(formatAge(30_000), "less than a minute old")
+  assert.equal(formatAge(42 * 60_000), "42 min old")
+  assert.equal(formatAge(3 * 3_600_000), "3 h old")
+  assert.equal(formatAge(3 * 86_400_000), "3 days old")
+})

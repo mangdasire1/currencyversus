@@ -65,6 +65,16 @@ export function formatMetalAmount(n: number, unit: MetalUnit): string {
   return belowStep(n, d) ?? fixed(n, d)
 }
 
+// "3 h old" style age for cached fallback data.
+export function formatAge(ms: number): string {
+  const min = Math.floor(ms / 60000)
+  if (min < 1) return "less than a minute old"
+  if (min < 60) return `${min} min old`
+  const h = Math.floor(min / 60)
+  if (h < 48) return `${h} h old`
+  return `${Math.floor(h / 24)} days old`
+}
+
 // Changes smaller than the displayed resolution are shown as ~0% rather than
 // a figure like -0.02% that the visible rates cannot confirm.
 export const PERCENT_EPSILON = 0.01

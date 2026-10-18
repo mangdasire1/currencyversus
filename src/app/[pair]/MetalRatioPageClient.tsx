@@ -6,6 +6,7 @@ import { TrendingUp, ArrowLeft, RefreshCw } from "lucide-react"
 import { useMetalRate } from "@/hooks/useMetalRate"
 import { GOLD_SILVER_RATIO_INFO } from "@/lib/metal-info"
 import { formatUtcTime } from "@/lib/utils"
+import { formatAge } from "@/lib/format"
 
 const ShaderBackground = dynamic(
   () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
@@ -25,9 +26,9 @@ export function MetalRatioPageClient({
   initialGoldTime,
   initialSilverTime,
 }: MetalRatioPageClientProps) {
-  const { price: goldUsd, priceTime: goldTime, stale: goldStale } =
+  const { price: goldUsd, priceTime: goldTime, stale: goldStale, staleAgeMs: goldAge } =
     useMetalRate("XAU", initialGoldUsd, true, initialGoldTime)
-  const { price: silverUsd, priceTime: silverTime, stale: silverStale } =
+  const { price: silverUsd, priceTime: silverTime, stale: silverStale, staleAgeMs: silverAge } =
     useMetalRate("XAG", initialSilverUsd, true, initialSilverTime)
 
   const ratio =
@@ -38,6 +39,8 @@ export function MetalRatioPageClient({
   const goldTimeLabel = formatUtcTime(goldTime)
   const silverTimeLabel = formatUtcTime(silverTime)
   const isStale = goldStale || silverStale
+  const staleAges = [goldAge, silverAge].filter((a): a is number => a !== null)
+  const staleAge = staleAges.length > 0 ? Math.max(...staleAges) : null
 
   const ratioCategory =
     ratio === null
@@ -95,7 +98,7 @@ export function MetalRatioPageClient({
               )}
               <p className="text-xs text-slate-600 font-mono flex items-center gap-1.5 flex-wrap">
                 {isStale && <RefreshCw className="w-3 h-3 text-amber-400" />}
-                {isStale ? "Showing cached data · " : ""}
+                {isStale ? `Showing cached data${staleAge !== null ? ` (${formatAge(staleAge)})` : ""} · ` : ""}
                 Gold price time: {goldTimeLabel ?? "not provided"} · Silver price time:{" "}
                 {silverTimeLabel ?? "not provided"} · Source: gold-api.com
               </p>

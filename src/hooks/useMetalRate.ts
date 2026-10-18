@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { fetchMetalPrice, metalCacheKey } from "@/lib/api"
-import type { MetalPrice } from "@/lib/api"
 import { cacheGetStale } from "@/lib/cache"
+import { isMetalPriceFor } from "@/lib/cache-schemas"
 import type { MetalCode } from "@/lib/metals"
 
 interface UseMetalRateResult {
@@ -12,6 +12,7 @@ interface UseMetalRateResult {
   fetchedAt: string | null
   loading: boolean
   stale: boolean
+  staleAgeMs: number | null
 }
 
 // initialPriceUsd: pass the build-time USD oz price for SSR hydration (no skeleton flicker).
@@ -30,6 +31,7 @@ export function useMetalRate(
   const [loading, setLoading] = useState(enabled && initialPriceUsd == null)
   const [failed, setFailed] = useState(false)
   const [stale, setStale] = useState(false)
+  const [staleAgeMs, setStaleAgeMs] = useState<number | null>(null)
 
   useEffect(() => {
     if (!enabled) {
@@ -51,12 +53,13 @@ export function useMetalRate(
       })
       .catch(() => {
         if (cancelled) return
-        const staleData = cacheGetStale<MetalPrice>(metalCacheKey(metal))
-        if (staleData) {
-          setPrice(staleData.price)
-          setPriceTime(staleData.priceTime)
-          setFetchedAt(staleData.fetchedAt)
+        const staleHit = cacheGetStale(metalCacheKey(metal), isMetalPriceFor(metal))
+        if (staleHit) {
+          setPrice(staleHit.data.price)
+          setPriceTime(staleHit.data.priceTime)
+          setFetchedAt(staleHit.data.fetchedAt)
           setStale(true)
+          setStaleAgeMs(staleHit.ageMs)
         } else if (hasData) {
           setStale(true)
         } else {
@@ -76,5 +79,6 @@ export function useMetalRate(
     // render between `enabled` flipping on and the effect running).
     loading: enabled && (loading || (price === null && !failed)),
     stale,
+    staleAgeMs: stale ? staleAgeMs : null,
   }
 }

@@ -64,15 +64,16 @@ export function useConversionInputs(
           date: fx.data.date ?? null,
           fetchedAt: fx.data.fetchedAt ?? null,
           stale: fx.stale,
+          staleAgeMs: fx.staleAgeMs,
         }
       : null
 
   const metals: Record<string, MetalQuote | null> = {
     XAU: wantGold && gold.price !== null
-      ? { metal: "XAU", usdPerOz: gold.price, priceTime: gold.priceTime, fetchedAt: gold.fetchedAt, stale: gold.stale }
+      ? { metal: "XAU", usdPerOz: gold.price, priceTime: gold.priceTime, fetchedAt: gold.fetchedAt, stale: gold.stale, staleAgeMs: gold.staleAgeMs }
       : null,
     XAG: wantSilver && silver.price !== null
-      ? { metal: "XAG", usdPerOz: silver.price, priceTime: silver.priceTime, fetchedAt: silver.fetchedAt, stale: silver.stale }
+      ? { metal: "XAG", usdPerOz: silver.price, priceTime: silver.priceTime, fetchedAt: silver.fetchedAt, stale: silver.stale, staleAgeMs: silver.staleAgeMs }
       : null,
   }
 

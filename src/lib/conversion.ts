@@ -23,6 +23,7 @@ export interface FxQuote {
   date: string | null // ECB publication date (YYYY-MM-DD)
   fetchedAt?: string | null // when we retrieved it (ISO)
   stale?: boolean
+  staleAgeMs?: number | null // age of cached fallback data
 }
 
 export interface MetalQuote {
@@ -31,6 +32,7 @@ export interface MetalQuote {
   priceTime: string | null // provider timestamp (ISO, incl. time)
   fetchedAt?: string | null
   stale?: boolean
+  staleAgeMs?: number | null
 }
 
 export interface ConversionInput {
@@ -63,6 +65,7 @@ export interface ConversionResult {
   fxDate: string | null // FX leg date when an FX rate was used
   metalPriceTime: string | null // metal leg time when a metal price was used
   status: ConversionStatus
+  staleAgeMs: number | null // oldest cached fallback in use (status "stale")
   missing: string[] // "fx" | "metal"
 }
 
@@ -141,6 +144,11 @@ export function computeConversion(input: ConversionInput): ConversionResult {
   const fetched: (string | null | undefined)[] = []
   const missing: string[] = []
   let anyStale = false
+  let staleAgeMs: number | null = null
+  const noteStale = (age: number | null | undefined) => {
+    anyStale = true
+    if (typeof age === "number") staleAgeMs = Math.max(staleAgeMs ?? 0, age)
+  }
   let pendingMissing = false
 
   const needFx = (fxBase: string, fxQuote: string): FxQuote | null => {
@@ -152,7 +160,7 @@ export function computeConversion(input: ConversionInput): ConversionResult {
     }
     fxDate = fx.date
     fetched.push(fx.fetchedAt)
-    if (fx.stale) anyStale = true
+    if (fx.stale) noteStale(fx.staleAgeMs)
     return fx
   }
   const needMetal = (code: string): MetalQuote | null => {
@@ -164,7 +172,7 @@ export function computeConversion(input: ConversionInput): ConversionResult {
     }
     metalPriceTime = earliest(metalPriceTime, m.priceTime)
     fetched.push(m.fetchedAt)
-    if (m.stale) anyStale = true
+    if (m.stale) noteStale(m.staleAgeMs)
     return m
   }
 
@@ -229,6 +237,7 @@ export function computeConversion(input: ConversionInput): ConversionResult {
     fxDate,
     metalPriceTime,
     status,
+    staleAgeMs: anyStale ? staleAgeMs : null,
     missing,
   }
 }
