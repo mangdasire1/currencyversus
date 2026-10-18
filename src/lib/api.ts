@@ -20,10 +20,11 @@ export async function fetchLatestRates(
 export async function fetchHistoricalRate(
   date: string,
   base: string,
-  symbols: string[]
+  symbols: string[],
+  signal?: AbortSignal
 ): Promise<ExchangeRate> {
   const params = new URLSearchParams({ base, symbols: symbols.join(",") })
-  const res = await fetch(`${BASE_URL}/${date}?${params}`)
+  const res = await fetch(`${BASE_URL}/${date}?${params}`, { signal })
   if (!res.ok) throw new Error(`API error: ${res.status}`)
   return res.json()
 }
@@ -32,10 +33,11 @@ export async function fetchTimeSeries(
   startDate: string,
   endDate: string,
   base: string,
-  symbols: string[]
+  symbols: string[],
+  signal?: AbortSignal
 ): Promise<TimeSeriesRates> {
   const params = new URLSearchParams({ base, symbols: symbols.join(",") })
-  const res = await fetch(`${BASE_URL}/${startDate}..${endDate}?${params}`)
+  const res = await fetch(`${BASE_URL}/${startDate}..${endDate}?${params}`, { signal })
   if (!res.ok) throw new Error(`API error: ${res.status}`)
   return res.json()
 }

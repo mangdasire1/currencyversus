@@ -27,10 +27,14 @@ export function formatPercent(value: number): string {
   return `${sign}${value.toFixed(2)}%`
 }
 
+// Calendar-month subtraction in UTC (all API dates are UTC calendar days).
+// The day is clamped to the target month's last day, so 31 Mar − 1 month is
+// 28/29 Feb rather than rolling over into 3 Mar. Returns UTC midnight.
 export function subtractMonths(date: Date, months: number): Date {
-  const result = new Date(date)
-  result.setMonth(result.getMonth() - months)
-  return result
+  const y = date.getUTCFullYear()
+  const m = date.getUTCMonth() - months
+  const lastDayOfTarget = new Date(Date.UTC(y, m + 1, 0)).getUTCDate()
+  return new Date(Date.UTC(y, m, Math.min(date.getUTCDate(), lastDayOfTarget)))
 }
 
 // "2026-10-17T11:59:11.000Z" -> "2026-10-17 11:59 UTC"

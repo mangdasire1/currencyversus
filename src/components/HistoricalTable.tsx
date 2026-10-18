@@ -54,10 +54,20 @@ export function HistoricalTable({ base, target, current }: HistoricalTableProps)
                     <td className="py-3 pr-4 text-slate-300 font-mono text-xs whitespace-nowrap">
                       {c.period.label}
                     </td>
-                    <td className="py-3 px-4 text-right text-slate-400 font-mono text-xs">
+                    <td
+                      className="py-3 px-4 text-right text-slate-400 font-mono text-xs"
+                      title={
+                        c.historicalDate && c.historicalDate !== c.requestedDate
+                          ? `Requested ${c.requestedDate}; nearest ECB business day ${c.historicalDate}`
+                          : undefined
+                      }
+                    >
                       {c.historicalRate !== null && targetCurrency
                         ? formatRate(c.historicalRate, targetCurrency)
                         : "—"}
+                      {c.historicalDate && (
+                        <div className="text-[10px] text-slate-600">{c.historicalDate}</div>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-right text-white font-mono text-xs font-semibold">
                       {c.currentRate !== null && targetCurrency

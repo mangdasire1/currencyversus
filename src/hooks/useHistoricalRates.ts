@@ -6,7 +6,7 @@ import { cacheGet, cacheSet, cacheGetStale, getCacheTTL } from "@/lib/cache"
 import { subtractMonths, toISODate } from "@/lib/utils"
 import { TIME_PERIODS } from "@/lib/currencies"
 import { samplePoints, sampleFrequencyFor } from "@/lib/history"
-import type { HistoricalComparison, HistoricalPoint } from "@/lib/types"
+import type { HistoricalComparison, HistoricalPoint, TimePeriod } from "@/lib/types"
 
 interface UseHistoricalRatesResult {
   comparisons: HistoricalComparison[]
@@ -14,120 +14,153 @@ interface UseHistoricalRatesResult {
   error: string | null
 }
 
+interface PeriodHistory {
+  period: TimePeriod
+  requestedDate: string // date we asked for (today − period, UTC)
+  historicalDate: string | null // business day the provider actually returned
+  historicalRate: number | null
+  sparklineData: HistoricalPoint[]
+}
+
+interface CachedPeriod {
+  historicalRate: number
+  historicalDate?: string | null
+  sparklineData: HistoricalPoint[]
+}
+
+// Rows are tagged with the pair they were fetched for; rows for any other
+// pair are never returned.
+interface HistoryState {
+  pairKey: string
+  rows: PeriodHistory[]
+  error: string | null
+}
+
+function identityRows(today: Date): PeriodHistory[] {
+  return TIME_PERIODS.map((period) => {
+    const requestedDate = toISODate(subtractMonths(today, period.months))
+    return {
+      period,
+      requestedDate,
+      historicalDate: requestedDate,
+      historicalRate: 1,
+      sparklineData: [
+        { date: requestedDate, rate: 1 },
+        { date: toISODate(today), rate: 1 },
+      ],
+    }
+  })
+}
+
 export function useHistoricalRates(
   base: string,
   target: string,
   currentRate: number | null
 ): UseHistoricalRatesResult {
-  const [comparisons, setComparisons] = useState<HistoricalComparison[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const pairKey = `${base}_${target}`
+  const [state, setState] = useState<HistoryState | null>(null)
 
   useEffect(() => {
-    if (base && base === target) {
-      // Identity: 1 A = 1 A in every period, change is exactly 0.
-      const today = new Date()
-      setComparisons(
-        TIME_PERIODS.map((period) => ({
-          period,
-          historicalRate: 1,
-          currentRate: 1,
-          percentChange: 0,
-          sparklineData: [
-            { date: toISODate(subtractMonths(today, period.months)), rate: 1 },
-            { date: toISODate(today), rate: 1 },
-          ],
-        }))
-      )
-      setLoading(false)
-      return
-    }
-    if (!base || !target || currentRate === null) {
-      // Never leave the previous pair's rows on screen.
-      setComparisons([])
-      setLoading(true)
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
+    if (!base || !target) return
     const today = new Date()
 
+    if (base === target) {
+      // Identity: 1 A = 1 A in every period, change is exactly 0.
+      setState({ pairKey, rows: identityRows(today), error: null })
+      return
+    }
+
+    // Only the response for the pair that is still selected may write state.
+    let cancelled = false
+    const controller = new AbortController()
+
     const fetchAll = async () => {
-      const results: HistoricalComparison[] = []
+      const rows: PeriodHistory[] = []
+      const endStr = toISODate(today)
 
       for (const period of TIME_PERIODS) {
-        const startDate = subtractMonths(today, period.months)
-        const startStr = toISODate(startDate)
-        const endStr = toISODate(today)
-        // v2: sparklines now span the full period (older entries were capped at 12 months)
+        if (cancelled) return
+        const requestedDate = toISODate(subtractMonths(today, period.months))
+        // v2: sparklines span the full period (older entries were capped at 12 months)
         const cacheKey = `${base}_${target}_${period.key}_v2`
         const ttl = getCacheTTL(period.key)
 
         try {
-          const cached = cacheGet<{
-            historicalRate: number
-            sparklineData: HistoricalPoint[]
-          }>(cacheKey)
-
-          let historicalRate: number
-          let sparklineData: HistoricalPoint[]
-
-          if (cached) {
-            historicalRate = cached.historicalRate
-            sparklineData = cached.sparklineData
-          } else {
-            // Fetch historical rate at start date
-            const historical = await fetchHistoricalRate(startStr, base, [target])
-            historicalRate = historical.rates[target]
-
+          let entry = cacheGet<CachedPeriod>(cacheKey)
+          if (!entry) {
+            // Rate on the requested date; the provider answers with the
+            // nearest preceding business day, which we keep separately.
+            const historical = await fetchHistoricalRate(requestedDate, base, [target], controller.signal)
             // Sparkline covers the period's own range; long ranges are thinned
             // by sampling frequency (daily/weekly/monthly), endpoints kept.
-            const timeSeries = await fetchTimeSeries(startStr, endStr, base, [target])
-            sparklineData = samplePoints(
-              Object.entries(timeSeries.rates).map(([date, rates]) => ({ date, rate: rates[target] })),
-              sampleFrequencyFor(period.months)
-            )
-
-            cacheSet(cacheKey, { historicalRate, sparklineData }, ttl)
+            const timeSeries = await fetchTimeSeries(requestedDate, endStr, base, [target], controller.signal)
+            if (historical.base !== base || typeof historical.rates[target] !== "number") {
+              throw new Error("historical response does not match the requested pair")
+            }
+            entry = {
+              historicalRate: historical.rates[target],
+              historicalDate: historical.date ?? null,
+              sparklineData: samplePoints(
+                Object.entries(timeSeries.rates).map(([date, rates]) => ({ date, rate: rates[target] })),
+                sampleFrequencyFor(period.months)
+              ),
+            }
+            cacheSet(cacheKey, entry, ttl)
           }
-
-          const percentChange =
-            historicalRate !== 0
-              ? ((currentRate - historicalRate) / historicalRate) * 100
-              : null
-
-          results.push({
+          rows.push({
             period,
-            historicalRate,
-            currentRate,
-            percentChange,
-            sparklineData,
+            requestedDate,
+            historicalDate: entry.historicalDate ?? null,
+            historicalRate: entry.historicalRate,
+            sparklineData: entry.sparklineData,
           })
         } catch {
-          const stale = cacheGetStale<{
-            historicalRate: number
-            sparklineData: HistoricalPoint[]
-          }>(cacheKey)
-
-          results.push({
+          if (cancelled) return
+          const stale = cacheGetStale<CachedPeriod>(cacheKey)
+          rows.push({
             period,
+            requestedDate,
+            historicalDate: stale?.historicalDate ?? null,
             historicalRate: stale?.historicalRate ?? null,
-            currentRate,
-            percentChange: null,
             sparklineData: stale?.sparklineData ?? [],
           })
         }
       }
 
-      setComparisons(results)
+      if (!cancelled) setState({ pairKey, rows, error: null })
     }
 
-    fetchAll()
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [base, target, currentRate])
+    fetchAll().catch((err: Error) => {
+      if (!cancelled) setState({ pairKey, rows: [], error: err.message })
+    })
 
-  return { comparisons, loading, error }
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [base, target, pairKey])
+
+  const rows = state?.pairKey === pairKey ? state.rows : null
+  const now = base === target ? 1 : currentRate
+
+  const comparisons: HistoricalComparison[] = (rows ?? []).map((r) => ({
+    period: r.period,
+    requestedDate: r.requestedDate,
+    historicalDate: r.historicalDate,
+    historicalRate: r.historicalRate,
+    currentRate: now,
+    percentChange:
+      base === target
+        ? 0
+        : now !== null && r.historicalRate !== null && r.historicalRate !== 0
+          ? ((now - r.historicalRate) / r.historicalRate) * 100
+          : null,
+    sparklineData: r.sparklineData,
+  }))
+
+  return {
+    comparisons,
+    loading: rows === null,
+    error: state?.pairKey === pairKey ? state.error : null,
+  }
 }

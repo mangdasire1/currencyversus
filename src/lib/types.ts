@@ -33,6 +33,8 @@ export interface TimePeriod {
 
 export interface HistoricalComparison {
   period: TimePeriod
+  requestedDate: string // today − period (UTC calendar date)
+  historicalDate: string | null // business day the provider actually returned
   historicalRate: number | null
   currentRate: number | null
   percentChange: number | null
