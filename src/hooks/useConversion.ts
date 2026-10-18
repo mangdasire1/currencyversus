@@ -3,7 +3,7 @@
 import { useExchangeRate } from "./useExchangeRate"
 import { useMetalRate } from "./useMetalRate"
 import { computeConversion, isMetalCode } from "@/lib/conversion"
-import type { ConversionResult, FxQuote, MetalQuote, MetalUnit } from "@/lib/conversion"
+import type { ConversionInput, ConversionResult, FxQuote, MetalQuote, MetalUnit } from "@/lib/conversion"
 import type { ExchangeRate } from "@/lib/types"
 
 interface UseConversionOptions {
@@ -12,15 +12,22 @@ interface UseConversionOptions {
   // Build-time seeds (no skeleton on first paint)
   initialFx?: ExchangeRate | null
   initialMetalUsd?: Partial<Record<"XAU" | "XAG", number | null>>
+  initialMetalTime?: Partial<Record<"XAU" | "XAG", string | null>>
 }
 
 // Wires the data hooks into the pure conversion model. Every UI surface that
 // shows a rate for (base, quote) goes through this, so they all agree.
-export function useConversion(
+export function useConversion(base: string, quote: string, options: UseConversionOptions = {}): ConversionResult {
+  return computeConversion(useConversionInputs(base, quote, options))
+}
+
+// The fetched inputs for (base, quote). Use directly when one page needs the
+// same pair in several units (e.g. per oz and per gram) from a single fetch.
+export function useConversionInputs(
   base: string,
   quote: string,
-  { amount = 1, metalUnit = "g", initialFx, initialMetalUsd }: UseConversionOptions = {}
-): ConversionResult {
+  { amount = 1, metalUnit = "g", initialFx, initialMetalUsd, initialMetalTime }: UseConversionOptions = {}
+): ConversionInput {
   const baseIsMetal = isMetalCode(base)
   const quoteIsMetal = isMetalCode(quote)
   const identity = base === quote
@@ -45,8 +52,8 @@ export function useConversion(
 
   const wantGold = !identity && (base === "XAU" || quote === "XAU")
   const wantSilver = !identity && (base === "XAG" || quote === "XAG")
-  const gold = useMetalRate("XAU", initialMetalUsd?.XAU ?? null, wantGold)
-  const silver = useMetalRate("XAG", initialMetalUsd?.XAG ?? null, wantSilver)
+  const gold = useMetalRate("XAU", initialMetalUsd?.XAU ?? null, wantGold, initialMetalTime?.XAU)
+  const silver = useMetalRate("XAG", initialMetalUsd?.XAG ?? null, wantSilver, initialMetalTime?.XAG)
 
   const fxQuoteObj: FxQuote | null =
     needsFx && fx.data
@@ -69,7 +76,7 @@ export function useConversion(
       : null,
   }
 
-  return computeConversion({
+  return {
     base,
     quote,
     amount,
@@ -78,5 +85,5 @@ export function useConversion(
     metals,
     fxLoading: needsFx && fx.loading,
     metalLoading: (wantGold && gold.loading) || (wantSilver && silver.loading),
-  })
+  }
 }

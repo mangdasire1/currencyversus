@@ -3,13 +3,16 @@
 import { useState } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
-import { TrendingUp, ArrowLeft, RefreshCw } from "lucide-react"
-import { useMetalRate } from "@/hooks/useMetalRate"
+import { TrendingUp, ArrowLeft } from "lucide-react"
+import { useConversionInputs } from "@/hooks/useConversion"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
+import { DataFreshness } from "@/components/DataFreshness"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { METAL_INFO } from "@/lib/metal-info"
-import { OZ_TO_GRAM } from "@/lib/metals"
+import { computeConversion } from "@/lib/conversion"
 import type { MetalCode } from "@/lib/metals"
+import type { ExchangeRate } from "@/lib/types"
+import { formatUtcTime } from "@/lib/utils"
 
 const ShaderBackground = dynamic(
   () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
@@ -20,8 +23,9 @@ interface MetalPageClientProps {
   metal: MetalCode
   target: string
   initialOzPriceUsd: number | null
+  initialPriceTime: string | null
   initialUsdToTargetRate: number | null
-  initialDate: string | null
+  initialFxDate: string | null
 }
 
 function formatMetal(value: number, decimals: number): string {
@@ -42,23 +46,38 @@ export function MetalPageClient({
   metal,
   target,
   initialOzPriceUsd,
+  initialPriceTime,
   initialUsdToTargetRate,
-  initialDate,
+  initialFxDate,
 }: MetalPageClientProps) {
   // Local converter state (pre-set to this metal/currency pair)
   const [convBase, setConvBase] = useState<string>(metal)
   const [convTarget, setConvTarget] = useState<string>(target)
 
-  const { price: livePriceUsd, priceTime: date, stale } = useMetalRate(metal, initialOzPriceUsd)
+  // Build-time FX seed (USD→target) so the first paint has a price.
+  const initialFx: ExchangeRate | null =
+    target !== "USD" && initialUsdToTargetRate !== null && initialFxDate !== null
+      ? { base: "USD", date: initialFxDate, rates: { [target]: initialUsdToTargetRate } }
+      : null
+
+  // One fetch, two units — both computed by the shared conversion model.
+  const inputs = useConversionInputs(metal, target, {
+    initialFx,
+    initialMetalUsd: { [metal]: initialOzPriceUsd },
+    initialMetalTime: { [metal]: initialPriceTime },
+  })
+  const perOz = computeConversion({ ...inputs, metalUnit: "oz" })
+  const perGram = computeConversion({ ...inputs, metalUnit: "g" })
+
   const info = METAL_INFO[metal]
   const targetCurrency = CURRENCY_MAP[target]
-  const usdToTarget = initialUsdToTargetRate ?? 1
   const ozDecimals = getDecimals(target)
   const gramDecimals = ozDecimals === 0 ? 0 : 2
 
-  const ozPriceTarget = livePriceUsd !== null ? livePriceUsd * usdToTarget : null
-  const gramPriceTarget = ozPriceTarget !== null ? ozPriceTarget / OZ_TO_GRAM : null
-  const displayDate = date ?? initialDate
+  const ozPriceTarget = perOz.rate
+  const gramPriceTarget = perGram.rate
+  const livePriceUsd = inputs.metals?.[metal]?.usdPerOz ?? null
+  const priceTimeLabel = formatUtcTime(perOz.metalPriceTime)
 
   const COMMON_AMOUNTS: { label: string; grams: number | null }[] = [
     { label: "1 g", grams: 1 },
@@ -112,28 +131,28 @@ export function MetalPageClient({
               </div>
 
               {ozPriceTarget !== null && gramPriceTarget !== null ? (
-                <p className="text-slate-300 font-mono text-sm">
-                  1 oz {info.name} ={" "}
-                  <span className="text-white font-semibold">
-                    {formatMetal(ozPriceTarget, ozDecimals)} {target}
-                  </span>
-                  {" · "}
-                  1 g ={" "}
-                  <span className="text-white font-semibold">
-                    {formatMetal(gramPriceTarget, gramDecimals)} {target}
-                  </span>
+                <p className="text-white font-semibold font-mono text-sm">
+                  {perOz.rateLabel}
+                  <span className="text-slate-500 font-normal">{" · "}</span>
+                  {perGram.rateLabel}
                 </p>
-              ) : (
+              ) : perOz.status === "loading" ? (
                 <p className="text-slate-500 font-mono text-sm">Loading price…</p>
+              ) : (
+                <p className="text-amber-400 font-mono text-sm">
+                  {perOz.missing.includes("metal") ? "Metal price" : "Exchange rate"} unavailable right now.
+                </p>
               )}
 
-              {displayDate && (
-                <p className="text-xs text-slate-600 font-mono flex items-center gap-1.5">
-                  {stale && <RefreshCw className="w-3 h-3 text-amber-400" />}
-                  {stale ? "Showing cached data · " : ""}
-                  Price as of {displayDate} · Source: gold-api.com
+              <p className="text-xs text-slate-600 font-mono">
+                Price as of {priceTimeLabel ?? "— (time not provided by source)"} · Source: gold-api.com
+              </p>
+              {perOz.fxDate && (
+                <p className="text-xs text-slate-600 font-mono">
+                  USD→{target} conversion: ECB reference rate of {perOz.fxDate}
                 </p>
               )}
+              {perOz.status === "stale" && <DataFreshness conv={perOz} />}
             </div>
 
             {/* Quick Stats */}
@@ -160,8 +179,8 @@ export function MetalPageClient({
                       : "—",
                   },
                   {
-                    label: "Updated",
-                    value: displayDate ?? "—",
+                    label: "Price time",
+                    value: priceTimeLabel ?? "—",
                   },
                 ].map(({ label, value }) => (
                   <div
@@ -243,6 +262,7 @@ export function MetalPageClient({
                 includeMetals={true}
                 initialOzPriceBaseUsd={metal === convBase ? initialOzPriceUsd : undefined}
                 initialOzPriceTargetUsd={metal === convTarget ? initialOzPriceUsd : undefined}
+                initialMetalPriceTime={initialPriceTime}
               />
             </section>
 

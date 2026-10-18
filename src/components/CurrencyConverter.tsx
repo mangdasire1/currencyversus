@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { ArrowLeftRight, ArrowUpDown, RefreshCw } from "lucide-react"
+import { ArrowLeftRight, ArrowUpDown } from "lucide-react"
 import { CurrencySelect } from "./CurrencySelect"
 import { SkeletonConverter } from "./SkeletonLoaders"
+import { DataFreshness } from "./DataFreshness"
 import { useConversion } from "@/hooks/useConversion"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { METAL_INFO } from "@/lib/metal-info"
@@ -20,6 +21,7 @@ interface CurrencyConverterProps {
   includeMetals?: boolean
   initialOzPriceBaseUsd?: number | null
   initialOzPriceTargetUsd?: number | null
+  initialMetalPriceTime?: string | null // provider time of the seeded metal price
 }
 
 function fmtNum(value: number, decimals: number): string {
@@ -38,6 +40,7 @@ export function CurrencyConverter({
   includeMetals = false,
   initialOzPriceBaseUsd,
   initialOzPriceTargetUsd,
+  initialMetalPriceTime,
 }: CurrencyConverterProps) {
   const [amount, setAmount] = useState("1")
   const [metalUnit, setMetalUnit] = useState<MetalUnit>("g")
@@ -49,10 +52,17 @@ export function CurrencyConverter({
   const numericAmount = parseFloat(amount) || 0
 
   const initialMetalUsd: Partial<Record<MetalCode, number | null>> = {}
-  if (baseIsMetal && initialOzPriceBaseUsd != null) initialMetalUsd[base as MetalCode] = initialOzPriceBaseUsd
-  if (targetIsMetal && initialOzPriceTargetUsd != null) initialMetalUsd[target as MetalCode] = initialOzPriceTargetUsd
+  const initialMetalTime: Partial<Record<MetalCode, string | null>> = {}
+  if (baseIsMetal && initialOzPriceBaseUsd != null) {
+    initialMetalUsd[base as MetalCode] = initialOzPriceBaseUsd
+    initialMetalTime[base as MetalCode] = initialMetalPriceTime ?? null
+  }
+  if (targetIsMetal && initialOzPriceTargetUsd != null) {
+    initialMetalUsd[target as MetalCode] = initialOzPriceTargetUsd
+    initialMetalTime[target as MetalCode] = initialMetalPriceTime ?? null
+  }
 
-  const conv = useConversion(base, target, { amount: numericAmount, metalUnit, initialMetalUsd })
+  const conv = useConversion(base, target, { amount: numericAmount, metalUnit, initialMetalUsd, initialMetalTime })
 
   // Convenience
   const baseCurrency = CURRENCY_MAP[base]
@@ -97,17 +107,7 @@ export function CurrencyConverter({
           {`${prefix ?? ""} ${formatResult(conv.amount)}${suffix}`}
         </div>
         <div className="text-sm text-slate-400 font-mono">{conv.rateLabel}</div>
-        <div className="flex items-center gap-1.5 mt-1">
-          {conv.status === "stale" && (
-            <span className="flex items-center gap-1 text-xs text-amber-400">
-              <RefreshCw className="w-3 h-3" />
-              Showing cached data
-            </span>
-          )}
-          {conv.sourceDate && conv.status !== "stale" && (
-            <span className="text-xs text-slate-500">Updated {conv.sourceDate}</span>
-          )}
-        </div>
+        <DataFreshness conv={conv} />
       </div>
     )
   }

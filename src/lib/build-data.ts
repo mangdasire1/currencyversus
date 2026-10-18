@@ -2,14 +2,21 @@ import type { ExchangeRate } from "./types"
 import { CURRENCIES } from "./currencies"
 import { METAL_API_BASE } from "./metals"
 import type { MetalCode } from "./metals"
+import { parseGoldApiPrice } from "./gold-api"
 
 const BASE_URL = "https://api.frankfurter.dev/v1"
 const ALL_CODES = CURRENCIES.map((c) => c.code)
 const RETRY_ATTEMPTS = 3
 const RETRY_DELAY_MS = 2000
 
+export interface BuildMetalPrice {
+  price: number // USD per troy oz
+  priceTime: string | null // provider's updatedAt; null if not supplied
+  fetchedAt: string // when the build queried the provider
+}
+
 // Module-level memo so each metal is fetched at most once per build.
-const metalPriceMemo = new Map<MetalCode, { price: number; date: string }>()
+const metalPriceMemo = new Map<MetalCode, BuildMetalPrice>()
 
 async function fetchWithRetry(url: string): Promise<Response> {
   let lastError: unknown
@@ -32,22 +39,18 @@ async function fetchWithRetry(url: string): Promise<Response> {
 // Module-level memo prevents duplicate fetches during the same build.
 export async function getBuildTimeMetalPrice(
   metal: MetalCode
-): Promise<{ price: number; date: string } | null> {
+): Promise<BuildMetalPrice | null> {
   const cached = metalPriceMemo.get(metal)
   if (cached) return cached
 
   const url = `${METAL_API_BASE}/price/${metal}`
   try {
     const res = await fetchWithRetry(url)
-    const data = (await res.json()) as { price?: number; timestamp?: number }
-    const price = data.price
-    if (typeof price === "number") {
-      const date = data.timestamp
-        ? new Date(data.timestamp * 1000).toISOString().split("T")[0]
-        : new Date().toISOString().split("T")[0]
-      const result = { price, date }
+    const parsed = parseGoldApiPrice(await res.json())
+    if (parsed) {
+      const result: BuildMetalPrice = { ...parsed, fetchedAt: new Date().toISOString() }
       metalPriceMemo.set(metal, result)
-      console.log("[build-data] metal OK", metal, price)
+      console.log("[build-data] metal OK", metal, parsed.price, "updatedAt", parsed.priceTime ?? "missing")
       return result
     }
     console.warn("[build-data] metal FAILED", metal, "price not found in response")

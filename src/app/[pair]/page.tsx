@@ -175,7 +175,8 @@ export default async function PairPage({
       <MetalRatioPageClient
         initialGoldUsd={goldData?.price ?? null}
         initialSilverUsd={silverData?.price ?? null}
-        initialDate={goldData?.date ?? silverData?.date ?? null}
+        initialGoldTime={goldData?.priceTime ?? null}
+        initialSilverTime={silverData?.priceTime ?? null}
       />
     )
   }
@@ -200,8 +201,9 @@ export default async function PairPage({
       metal={metal}
       target={target}
       initialOzPriceUsd={metalData?.price ?? null}
+      initialPriceTime={metalData?.priceTime ?? null}
       initialUsdToTargetRate={initialUsdToTargetRate}
-      initialDate={metalData?.date ?? null}
+      initialFxDate={target === "USD" ? null : (usdRateData?.date ?? null)}
     />
   )
 }

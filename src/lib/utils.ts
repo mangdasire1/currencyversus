@@ -33,6 +33,15 @@ export function subtractMonths(date: Date, months: number): Date {
   return result
 }
 
+// "2026-10-17T11:59:11.000Z" -> "2026-10-17 11:59 UTC"
+export function formatUtcTime(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const ms = Date.parse(iso)
+  if (!Number.isFinite(ms)) return null
+  const s = new Date(ms).toISOString()
+  return `${s.slice(0, 10)} ${s.slice(11, 16)} UTC`
+}
+
 export function toISODate(date: Date): string {
   return date.toISOString().split("T")[0]
 }

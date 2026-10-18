@@ -5,6 +5,7 @@ import Link from "next/link"
 import { TrendingUp, ArrowLeft, RefreshCw } from "lucide-react"
 import { useMetalRate } from "@/hooks/useMetalRate"
 import { GOLD_SILVER_RATIO_INFO } from "@/lib/metal-info"
+import { formatUtcTime } from "@/lib/utils"
 
 const ShaderBackground = dynamic(
   () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
@@ -14,23 +15,28 @@ const ShaderBackground = dynamic(
 interface MetalRatioPageClientProps {
   initialGoldUsd: number | null
   initialSilverUsd: number | null
-  initialDate: string | null
+  initialGoldTime: string | null
+  initialSilverTime: string | null
 }
 
 export function MetalRatioPageClient({
   initialGoldUsd,
   initialSilverUsd,
-  initialDate,
+  initialGoldTime,
+  initialSilverTime,
 }: MetalRatioPageClientProps) {
-  const { price: goldUsd, priceTime: goldDate, stale: goldStale } = useMetalRate("XAU", initialGoldUsd)
-  const { price: silverUsd, stale: silverStale } = useMetalRate("XAG", initialSilverUsd)
+  const { price: goldUsd, priceTime: goldTime, stale: goldStale } =
+    useMetalRate("XAU", initialGoldUsd, true, initialGoldTime)
+  const { price: silverUsd, priceTime: silverTime, stale: silverStale } =
+    useMetalRate("XAG", initialSilverUsd, true, initialSilverTime)
 
   const ratio =
     goldUsd !== null && silverUsd !== null && silverUsd > 0
       ? goldUsd / silverUsd
       : null
 
-  const displayDate = goldDate ?? initialDate
+  const goldTimeLabel = formatUtcTime(goldTime)
+  const silverTimeLabel = formatUtcTime(silverTime)
   const isStale = goldStale || silverStale
 
   const ratioCategory =
@@ -87,13 +93,12 @@ export function MetalRatioPageClient({
               ) : (
                 <p className="text-slate-500 font-mono text-sm">Loading ratio…</p>
               )}
-              {displayDate && (
-                <p className="text-xs text-slate-600 font-mono flex items-center gap-1.5">
-                  {isStale && <RefreshCw className="w-3 h-3 text-amber-400" />}
-                  {isStale ? "Showing cached data · " : ""}
-                  Prices as of {displayDate} · Source: gold-api.com
-                </p>
-              )}
+              <p className="text-xs text-slate-600 font-mono flex items-center gap-1.5 flex-wrap">
+                {isStale && <RefreshCw className="w-3 h-3 text-amber-400" />}
+                {isStale ? "Showing cached data · " : ""}
+                Gold price time: {goldTimeLabel ?? "not provided"} · Silver price time:{" "}
+                {silverTimeLabel ?? "not provided"} · Source: gold-api.com
+              </p>
             </div>
 
             {/* Ratio card */}
