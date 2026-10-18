@@ -57,7 +57,7 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
   // Quick Stats quotes metals per gram so the unit is always explicit.
   const conv = useConversion(base, target, { metalUnit: "g" })
 
-  // Metal prices for Precious Metals section (live updates, seeded with build-time values)
+  // Metal prices for Precious Metals section (refreshed client-side, seeded with build-time values)
   const { price: goldUsd } = useMetalRate("XAU", initialGoldUsd)
   const { price: silverUsd } = useMetalRate("XAG", initialSilverUsd)
 
@@ -80,7 +80,7 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
                     <span className="text-[#6366f1]">Comparison</span>
                   </h1>
                   <p className="mt-2 text-slate-400 text-sm">
-                    Real-time exchange rates for 15 major currencies and precious metals
+                    Latest ECB reference rates for 15 major currencies, updated each business day · Gold and silver spot prices refreshed throughout the day
                   </p>
                 </div>
                 <CurrencyConverter
@@ -246,10 +246,10 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
                 </h2>
                 <div className="flex flex-col gap-3 text-sm text-slate-300 leading-relaxed font-body">
                   <p>
-                    CurrencyVersus is a free tool for comparing exchange rates between 15 major world currencies — including USD, EUR, GBP, JPY, TRY, CNY, INR, and more — plus live gold and silver prices.
+                    CurrencyVersus is a free tool for comparing exchange rates between 15 major world currencies — including USD, EUR, GBP, JPY, TRY, CNY, INR, and more — plus gold and silver spot prices.
                   </p>
                   <p>
-                    Track real-time rates and explore how currencies have performed over the past decade. Historical data spans 7 time periods — from 1 month to 10 years — so you can spot long-term trends at a glance.
+                    Currency rates are the European Central Bank{"'"}s daily reference rates: published once per business day (around 16:00 CET) and unchanged over weekends and holidays. Gold and silver prices come from a separate spot-price feed that updates far more often, so each result shows its own data time. Historical data spans 7 time periods — from 1 month to 10 years — so you can spot long-term trends at a glance.
                   </p>
                   <p>
                     Whether you{"'"}re a traveler planning a trip, an investor monitoring forex and precious metals markets, or a student learning about global economics, CurrencyVersus makes it easy to understand financial trends without any sign-up or fees.
@@ -271,8 +271,8 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
                     },
                     {
                       step: "02",
-                      title: "View the live rate",
-                      desc: "See the current exchange rate updated from the European Central Bank, plus an instant converter for any amount.",
+                      title: "View the latest rate",
+                      desc: "See the latest published ECB reference rate (or metal spot price) with its data date, plus an instant converter for any amount.",
                     },
                     {
                       step: "03",

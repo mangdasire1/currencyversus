@@ -82,20 +82,20 @@ export async function generateMetadata({
     const { base, target } = currencyParsed
     return {
       title: `${base} to ${target} Exchange Rate — Convert ${base} to ${target} | CurrencyVersus`,
-      description: `Convert ${base} to ${target} with real-time exchange rates. Compare ${base} vs ${target} over 1 month, 1 year, 5 years, and 10 years. Free currency comparison tool.`,
+      description: `Convert ${base} to ${target} with the latest ECB reference rate, updated each business day. Compare ${base} vs ${target} over 1 month, 1 year, 5 years, and 10 years. Free currency comparison tool.`,
       alternates: {
         canonical: `https://currencyversus.com/${base.toLowerCase()}-vs-${target.toLowerCase()}/`,
       },
       openGraph: {
         title: `${base} vs ${target} — Exchange Rate Comparison`,
-        description: `Real-time ${base} to ${target} conversion with historical data.`,
+        description: `${base} to ${target} conversion with daily ECB reference rates and historical data.`,
         url: `https://currencyversus.com/${base.toLowerCase()}-vs-${target.toLowerCase()}`,
         images: [{ url: "https://currencyversus.com/logo.png", width: 1200, height: 630, alt: `${base} vs ${target} Exchange Rate` }],
       },
       twitter: {
         card: "summary_large_image",
         title: `${base} vs ${target} — Exchange Rate Comparison`,
-        description: `Real-time ${base} to ${target} conversion with historical data.`,
+        description: `${base} to ${target} conversion with daily ECB reference rates and historical data.`,
         images: ["https://currencyversus.com/logo.png"],
       },
     }
@@ -108,7 +108,7 @@ export async function generateMetadata({
     return {
       title: "Gold/Silver Ratio Today — Compare Gold and Silver Prices | CurrencyVersus",
       description:
-        "Track the gold/silver ratio in real time. Learn what the ratio means, its historical range, and how investors use it to compare the relative value of gold and silver.",
+        "Track the gold/silver ratio from frequently updated spot prices. Learn what the ratio means, its historical range, and how investors use it to compare the relative value of gold and silver.",
       alternates: { canonical: "https://currencyversus.com/gold-vs-silver/" },
     }
   }
@@ -117,13 +117,13 @@ export async function generateMetadata({
   const metalName = metal === "XAU" ? "Gold" : "Silver"
   return {
     title: `${metalName} Price in ${target} Today — Convert ${metalName} to ${target} | CurrencyVersus`,
-    description: `Live ${metalName.toLowerCase()} price in ${target} per ounce and per gram. Convert ${metalName.toLowerCase()} to ${target} with up-to-date market prices. Free precious metals converter.`,
+    description: `${metalName} spot price in ${target} per ounce and per gram, from a frequently updated spot feed${target === "USD" ? "" : " converted at the daily ECB reference rate"}. Free precious metals converter.`,
     alternates: {
       canonical: `https://currencyversus.com/${metal === "XAU" ? "gold" : "silver"}-vs-${target.toLowerCase()}/`,
     },
     openGraph: {
       title: `${metalName} Price in ${target} — CurrencyVersus`,
-      description: `Live ${metalName.toLowerCase()} price in ${target} per ounce and per gram.`,
+      description: `${metalName} spot price in ${target} per ounce and per gram.`,
       url: `https://currencyversus.com/${metal === "XAU" ? "gold" : "silver"}-vs-${target.toLowerCase()}`,
       images: [{ url: "https://currencyversus.com/logo.png", width: 1200, height: 630, alt: `${metalName} Price in ${target}` }],
     },

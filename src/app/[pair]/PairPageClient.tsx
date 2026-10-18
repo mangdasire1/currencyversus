@@ -13,6 +13,7 @@ import { useConversion } from "@/hooks/useConversion"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { CURRENCY_INFO } from "@/lib/currency-info"
 import type { ExchangeRate } from "@/lib/types"
+import { formatUtcTime } from "@/lib/utils"
 
 const ShaderBackground = dynamic(
   () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
@@ -107,7 +108,9 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
               )}
               {forThisPair && conv.fxDate && (
                 <p className="text-xs text-slate-600 font-mono">
-                  Rates as of {conv.fxDate} · Source: European Central Bank
+                  ECB reference rate of {conv.fxDate} (published business days ~16:00 CET)
+                  {conv.fetchedAt ? ` · Last checked ${formatUtcTime(conv.fetchedAt)}` : ""}
+                  {" "}· Mid-market rate, bank spreads and fees not included
                 </p>
               )}
             </div>

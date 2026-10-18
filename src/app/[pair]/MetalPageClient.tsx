@@ -146,6 +146,7 @@ export function MetalPageClient({
 
               <p className="text-xs text-slate-600 font-mono">
                 Price as of {priceTimeLabel ?? "— (time not provided by source)"} · Source: gold-api.com
+                {perOz.fetchedAt ? ` · Last checked ${formatUtcTime(perOz.fetchedAt)}` : ""}
               </p>
               {perOz.fxDate && (
                 <p className="text-xs text-slate-600 font-mono">

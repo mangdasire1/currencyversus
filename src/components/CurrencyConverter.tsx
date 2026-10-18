@@ -108,6 +108,11 @@ export function CurrencyConverter({
         </div>
         <div className="text-sm text-slate-400 font-mono">{conv.rateLabel}</div>
         <DataFreshness conv={conv} />
+        {base !== target && (
+          <p className="text-[11px] text-slate-600 font-body mt-1">
+            Mid-market reference value. Bank buy/sell spreads and fees are not included.
+          </p>
+        )}
       </div>
     )
   }

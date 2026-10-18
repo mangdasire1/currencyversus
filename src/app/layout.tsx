@@ -25,7 +25,7 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "CurrencyVersus — Compare World Currencies",
   description:
-    "Compare exchange rates between 15 major world currencies including USD, EUR, GBP, TRY, and more. View real-time rates and historical trends spanning up to 10 years.",
+    "Compare 15 major world currencies including USD, EUR, GBP, TRY, and more using the latest published European Central Bank reference rates, updated each business day, plus gold and silver spot prices. Historical trends span up to 10 years.",
   keywords:
     "currency converter, exchange rate, forex, USD, EUR, TRY, currency comparison",
   alternates: {
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "CurrencyVersus — Compare World Currencies",
-    description: "Real-time currency comparison with historical data.",
+    description: "Daily ECB reference rates and gold/silver spot prices, with up to 10 years of history.",
     url: "https://currencyversus.com",
     siteName: "CurrencyVersus",
     type: "website",
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "CurrencyVersus — Compare World Currencies",
-    description: "Real-time currency comparison with historical data.",
+    description: "Daily ECB reference rates and gold/silver spot prices, with up to 10 years of history.",
     images: ["https://currencyversus.com/logo.png"],
   },
 };

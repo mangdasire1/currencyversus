@@ -14,7 +14,11 @@ export function DataFreshness({ conv }: { conv: ConversionResult }) {
     lines.push(`Metal price: ${metalTime ?? "time not provided"} · gold-api.com`)
   }
   if (conv.fxDate) {
-    lines.push(`Exchange rate: ECB reference rate of ${conv.fxDate}`)
+    lines.push(`Exchange rate: ECB reference rate of ${conv.fxDate} (published business days ~16:00 CET)`)
+  }
+  const checked = formatUtcTime(conv.fetchedAt)
+  if (checked && lines.length > 0) {
+    lines.push(`Last checked: ${checked}`)
   }
 
   if (lines.length === 0 && conv.status !== "stale") return null

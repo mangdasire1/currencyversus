@@ -6,7 +6,7 @@ export function getWebApplicationSchema() {
     url: "https://currencyversus.com",
     applicationCategory: "FinanceApplication",
     description:
-      "Compare exchange rates between 15 major world currencies including USD, EUR, GBP, TRY, and more. View real-time rates and historical trends spanning up to 10 years.",
+      "Compare 15 major world currencies including USD, EUR, GBP, TRY, and more using the latest published European Central Bank reference rates, updated each business day, plus gold and silver spot prices. Historical trends span up to 10 years.",
     offers: {
       "@type": "Offer",
       price: "0",
@@ -36,8 +36,8 @@ export function getFAQSchema(
           "@type": "Answer",
           text:
             rateStr !== null
-              ? `As of ${dateStr}, 1 ${base} equals ${rateStr} ${target} based on European Central Bank reference rates.`
-              : `The current ${base} to ${target} exchange rate is available on CurrencyVersus, updated daily from European Central Bank data.`,
+              ? `Based on the European Central Bank reference rate published on ${dateStr}, 1 ${base} equals ${rateStr} ${target}. This is a mid-market reference rate; bank buy/sell spreads and fees are not included.`
+              : `CurrencyVersus shows the latest ${base} to ${target} reference rate published by the European Central Bank, updated once per business day.`,
         },
       },
       {
@@ -47,8 +47,8 @@ export function getFAQSchema(
           "@type": "Answer",
           text:
             rateStr !== null
-              ? `The ${base}/${target} exchange rate as of ${dateStr} is ${rateStr} ${target} per 1 ${base}. CurrencyVersus tracks this rate using European Central Bank reference data.`
-              : `CurrencyVersus provides the latest ${base} to ${target} exchange rate, sourced from the European Central Bank.`,
+              ? `The latest published ECB reference rate (${dateStr}) is ${rateStr} ${target} per 1 ${base}. The ECB publishes once per business day around 16:00 CET, so the rate does not change over weekends or holidays.`
+              : `CurrencyVersus provides the latest published ${base} to ${target} reference rate from the European Central Bank, updated once per business day.`,
         },
       },
       {
@@ -56,7 +56,7 @@ export function getFAQSchema(
         name: `Where does CurrencyVersus get its ${base}/${target} data?`,
         acceptedAnswer: {
           "@type": "Answer",
-          text: `CurrencyVersus sources all exchange rate data from the Frankfurter API, which provides European Central Bank (ECB) reference rates. The ECB publishes reference rates for major currencies each business day.`,
+          text: `CurrencyVersus sources all exchange rate data from the Frankfurter API, which provides European Central Bank (ECB) reference rates. The ECB publishes these once per business day, around 16:00 CET; they are not live market quotes. Gold and silver prices come separately from gold-api.com and update more frequently.`,
         },
       },
       {
