@@ -45,6 +45,12 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 ${urls.join("\n")}
 </urlset>`
 
-const outPath = path.join(__dirname, "..", "out", "sitemap.xml")
-fs.writeFileSync(outPath, sitemap, "utf-8")
+// Written to public/ so `next build` copies it into out/. Runs from
+// next.config.ts at build start (see there); also refreshes out/ when run by
+// hand after a build.
+const root = path.join(__dirname, "..")
+fs.writeFileSync(path.join(root, "public", "sitemap.xml"), sitemap, "utf-8")
+if (fs.existsSync(path.join(root, "out"))) {
+  fs.writeFileSync(path.join(root, "out", "sitemap.xml"), sitemap, "utf-8")
+}
 console.log(`✓ sitemap.xml generated with ${pairs.length + metalPairs.length + 1} URLs`)
