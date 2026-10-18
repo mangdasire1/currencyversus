@@ -1,0 +1,32 @@
+name: Keep scheduled workflows active
+# GitHub disables scheduled workflows in a public repository after 60 days
+# without repository activity. That would silently stop the daily rebuild and
+# the production monitor. This job adds an empty commit only when the last
+# commit is 45+ days old, so an active repository gets no extra commits.
+on:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Commit if the repository has been quiet for 45 days
+        run: |
+          last=$(git log -1 --format=%ct)
+          age_days=$(( ( $(date +%s) - last ) / 86400 ))
+          echo "last commit ${age_days} days ago"
+          if [ "$age_days" -lt 45 ]; then
+            echo "repository active — nothing to do"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keep scheduled workflows active (${age_days} days without commits)"
+          git push

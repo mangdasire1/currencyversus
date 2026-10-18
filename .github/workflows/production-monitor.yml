@@ -1,0 +1,30 @@
+name: Production freshness monitor
+# Checks what is actually live, not whether a deploy hook answered 2xx:
+#   - is the published build main's latest commit?
+#   - how old is the published HTML (static export: unchanged until the next
+#     successful build + deploy)?
+#   - is the embedded ECB rate behind (weekends/holidays not counted)?
+# A failed run makes GitHub send its failure notification.
+on:
+  schedule:
+    - cron: "0 18 * * *" # daily, after the 16:30 UTC weekday rebuild has had time to deploy
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Check live build-info.json
+        run: |
+          export EXPECTED_SHA="$(git rev-parse HEAD)"
+          export EXPECTED_SHA_TIME="$(git log -1 --format=%cI HEAD)"
+          node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-production.mts https://currencyversus.com/build-info.json
