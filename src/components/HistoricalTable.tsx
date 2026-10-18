@@ -42,9 +42,12 @@ export function HistoricalTable({ base, target, current }: HistoricalTableProps)
             </tr>
           </thead>
           <tbody>
-            {loading
-              ? TIME_PERIODS.map((p) => <SkeletonTableRowTr key={p.key} />)
-              : comparisons.map((c) => (
+            {/* Row by row: each period renders as soon as its own data exists. */}
+            {TIME_PERIODS.map((p) => {
+              const c = loading ? undefined : comparisons.find((x) => x.period.key === p.key)
+              return !c ? (
+                <SkeletonTableRowTr key={p.key} />
+              ) : (
                   <tr
                     key={c.period.key}
                     className="border-b border-white/5 hover:bg-white/2 transition-colors"
@@ -79,7 +82,8 @@ export function HistoricalTable({ base, target, current }: HistoricalTableProps)
                       <Sparkline data={c.sparklineData} />
                     </td>
                   </tr>
-                ))}
+                )
+            })}
           </tbody>
         </table>
       </div>

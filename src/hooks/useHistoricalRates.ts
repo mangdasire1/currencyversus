@@ -1,14 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { fetchHistoricalRate, fetchTimeSeries } from "@/lib/api"
-import { cacheGet, cacheSet, cacheGetStale, getCacheTTL } from "@/lib/cache"
-import { isCachedPeriod } from "@/lib/cache-schemas"
-import type { CachedPeriod } from "@/lib/cache-schemas"
+import { fetchTimeSeries } from "@/lib/api"
+import { cacheGet, cacheSet, cacheGetStale, FRESH_TTL } from "@/lib/cache"
+import { isCachedHistory } from "@/lib/cache-schemas"
+import type { CachedHistoryRow } from "@/lib/cache-schemas"
 import { subtractMonths, toISODate } from "@/lib/utils"
 import { TIME_PERIODS } from "@/lib/currencies"
-import { samplePoints, sampleFrequencyFor } from "@/lib/history"
-import type { HistoricalComparison, HistoricalPoint, TimePeriod } from "@/lib/types"
+import { loadPeriodHistory } from "@/lib/history"
+import type { PeriodHistory } from "@/lib/history"
+import { sharedRequest } from "@/lib/inflight"
+import type { HistoricalComparison, TimePeriod } from "@/lib/types"
 
 interface UseHistoricalRatesResult {
   comparisons: HistoricalComparison[]
@@ -16,23 +18,15 @@ interface UseHistoricalRatesResult {
   error: string | null
 }
 
-interface PeriodHistory {
-  period: TimePeriod
-  requestedDate: string // date we asked for (today − period, UTC)
-  historicalDate: string | null // business day the provider actually returned
-  historicalRate: number | null
-  sparklineData: HistoricalPoint[]
-}
-
 // Rows are tagged with the pair they were fetched for; rows for any other
 // pair are never returned.
 interface HistoryState {
   pairKey: string
-  rows: PeriodHistory[]
+  rows: PeriodHistory<TimePeriod>[]
   error: string | null
 }
 
-function identityRows(today: Date): PeriodHistory[] {
+function identityRows(today: Date): PeriodHistory<TimePeriod>[] {
   return TIME_PERIODS.map((period) => {
     const requestedDate = toISODate(subtractMonths(today, period.months))
     return {
@@ -46,6 +40,22 @@ function identityRows(today: Date): PeriodHistory[] {
       ],
     }
   })
+}
+
+function toCache(rows: PeriodHistory<TimePeriod>[]): CachedHistoryRow[] {
+  return rows.map(({ period, ...rest }) => ({ periodKey: period.key, ...rest }))
+}
+
+function fromCache(rows: CachedHistoryRow[]): PeriodHistory<TimePeriod>[] | null {
+  const out: PeriodHistory<TimePeriod>[] = []
+  for (const period of TIME_PERIODS) {
+    const r = rows.find((x) => x.periodKey === period.key)
+    if (!r) return null // cached rows don't cover the current period set
+    const { periodKey: _unused, ...rest } = r
+    void _unused
+    out.push({ period, ...rest })
+  }
+  return out
 }
 
 export function useHistoricalRates(
@@ -66,69 +76,58 @@ export function useHistoricalRates(
       return
     }
 
+    // v3: one entry per pair holding every period (derived from one series)
+    const cacheKey = `${base}_${target}_history_v3`
+    const cached = cacheGet(cacheKey, isCachedHistory)
+    const cachedRows = cached ? fromCache(cached) : null
+    if (cachedRows) {
+      setState({ pairKey, rows: cachedRows, error: null })
+      return
+    }
+
     // Only the response for the pair that is still selected may write state.
     let cancelled = false
     const controller = new AbortController()
 
-    const fetchAll = async () => {
-      const rows: PeriodHistory[] = []
-      const endStr = toISODate(today)
+    // One time-series request covers all periods; identical concurrent
+    // requests (e.g. two components on the same pair) share one fetch.
+    const fetchSeries = (start: string, end: string, signal?: AbortSignal) =>
+      sharedRequest(
+        `series_${base}_${target}_${start}_${end}`,
+        async (s) => {
+          const ts = await fetchTimeSeries(start, end, base, [target], s)
+          if (ts.base !== base) throw new Error("time series does not match the requested pair")
+          return Object.entries(ts.rates).map(([date, rates]) => ({ date, rate: rates[target] }))
+        },
+        signal
+      )
 
-      for (const period of TIME_PERIODS) {
+    loadPeriodHistory(today, TIME_PERIODS, fetchSeries, controller.signal)
+      .then((rows) => {
         if (cancelled) return
-        const requestedDate = toISODate(subtractMonths(today, period.months))
-        // v2: sparklines span the full period (older entries were capped at 12 months)
-        const cacheKey = `${base}_${target}_${period.key}_v2`
-        const ttl = getCacheTTL(period.key)
-
-        try {
-          let entry: CachedPeriod | null = cacheGet(cacheKey, isCachedPeriod)
-          if (!entry) {
-            // Rate on the requested date; the provider answers with the
-            // nearest preceding business day, which we keep separately.
-            const historical = await fetchHistoricalRate(requestedDate, base, [target], controller.signal)
-            // Sparkline covers the period's own range; long ranges are thinned
-            // by sampling frequency (daily/weekly/monthly), endpoints kept.
-            const timeSeries = await fetchTimeSeries(requestedDate, endStr, base, [target], controller.signal)
-            if (historical.base !== base || typeof historical.rates[target] !== "number") {
-              throw new Error("historical response does not match the requested pair")
-            }
-            entry = {
-              historicalRate: historical.rates[target],
-              historicalDate: historical.date ?? null,
-              sparklineData: samplePoints(
-                Object.entries(timeSeries.rates).map(([date, rates]) => ({ date, rate: rates[target] })),
-                sampleFrequencyFor(period.months)
-              ),
-            }
-            cacheSet(cacheKey, entry, ttl, "history")
-          }
-          rows.push({
-            period,
-            requestedDate,
-            historicalDate: entry.historicalDate ?? null,
-            historicalRate: entry.historicalRate,
-            sparklineData: entry.sparklineData,
-          })
-        } catch {
-          if (cancelled) return
-          const stale = cacheGetStale(cacheKey, isCachedPeriod)?.data
-          rows.push({
-            period,
-            requestedDate,
-            historicalDate: stale?.historicalDate ?? null,
-            historicalRate: stale?.historicalRate ?? null,
-            sparklineData: stale?.sparklineData ?? [],
-          })
-        }
-      }
-
-      if (!cancelled) setState({ pairKey, rows, error: null })
-    }
-
-    fetchAll().catch((err: Error) => {
-      if (!cancelled) setState({ pairKey, rows: [], error: err.message })
-    })
+        cacheSet(cacheKey, toCache(rows), FRESH_TTL.shortHistory, "history")
+        setState({ pairKey, rows, error: null })
+      })
+      .catch((err: Error) => {
+        if (cancelled) return
+        const stale = cacheGetStale(cacheKey, isCachedHistory)
+        const staleRows = stale ? fromCache(stale.data) : null
+        setState(
+          staleRows
+            ? { pairKey, rows: staleRows, error: null }
+            : {
+                pairKey,
+                rows: TIME_PERIODS.map((period) => ({
+                  period,
+                  requestedDate: toISODate(subtractMonths(today, period.months)),
+                  historicalDate: null,
+                  historicalRate: null,
+                  sparklineData: [],
+                })),
+                error: err.message,
+              }
+        )
+      })
 
     return () => {
       cancelled = true

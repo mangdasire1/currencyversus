@@ -18,14 +18,9 @@ const CLOCK_SKEW_MS = 5 * 60 * 1000
 
 export const FRESH_TTL = {
   latest: 60 * 60 * 1000, // 1 hour
-  shortHistory: 12 * 60 * 60 * 1000, // 12 hours (1m–6m)
-  longHistory: 24 * 60 * 60 * 1000, // 24 hours (1y–10y)
+  shortHistory: 12 * 60 * 60 * 1000, // 12 hours (all periods share one series)
+  longHistory: 24 * 60 * 60 * 1000, // 24 hours
   metal: 15 * 60 * 1000, // 15 min — metals are more volatile than FX
-}
-
-export function getCacheTTL(periodKey: string): number {
-  const short = ["1m", "3m", "6m"]
-  return short.includes(periodKey) ? FRESH_TTL.shortHistory : FRESH_TTL.longHistory
 }
 
 export function retentionFor(freshTtl: number, kind: CacheKind): number {

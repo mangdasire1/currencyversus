@@ -1,6 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { samplePoints, sampleFrequencyFor, sparklineIsUp } from "./history.ts"
+import { samplePoints, sampleFrequencyFor, sparklineIsUp, derivePeriodHistory, loadPeriodHistory, seriesRange } from "./history.ts"
+import { sharedRequest, requestStats } from "./inflight.ts"
 import { TIME_PERIODS } from "./currencies.ts"
 import { subtractMonths, toISODate } from "./utils.ts"
 import type { HistoricalPoint } from "./types.ts"
@@ -58,4 +59,75 @@ test("sampling never drops the last element (old i % step bug)", () => {
 test("sparkline colour follows the drawn line's own endpoints", () => {
   assert.equal(sparklineIsUp([{ date: "a", rate: 1 }, { date: "b", rate: 2 }, { date: "c", rate: 1.5 }]), true)
   assert.equal(sparklineIsUp([{ date: "a", rate: 2 }, { date: "b", rate: 3 }, { date: "c", rate: 1.5 }]), false)
+})
+
+// --- CV-13: one series request for all periods --------------------------------
+
+const TODAY_SAT = new Date(Date.UTC(2026, 9, 18)) // Sat 2026-10-18
+
+test("one series covers every period; 'Then' is the last business day ≤ requested date", () => {
+  const { start, end } = seriesRange(TODAY_SAT, TIME_PERIODS)
+  const series = businessDays(start, end)
+  const rows = derivePeriodHistory(series, TODAY_SAT, TIME_PERIODS)
+  for (const r of rows) {
+    assert.ok(r.historicalDate !== null && r.historicalRate !== null, r.period.key)
+    assert.ok(r.historicalDate! <= r.requestedDate, r.period.key)
+    const gapDays = (Date.parse(r.requestedDate) - Date.parse(r.historicalDate!)) / 864e5
+    assert.ok(gapDays <= 3, `${r.period.key} gap ${gapDays}`)
+    assert.equal(r.sparklineData[0].date, r.historicalDate, `${r.period.key} line starts at Then`)
+    assert.equal(r.sparklineData.at(-1)!.date, series.at(-1)!.date, `${r.period.key} line ends at last day`)
+  }
+  const tenY = rows.find((r) => r.period.key === "10y")!
+  console.log(`    series ${start}..${end} (${series.length} pts); 10y requested ${tenY.requestedDate} → Then ${tenY.historicalDate}`)
+})
+
+test("request count: 14 sequential requests before → 1 now", async () => {
+  let calls = 0
+  const fetchSeries = async (start: string, end: string) => {
+    calls++
+    return businessDays(start, end)
+  }
+  const rows = await loadPeriodHistory(TODAY_SAT, TIME_PERIODS, fetchSeries)
+  const before = TIME_PERIODS.length * 2 // old hook: historical-rate + time-series per period
+  console.log(`    history requests per empty-cache table load: before=${before}, after=${calls}`)
+  assert.equal(rows.length, TIME_PERIODS.length)
+  assert.equal(calls, 1)
+})
+
+test("in-flight dedup: concurrent identical requests share one fetch", async () => {
+  const startedBefore = requestStats.started
+  let underlying = 0
+  const run = () => { underlying++; return new Promise<number>((r) => setTimeout(() => r(42), 10)) }
+  const [a, b, c] = await Promise.all([
+    sharedRequest("k1", run), sharedRequest("k1", run), sharedRequest("k1", run),
+  ])
+  assert.deepEqual([a, b, c], [42, 42, 42])
+  assert.equal(underlying, 1)
+  assert.equal(requestStats.started - startedBefore, 1)
+  // After settling, a new call starts a new request.
+  await sharedRequest("k1", run)
+  assert.equal(underlying, 2)
+})
+
+test("in-flight dedup: one caller aborting does not cancel the others; all aborting does", async () => {
+  let sawAbort = false
+  const run = (signal: AbortSignal) => new Promise<string>((resolve, reject) => {
+    const t = setTimeout(() => resolve("ok"), 20)
+    signal.addEventListener("abort", () => { sawAbort = true; clearTimeout(t); reject(new Error("aborted")) })
+  })
+  const c1 = new AbortController()
+  const p1 = sharedRequest("k2", run, c1.signal)
+  const p2 = sharedRequest("k2", run)
+  c1.abort()
+  await assert.rejects(p1, { name: "AbortError" })
+  assert.equal(await p2, "ok")
+  assert.equal(sawAbort, false)
+
+  const c3 = new AbortController(), c4 = new AbortController()
+  const p3 = sharedRequest("k3", run, c3.signal)
+  const p4 = sharedRequest("k3", run, c4.signal)
+  c3.abort(); c4.abort()
+  await assert.rejects(p3, { name: "AbortError" })
+  await assert.rejects(p4, { name: "AbortError" })
+  assert.equal(sawAbort, true)
 })

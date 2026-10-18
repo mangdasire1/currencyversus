@@ -54,17 +54,22 @@ export function isHistoricalPoints(x: unknown): x is HistoricalPoint[] {
   )
 }
 
-export interface CachedPeriod {
-  historicalRate: number
+export interface CachedHistoryRow {
+  periodKey: string
+  requestedDate: string
   historicalDate: string | null
+  historicalRate: number | null
   sparklineData: HistoricalPoint[]
 }
 
-export function isCachedPeriod(x: unknown): x is CachedPeriod {
-  return (
-    isObject(x) &&
-    isRate(x.historicalRate) &&
-    (x.historicalDate === null || isPlausibleDate(x.historicalDate)) &&
-    isHistoricalPoints(x.sparklineData)
-  )
+function isCachedHistoryRow(x: unknown): x is CachedHistoryRow {
+  if (!isObject(x) || typeof x.periodKey !== "string" || !isPlausibleDate(x.requestedDate)) return false
+  // A row is either complete (rate + date) or explicitly empty (both null).
+  const complete = isRate(x.historicalRate) && isPlausibleDate(x.historicalDate)
+  const empty = x.historicalRate === null && x.historicalDate === null
+  return (complete || empty) && isHistoricalPoints(x.sparklineData)
+}
+
+export function isCachedHistory(x: unknown): x is CachedHistoryRow[] {
+  return Array.isArray(x) && x.length > 0 && x.every(isCachedHistoryRow)
 }

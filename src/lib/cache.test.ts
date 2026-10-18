@@ -15,7 +15,7 @@ const ls = new MemoryStorage()
 ;(globalThis as unknown as { window: { localStorage: MemoryStorage } }).window = { localStorage: ls }
 
 const { cacheGet, cacheGetStale, cacheSet, cachePurgeExpired, retentionFor, FRESH_TTL } = await import("./cache.ts")
-const { isExchangeRateFor, isMetalPriceFor, isCachedPeriod } = await import("./cache-schemas.ts")
+const { isExchangeRateFor, isMetalPriceFor, isCachedHistory } = await import("./cache-schemas.ts")
 
 const H = 60 * 60 * 1000
 const fx = { base: "USD", date: "2026-10-16", rates: { EUR: 0.8887 } }
@@ -96,6 +96,11 @@ test("metal and history payload validators", () => {
   assert.equal(isXau({ metal: "XAU", price: 4166.1, priceTime: "2026-10-18T14:14:45.000Z", fetchedAt: "2026-10-18T14:15:00.000Z" }), true)
   assert.equal(isXau({ metal: "XAG", price: 57, priceTime: null, fetchedAt: "2026-10-18T14:15:00.000Z" }), false)
   assert.equal(isXau({ metal: "XAU", price: 4166.1, date: "2026-10-18" }), false) // v1 shape
-  assert.equal(isCachedPeriod({ historicalRate: 0.9, historicalDate: "2026-07-17", sparklineData: [{ date: "2026-07-17", rate: 0.9 }] }), true)
-  assert.equal(isCachedPeriod({ historicalRate: 0.9, historicalDate: "2026-07-17", sparklineData: [{ date: "2026-07-17", rate: null }] }), false)
+  const row = { periodKey: "3m", requestedDate: "2026-07-18", historicalDate: "2026-07-17", historicalRate: 0.9, sparklineData: [{ date: "2026-07-17", rate: 0.9 }] }
+  assert.equal(isCachedHistory([row]), true)
+  assert.equal(isCachedHistory([{ ...row, historicalRate: null, historicalDate: null, sparklineData: [] }]), true)
+  assert.equal(isCachedHistory([{ ...row, sparklineData: [{ date: "2026-07-17", rate: null }] }]), false)
+  assert.equal(isCachedHistory([{ ...row, historicalRate: Infinity }]), false)
+  assert.equal(isCachedHistory([{ historicalRate: 0.9, sparklineData: [] }]), false) // v2 per-period shape
+  assert.equal(isCachedHistory([]), false)
 })
