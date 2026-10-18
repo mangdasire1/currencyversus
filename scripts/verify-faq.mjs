@@ -1,7 +1,7 @@
 // Post-build check (R-04): on every generated page that carries FAQPage
 // JSON-LD, each question and answer must also appear in the visible HTML.
 //
-//   node scripts/verify-faq.mts        (after `next build`)
+//   node scripts/verify-faq.mjs        (after `next build`)
 
 import fs from "node:fs"
 import path from "node:path"
@@ -9,10 +9,10 @@ import { fileURLToPath } from "node:url"
 
 const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "out")
 
-const decode = (s: string) =>
+const decode = (s) =>
   s.replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
 
-function visibleText(html: string): string {
+function visibleText(html) {
   return decode(
     html
       .replace(/<script[\s\S]*?<\/script>/g, " ")
@@ -24,7 +24,7 @@ function visibleText(html: string): string {
 
 let pagesWithFaq = 0
 let pairs = 0
-const problems: string[] = []
+const problems = []
 for (const dir of fs.readdirSync(outDir)) {
   const file = path.join(outDir, dir, "index.html")
   if (!dir.includes("-vs-") || !fs.existsSync(file)) continue

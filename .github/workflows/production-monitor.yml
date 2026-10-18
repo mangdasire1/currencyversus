@@ -21,10 +21,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .node-version # same pinned runtime as the Cloudflare build
 
       - name: Check live build-info.json
         run: |
           export EXPECTED_SHA="$(git rev-parse HEAD)"
           export EXPECTED_SHA_TIME="$(git log -1 --format=%cI HEAD)"
-          node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-production.mts https://currencyversus.com/build-info.json
+          node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-production.mjs https://currencyversus.com/build-info.json

@@ -2,7 +2,12 @@
 // as a generated page in out/, and out/ must contain every catalog route.
 // Exits non-zero (failing `npm run build`) on any mismatch.
 //
-//   node scripts/verify-routes.mts        (after `next build`)
+//   node --experimental-strip-types scripts/verify-routes.mjs   (after `next build`)
+//
+// Plain JavaScript, but it imports the app's own route catalog and selector
+// logic from src/lib/*.ts (single source, R-01). On Node 22.16 — Cloudflare's
+// build runtime — loading .ts needs --experimental-strip-types; newer Node
+// versions accept the flag as a no-op.
 
 import fs from "node:fs"
 import path from "node:path"
@@ -22,10 +27,10 @@ const generated = new Set(
 )
 
 const codes = [...CURRENCIES.map((c) => c.code), ...METALS.map((m) => m.code)]
-const reachable = new Set<string>()
+const reachable = new Set()
 for (const slug of routeCatalog()) {
-  const current = parsePairSlug(slug)!
-  for (const side of ["base", "target"] as const) {
+  const current = parsePairSlug(slug) // every catalog slug parses
+  for (const side of ["base", "target"]) {
     for (const code of codes) {
       const nav = navigateSelection(current, side, code)
       reachable.add(nav ? nav.path.slice(1, -1) : `UNRESOLVED:${slug}:${side}=${code}`)
