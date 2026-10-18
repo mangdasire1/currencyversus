@@ -8,6 +8,7 @@ const BASE_URL = "https://api.frankfurter.dev/v1"
 const ALL_CODES = CURRENCIES.map((c) => c.code)
 const RETRY_ATTEMPTS = 3
 const RETRY_DELAY_MS = 2000
+const BUILD_FETCH_MAX_AGE_S = 60 * 60 // 1 hour
 
 export interface BuildMetalPrice {
   price: number // USD per troy oz
@@ -22,7 +23,12 @@ async function fetchWithRetry(url: string): Promise<Response> {
   let lastError: unknown
   for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
     try {
-      const res = await fetch(url, { cache: "force-cache" })
+      // Next's data cache deduplicates identical URLs across build workers.
+      // A bounded lifetime (not an indefinite cache) means a persisted
+      // .next/cache can never embed prices older than an hour in the HTML.
+      // `cache: "no-store"` is not usable here: with output: "export" it makes
+      // every fetch fail with `dynamic = "error"`.
+      const res = await fetch(url, { next: { revalidate: BUILD_FETCH_MAX_AGE_S } })
       if (res.ok) return res
       lastError = new Error(`HTTP ${res.status}`)
     } catch (err) {
@@ -63,7 +69,7 @@ export async function getBuildTimeMetalPrice(
 }
 
 // Fetches all rates for a given base in one request.
-// force-cache deduplicates identical URLs across Next.js build workers.
+// The data cache (see fetchWithRetry) deduplicates identical URLs across build workers.
 export async function getInitialRateData(
   base: string,
   target: string
