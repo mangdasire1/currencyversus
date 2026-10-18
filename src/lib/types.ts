@@ -10,6 +10,7 @@ export interface ExchangeRate {
   base: string
   date: string
   rates: Record<string, number>
+  fetchedAt?: string // ISO time we retrieved it (client only)
 }
 
 export interface TimeSeriesRates {

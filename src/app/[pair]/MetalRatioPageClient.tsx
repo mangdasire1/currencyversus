@@ -22,7 +22,7 @@ export function MetalRatioPageClient({
   initialSilverUsd,
   initialDate,
 }: MetalRatioPageClientProps) {
-  const { price: goldUsd, date: goldDate, stale: goldStale } = useMetalRate("XAU", initialGoldUsd)
+  const { price: goldUsd, priceTime: goldDate, stale: goldStale } = useMetalRate("XAU", initialGoldUsd)
   const { price: silverUsd, stale: silverStale } = useMetalRate("XAG", initialSilverUsd)
 
   const ratio =

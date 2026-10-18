@@ -7,10 +7,14 @@ import { isMetal } from "@/lib/metals"
 import type { ExchangeRate } from "@/lib/types"
 
 interface UseExchangeRateResult {
-  data: ExchangeRate | null
+  data: ExchangeRate | null // null unless it belongs to the current base/target
   loading: boolean
   error: string | null
   stale: boolean
+}
+
+function isForPair(data: ExchangeRate | null, base: string, target: string): data is ExchangeRate {
+  return data !== null && data.base === base && typeof data.rates?.[target] === "number"
 }
 
 // initialData: pass a pre-built ExchangeRate for SSR hydration (pair pages).
@@ -26,8 +30,15 @@ export function useExchangeRate(
   const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
 
+  const applicable = !!base && !!target && base !== target && !isMetal(base) && !isMetal(target)
+
   useEffect(() => {
-    if (!base || !target || base === target || isMetal(base) || isMetal(target)) {
+    if (!applicable) {
+      // Not an FX pair (identity or metal). Drop whatever the previous pair
+      // left behind instead of keeping it on screen.
+      setData(null)
+      setStale(false)
+      setError(null)
       setLoading(false)
       return
     }
@@ -40,24 +51,28 @@ export function useExchangeRate(
       setData(cached)
       setLoading(false)
       setStale(false)
+      setError(null)
       return
     }
 
-    // No cached data — fetch fresh. If we already have initial data, revalidate
-    // silently (loading stays false). Otherwise show a loading indicator.
-    const hasData = initialData != null
+    // No cached data — fetch fresh. If we already hold data for this pair,
+    // revalidate silently (loading stays false). Otherwise show a loading state.
+    const hasData = isForPair(initialData ?? null, base, target)
     if (!hasData) {
       setLoading(true)
       setError(null)
+      setStale(false)
     }
 
     let cancelled = false
     fetchLatestRates(base, [target])
       .then((result) => {
         if (cancelled) return
-        setData(result)
+        const withMeta: ExchangeRate = { ...result, fetchedAt: new Date().toISOString() }
+        setData(withMeta)
         setStale(false)
-        cacheSet(cacheKey, result, TTL)
+        setError(null)
+        cacheSet(cacheKey, withMeta, TTL)
       })
       .catch((err: Error) => {
         if (cancelled) return
@@ -78,7 +93,14 @@ export function useExchangeRate(
     return () => {
       cancelled = true
     }
-  }, [base, target]) // initialData intentionally excluded: used only as useState seed
+  }, [base, target, applicable]) // initialData intentionally excluded: used only as useState seed
 
-  return { data, loading, error, stale }
+  // Pair identity check: data fetched for a previous pair is never returned.
+  const matching = applicable && isForPair(data, base, target) ? data : null
+  return {
+    data: matching,
+    loading: applicable && (loading || (matching === null && error === null)),
+    error: applicable ? error : null,
+    stale: matching !== null && stale,
+  }
 }

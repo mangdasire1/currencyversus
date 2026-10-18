@@ -7,7 +7,8 @@ import type { MetalCode } from "@/lib/metals"
 
 interface UseMetalRateResult {
   price: number | null
-  date: string | null
+  priceTime: string | null
+  fetchedAt: string | null
   loading: boolean
   stale: boolean
 }
@@ -21,8 +22,10 @@ export function useMetalRate(
   enabled = true
 ): UseMetalRateResult {
   const [price, setPrice] = useState<number | null>(initialPriceUsd ?? null)
-  const [date, setDate] = useState<string | null>(null)
+  const [priceTime, setPriceTime] = useState<string | null>(null)
+  const [fetchedAt, setFetchedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(enabled && initialPriceUsd == null)
+  const [failed, setFailed] = useState(false)
   const [stale, setStale] = useState(false)
 
   useEffect(() => {
@@ -32,13 +35,15 @@ export function useMetalRate(
     }
     const hasData = initialPriceUsd != null
     if (!hasData) { setLoading(true); setStale(false) }
+    setFailed(false)
 
     let cancelled = false
     fetchMetalPrice(metal)
       .then((result) => {
         if (cancelled) return
         setPrice(result.price)
-        setDate(result.date)
+        setPriceTime(result.date)
+        setFetchedAt(new Date().toISOString())
         setStale(false)
       })
       .catch(() => {
@@ -47,10 +52,12 @@ export function useMetalRate(
         const staleData = cacheGetStale<{ price: number; date: string }>(cacheKey)
         if (staleData) {
           setPrice(staleData.price)
-          setDate(staleData.date)
+          setPriceTime(staleData.date)
           setStale(true)
         } else if (hasData) {
           setStale(true)
+        } else {
+          setFailed(true)
         }
       })
       .finally(() => { if (!cancelled) setLoading(false) })
@@ -58,5 +65,13 @@ export function useMetalRate(
     return () => { cancelled = true }
   }, [metal, enabled]) // initialPriceUsd intentionally excluded: used only as useState seed
 
-  return { price, date, loading, stale }
+  return {
+    price,
+    priceTime,
+    fetchedAt,
+    // Enabled with no price yet and no failure → still loading (covers the
+    // render between `enabled` flipping on and the effect running).
+    loading: enabled && (loading || (price === null && !failed)),
+    stale,
+  }
 }

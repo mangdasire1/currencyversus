@@ -4,15 +4,12 @@ import { useState, useCallback } from "react"
 import { ArrowLeftRight, ArrowUpDown, RefreshCw } from "lucide-react"
 import { CurrencySelect } from "./CurrencySelect"
 import { SkeletonConverter } from "./SkeletonLoaders"
-import { useExchangeRate } from "@/hooks/useExchangeRate"
-import { useMetalRate } from "@/hooks/useMetalRate"
+import { useConversion } from "@/hooks/useConversion"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { METAL_INFO } from "@/lib/metal-info"
-import { OZ_TO_GRAM, isMetal } from "@/lib/metals"
+import { isMetal } from "@/lib/metals"
 import type { MetalCode } from "@/lib/metals"
-import { formatRate } from "@/lib/utils"
-
-type MetalUnit = "oz" | "g"
+import type { MetalUnit } from "@/lib/conversion"
 
 interface CurrencyConverterProps {
   base: string
@@ -49,196 +46,68 @@ export function CurrencyConverter({
   const targetIsMetal = isMetal(target)
   const anyMetal = baseIsMetal || targetIsMetal
 
-  // 1. Currency-to-currency rate (hook guards against metal codes via isMetal check in hook)
-  const { data: fxData, loading: fxLoading, stale: fxStale, error: fxError } =
-    useExchangeRate(base, target)
+  const numericAmount = parseFloat(amount) || 0
 
-  // 2. Metal prices in USD — always call both hooks, enabled only when relevant
-  const { price: goldUsd, stale: goldStale } = useMetalRate(
-    "XAU",
-    base === "XAU" ? initialOzPriceBaseUsd : target === "XAU" ? initialOzPriceTargetUsd : null,
-    base === "XAU" || target === "XAU"
-  )
-  const { price: silverUsd, stale: silverStale } = useMetalRate(
-    "XAG",
-    base === "XAG" ? initialOzPriceBaseUsd : target === "XAG" ? initialOzPriceTargetUsd : null,
-    base === "XAG" || target === "XAG"
-  )
+  const initialMetalUsd: Partial<Record<MetalCode, number | null>> = {}
+  if (baseIsMetal && initialOzPriceBaseUsd != null) initialMetalUsd[base as MetalCode] = initialOzPriceBaseUsd
+  if (targetIsMetal && initialOzPriceTargetUsd != null) initialMetalUsd[target as MetalCode] = initialOzPriceTargetUsd
 
-  // 3. USD/currency rate needed for metal ↔ non-USD-currency conversions
-  // currencyCode = the non-metal side (if any); null when both sides are metal
-  const currencyCode: string | null =
-    baseIsMetal && !targetIsMetal ? target
-    : !baseIsMetal && targetIsMetal ? base
-    : null
-  const needUsdFx = currencyCode !== null && currencyCode !== "USD"
-  // Use a stable dummy ("EUR") when not needed so the hook count stays the same
-  const usdFxSym = needUsdFx ? currencyCode! : "EUR"
-  const { data: usdFxData } = useExchangeRate("USD", usdFxSym)
-  const usdToCurrency: number | null =
-    currencyCode === "USD" ? 1
-    : needUsdFx ? (usdFxData?.rates[usdFxSym] ?? null)
-    : null
+  const conv = useConversion(base, target, { amount: numericAmount, metalUnit, initialMetalUsd })
 
   // Convenience
   const baseCurrency = CURRENCY_MAP[base]
   const targetCurrency = CURRENCY_MAP[target]
   const baseMetalInfo = baseIsMetal ? METAL_INFO[base as MetalCode] : null
   const targetMetalInfo = targetIsMetal ? METAL_INFO[target as MetalCode] : null
-  const baseMetalUsd = base === "XAU" ? goldUsd : base === "XAG" ? silverUsd : null
-  const targetMetalUsd = target === "XAU" ? goldUsd : target === "XAG" ? silverUsd : null
 
-  const numericAmount = parseFloat(amount) || 0
-  const ozFactor = metalUnit === "g" ? 1 / OZ_TO_GRAM : 1
+  // Pair identity: only render a result computed for the current selection.
+  const forThisPair = conv.base === base && conv.quote === target
 
-  // --- Compute result ---
-  let converted: number | null = null
-  let loading = fxLoading
-  const stale = anyMetal ? (goldStale || silverStale) : fxStale
-  const error = !anyMetal ? fxError : null
+  function formatResult(value: number): string {
+    if (targetIsMetal) {
+      return value !== 0 && Math.abs(value) < 1
+        ? value.toLocaleString("en-US", { maximumSignificantDigits: 4 })
+        : fmtNum(value, metalUnit === "oz" ? 4 : 2)
+    }
+    return fmtNum(value, targetCurrency?.decimals ?? 2)
+  }
 
-  if (!anyMetal) {
-    // Currency → Currency
-    const rate = fxData?.rates[target] ?? null
-    converted = rate !== null ? numericAmount * rate : null
-  } else if (baseIsMetal && !targetIsMetal) {
-    // Metal → Currency
-    loading = false
-    if (baseMetalUsd !== null && usdToCurrency !== null) {
-      const amountInOz = numericAmount * ozFactor
-      converted = amountInOz * baseMetalUsd * usdToCurrency
-    }
-  } else if (!baseIsMetal && targetIsMetal) {
-    // Currency → Metal
-    loading = false
-    if (targetMetalUsd !== null && usdToCurrency !== null) {
-      const currencyPerOz = targetMetalUsd * usdToCurrency
-      const inOz = numericAmount / currencyPerOz
-      converted = metalUnit === "g" ? inOz * OZ_TO_GRAM : inOz
-    }
-  } else {
-    // Metal → Metal (ratio-based)
-    loading = false
-    if (baseMetalUsd !== null && targetMetalUsd !== null && targetMetalUsd > 0) {
-      converted = numericAmount * (baseMetalUsd / targetMetalUsd)
-    }
+  function missingMessage(): string {
+    const metalMissing = conv.missing.includes("metal")
+    const fxMissing = conv.missing.includes("fx")
+    if (metalMissing && fxMissing) return "Metal price and exchange rate unavailable right now"
+    if (metalMissing) return "Metal price unavailable right now — cannot convert"
+    if (fxMissing) return "Exchange rate unavailable right now — cannot convert"
+    return "Failed to load rates"
   }
 
   // --- Result formatting ---
   function renderResult() {
-    if (loading) return <SkeletonConverter />
-    if (error) return <p className="text-red-400 text-sm">Failed to load rates</p>
-
-    if (!anyMetal) {
-      // Standard currency result
-      const rate = fxData?.rates[target] ?? null
-      return (
-        <div className="flex flex-col gap-1">
-          <div className="rate-value text-4xl font-bold text-white font-mono tracking-tight">
-            {converted !== null && targetCurrency
-              ? `${targetCurrency.flag} ${fmtNum(converted, targetCurrency.decimals)}`
-              : "—"}
-          </div>
-          {rate !== null && baseCurrency && targetCurrency && (
-            <div className="text-sm text-slate-400 font-mono">
-              1 {base} = {formatRate(rate, targetCurrency)} {target}
-            </div>
-          )}
-          <div className="flex items-center gap-1.5 mt-1">
-            {stale && (
-              <span className="flex items-center gap-1 text-xs text-amber-400">
-                <RefreshCw className="w-3 h-3" />
-                Showing cached data
-              </span>
-            )}
-            {fxData?.date && !stale && (
-              <span className="text-xs text-slate-500">Updated {fxData.date}</span>
-            )}
-          </div>
-        </div>
-      )
+    if (!forThisPair || conv.status === "loading") return <SkeletonConverter />
+    if (conv.status === "error" || conv.status === "partial" || conv.amount === null) {
+      return <p className="text-red-400 text-sm">{missingMessage()}</p>
     }
 
-    if (baseIsMetal && !targetIsMetal) {
-      // Metal → Currency
-      const unitLabel = metalUnit
-      const convDec = targetCurrency?.decimals ?? 2
-      return (
-        <div className="flex flex-col gap-1">
-          <div className="rate-value text-4xl font-bold text-white font-mono tracking-tight">
-            {converted !== null && targetCurrency
-              ? `${targetCurrency.flag} ${fmtNum(converted, convDec)}`
-              : "—"}
-          </div>
-          {converted !== null && baseMetalUsd !== null && usdToCurrency !== null && (
-            <div className="text-sm text-slate-400 font-mono">
-              1 {unitLabel} {baseMetalInfo?.name} ={" "}
-              {fmtNum(
-                (unitLabel === "g" ? 1 / OZ_TO_GRAM : 1) * baseMetalUsd * usdToCurrency,
-                convDec
-              )}{" "}
-              {target}
-            </div>
-          )}
-          {stale && (
-            <span className="flex items-center gap-1 text-xs text-amber-400 mt-1">
-              <RefreshCw className="w-3 h-3" /> Showing cached data
-            </span>
-          )}
-        </div>
-      )
-    }
+    const prefix = targetIsMetal ? targetMetalInfo?.icon : targetCurrency?.flag
+    const suffix = targetIsMetal ? ` ${metalUnit}` : ""
 
-    if (!baseIsMetal && targetIsMetal) {
-      // Currency → Metal
-      const convDec = metalUnit === "oz" ? 4 : 2
-      return (
-        <div className="flex flex-col gap-1">
-          <div className="rate-value text-4xl font-bold text-white font-mono tracking-tight">
-            {converted !== null && targetMetalInfo
-              ? `${targetMetalInfo.icon} ${fmtNum(converted, convDec)} ${metalUnit}`
-              : "—"}
-          </div>
-          {converted !== null && targetMetalUsd !== null && usdToCurrency !== null && (
-            <div className="text-sm text-slate-400 font-mono">
-              1 {target} ={" "}
-              {fmtNum(1 / ((metalUnit === "g" ? 1 / OZ_TO_GRAM : 1) * targetMetalUsd * usdToCurrency), convDec)}{" "}
-              {metalUnit} {targetMetalInfo?.name}
-            </div>
-          )}
-          {stale && (
-            <span className="flex items-center gap-1 text-xs text-amber-400 mt-1">
-              <RefreshCw className="w-3 h-3" /> Showing cached data
-            </span>
-          )}
-        </div>
-      )
-    }
-
-    // Metal → Metal
     return (
       <div className="flex flex-col gap-1">
         <div className="rate-value text-4xl font-bold text-white font-mono tracking-tight">
-          {converted !== null && targetMetalInfo
-            ? `${targetMetalInfo.icon} ${fmtNum(converted, metalUnit === "oz" ? 4 : 2)} ${metalUnit}`
-            : "—"}
+          {`${prefix ?? ""} ${formatResult(conv.amount)}${suffix}`}
         </div>
-        {baseMetalUsd !== null && targetMetalUsd !== null && targetMetalUsd > 0 && (
-          <div className="text-sm text-slate-400 font-mono">
-            1 {metalUnit} {baseMetalInfo?.name} ={" "}
-            {fmtNum(
-              (metalUnit === "g" ? 1 / OZ_TO_GRAM : 1) * baseMetalUsd /
-              ((metalUnit === "g" ? 1 / OZ_TO_GRAM : 1) * targetMetalUsd),
-              4
-            )}{" "}
-            {metalUnit} {targetMetalInfo?.name}
-          </div>
-        )}
-        {stale && (
-          <span className="flex items-center gap-1 text-xs text-amber-400 mt-1">
-            <RefreshCw className="w-3 h-3" /> Showing cached data
-          </span>
-        )}
+        <div className="text-sm text-slate-400 font-mono">{conv.rateLabel}</div>
+        <div className="flex items-center gap-1.5 mt-1">
+          {conv.status === "stale" && (
+            <span className="flex items-center gap-1 text-xs text-amber-400">
+              <RefreshCw className="w-3 h-3" />
+              Showing cached data
+            </span>
+          )}
+          {conv.sourceDate && conv.status !== "stale" && (
+            <span className="text-xs text-slate-500">Updated {conv.sourceDate}</span>
+          )}
+        </div>
       </div>
     )
   }

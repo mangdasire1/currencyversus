@@ -9,10 +9,9 @@ import { TrendingUp } from "lucide-react"
 import { CurrencySelect } from "@/components/CurrencySelect"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HistoricalTable } from "@/components/HistoricalTable"
-import { useExchangeRate } from "@/hooks/useExchangeRate"
+import { useConversion } from "@/hooks/useConversion"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { CURRENCY_INFO } from "@/lib/currency-info"
-import { formatRate } from "@/lib/utils"
 import type { ExchangeRate } from "@/lib/types"
 
 const ShaderBackground = dynamic(
@@ -37,8 +36,9 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
       ? { base, date: initialDate, rates: { [target]: initialRate } }
       : null
 
-  const { data } = useExchangeRate(base, target, serverRate)
-  const currentRate = data?.rates[target] ?? null
+  const conv = useConversion(base, target, { initialFx: serverRate })
+  const forThisPair = conv.base === base && conv.quote === target
+  const currentRate = forThisPair ? conv.rate : null
   const baseCurrency = CURRENCY_MAP[base]
   const targetCurrency = CURRENCY_MAP[target]
 
@@ -102,17 +102,12 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
                 </h1>
                 <span className="text-4xl">{targetCurrency?.flag}</span>
               </div>
-              {currentRate !== null && targetCurrency && (
-                <p className="text-slate-400 font-mono text-sm">
-                  1 {base} ={" "}
-                  <span className="text-white font-semibold">
-                    {formatRate(currentRate, targetCurrency)} {target}
-                  </span>
-                </p>
+              {currentRate !== null && (
+                <p className="text-white font-semibold font-mono text-sm">{conv.rateLabel}</p>
               )}
-              {data?.date && (
+              {forThisPair && conv.fxDate && (
                 <p className="text-xs text-slate-600 font-mono">
-                  Rates as of {data.date} · Source: European Central Bank
+                  Rates as of {conv.fxDate} · Source: European Central Bank
                 </p>
               )}
             </div>
@@ -159,17 +154,11 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
                     { label: "Target", value: `${targetCurrency?.flag} ${target}` },
                     {
                       label: "Current Rate",
-                      value:
-                        currentRate !== null && targetCurrency
-                          ? formatRate(currentRate, targetCurrency)
-                          : "—",
+                      value: currentRate !== null ? conv.rateLabel : conv.status === "loading" ? "…" : "Unavailable",
                     },
                     {
                       label: "Inverse Rate",
-                      value:
-                        currentRate !== null && baseCurrency
-                          ? formatRate(1 / currentRate, baseCurrency)
-                          : "—",
+                      value: currentRate !== null ? conv.inverseRateLabel : conv.status === "loading" ? "…" : "Unavailable",
                     },
                   ].map(({ label, value }) => (
                     <div
@@ -179,7 +168,7 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
                       <span className="text-xs text-slate-500 font-mono uppercase tracking-wider">
                         {label}
                       </span>
-                      <span className="text-base font-bold text-white font-mono">
+                      <span className="text-sm font-bold text-white font-mono break-words">
                         {value}
                       </span>
                     </div>
@@ -188,7 +177,7 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
               </div>
             </section>
 
-            <HistoricalTable base={base} target={target} currentRate={currentRate} />
+            <HistoricalTable base={base} target={target} current={conv} />
 
             {/* Content sections */}
             {(() => {

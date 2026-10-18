@@ -7,14 +7,17 @@ import { SkeletonTableRow } from "./SkeletonLoaders"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { formatRate } from "@/lib/utils"
 import { TIME_PERIODS } from "@/lib/currencies"
+import type { ConversionResult } from "@/lib/conversion"
 
 interface HistoricalTableProps {
   base: string
   target: string
-  currentRate: number | null
+  current: ConversionResult
 }
 
-export function HistoricalTable({ base, target, currentRate }: HistoricalTableProps) {
+export function HistoricalTable({ base, target, current }: HistoricalTableProps) {
+  // Pair identity: a "now" rate for another pair is never compared against this history.
+  const currentRate = current.base === base && current.quote === target ? current.rate : null
   const { comparisons, loading } = useHistoricalRates(base, target, currentRate)
   const targetCurrency = CURRENCY_MAP[target]
 

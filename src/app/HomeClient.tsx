@@ -6,8 +6,9 @@ import Link from "next/link"
 import { Header } from "@/components/Header"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HistoricalTable } from "@/components/HistoricalTable"
-import { useExchangeRate } from "@/hooks/useExchangeRate"
+import { useConversion } from "@/hooks/useConversion"
 import { useMetalRate } from "@/hooks/useMetalRate"
+import type { ConversionResult } from "@/lib/conversion"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { isMetal, OZ_TO_GRAM } from "@/lib/metals"
 
@@ -36,6 +37,13 @@ interface HomeClientProps {
   initialSilverUsd: number | null
 }
 
+// Quick Stats value for a rate cell. Never shows a rate computed for another pair.
+function statValue(conv: ConversionResult, base: string, target: string, which: "rate" | "inverse"): string {
+  if (conv.base !== base || conv.quote !== target || conv.status === "loading") return "…"
+  if (conv.rate === null) return "Unavailable"
+  return which === "rate" ? conv.rateLabel : conv.inverseRateLabel
+}
+
 function fmt(value: number, decimals: number): string {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: decimals,
@@ -46,8 +54,8 @@ function fmt(value: number, decimals: number): string {
 export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps) {
   const [base, setBase] = useState("USD")
   const [target, setTarget] = useState("EUR")
-  const { data } = useExchangeRate(base, target)
-  const currentRate = data?.rates[target] ?? null
+  // Quick Stats quotes metals per gram so the unit is always explicit.
+  const conv = useConversion(base, target, { metalUnit: "g" })
 
   // Metal prices for Precious Metals section (live updates, seeded with build-time values)
   const { price: goldUsd } = useMetalRate("XAU", initialGoldUsd)
@@ -92,39 +100,34 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
                   {[
                     { label: "Base", value: base },
                     { label: "Target", value: target },
-                    {
-                      label: "Current Rate",
-                      value: currentRate
-                        ? currentRate.toLocaleString("en-US", { maximumFractionDigits: 6 })
-                        : "—",
-                    },
-                    {
-                      label: "Inverse Rate",
-                      value: currentRate
-                        ? (1 / currentRate).toLocaleString("en-US", { maximumFractionDigits: 6 })
-                        : "—",
-                    },
+                    { label: "Current Rate", value: statValue(conv, base, target, "rate") },
+                    { label: "Inverse Rate", value: statValue(conv, base, target, "inverse") },
                   ].map(({ label, value }) => (
                     <div
                       key={label}
-                      className="flex flex-col gap-1 p-3 rounded-xl bg-white/5 border border-white/5"
+                      className="flex flex-col gap-1 p-3 rounded-xl bg-white/5 border border-white/5 min-w-0"
                     >
                       <span className="text-xs text-slate-500 font-mono uppercase tracking-wider">
                         {label}
                       </span>
-                      <span className="text-base font-bold text-white font-mono">
+                      <span className="text-sm font-bold text-white font-mono break-words">
                         {value}
                       </span>
                     </div>
                   ))}
                 </div>
+                {conv.base === base && conv.quote === target && (conv.status === "partial" || conv.status === "error") && (
+                  <p className="text-xs text-amber-400 font-mono">
+                    {conv.missing.includes("metal") ? "Metal price" : "Exchange rate"} unavailable right now — no rate is shown rather than a wrong one.
+                  </p>
+                )}
               </div>
             </section>
 
             {/* Historical table — hidden when a metal is selected */}
             {!isMetal(base) && !isMetal(target) && (
               <div className="animate-fade-in-up" style={{ animationDelay: "100ms" }}>
-                <HistoricalTable base={base} target={target} currentRate={currentRate} />
+                <HistoricalTable base={base} target={target} current={conv} />
               </div>
             )}
 

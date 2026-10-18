@@ -23,8 +23,28 @@ export function useHistoricalRates(
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!base || !target || base === target || currentRate === null) {
+    if (base && base === target) {
+      // Identity: 1 A = 1 A in every period, change is exactly 0.
+      const today = new Date()
+      setComparisons(
+        TIME_PERIODS.map((period) => ({
+          period,
+          historicalRate: 1,
+          currentRate: 1,
+          percentChange: 0,
+          sparklineData: [
+            { date: toISODate(subtractMonths(today, period.months)), rate: 1 },
+            { date: toISODate(today), rate: 1 },
+          ],
+        }))
+      )
       setLoading(false)
+      return
+    }
+    if (!base || !target || currentRate === null) {
+      // Never leave the previous pair's rows on screen.
+      setComparisons([])
+      setLoading(true)
       return
     }
 

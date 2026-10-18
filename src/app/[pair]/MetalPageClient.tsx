@@ -49,7 +49,7 @@ export function MetalPageClient({
   const [convBase, setConvBase] = useState<string>(metal)
   const [convTarget, setConvTarget] = useState<string>(target)
 
-  const { price: livePriceUsd, date, stale } = useMetalRate(metal, initialOzPriceUsd)
+  const { price: livePriceUsd, priceTime: date, stale } = useMetalRate(metal, initialOzPriceUsd)
   const info = METAL_INFO[metal]
   const targetCurrency = CURRENCY_MAP[target]
   const usdToTarget = initialUsdToTargetRate ?? 1
