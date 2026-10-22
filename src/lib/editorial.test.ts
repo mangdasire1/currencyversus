@@ -158,8 +158,19 @@ test("every currency with editorial content has a review entry", () => {
 })
 
 test("unreviewed records never show a review date", () => {
-  assert.equal(editorialReviewDate(["USD", "EUR"]), null)
-  assert.match(editorialReviewLabel(["USD", "EUR"]), /review pending/)
+  // A key with no review entry stands in for an unreviewed record.
+  assert.equal(editorialReviewDate(["USD", "NOT_REVIEWED"]), null)
+  assert.match(editorialReviewLabel(["USD", "NOT_REVIEWED"]), /review pending/)
+})
+
+test("review dates are real ISO dates, not in the future, and drive the page label", () => {
+  const today = new Date().toISOString().slice(0, 10)
+  for (const [key, date] of Object.entries(EDITORIAL_REVIEWED)) {
+    if (date === null) continue
+    assert.match(date, /^\d{4}-\d{2}-\d{2}$/, key)
+    assert.ok(Number.isFinite(Date.parse(date)) && date <= today, `${key}: ${date}`)
+  }
+  assert.equal(editorialReviewLabel(["USD", "EUR"]), `Editorial content last reviewed: ${editorialReviewDate(["USD", "EUR"])}`)
 })
 
 test("EUR makes no member-count claim (the Bulgaria error class: counts go stale)", () => {
