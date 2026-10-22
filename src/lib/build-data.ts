@@ -1,7 +1,7 @@
 import type { ExchangeRate, TimeSeriesRates, TimePeriod } from "./types"
 import { CURRENCIES, TIME_PERIODS } from "./currencies"
-import { derivePeriodHistory, seriesForTarget, seriesRange } from "./history"
-import type { PeriodHistory } from "./history"
+import { derivePeriodHistory, deriveChartPeriods, seriesForTarget, seriesRange } from "./history"
+import type { PeriodHistory, ChartPeriod } from "./history"
 import { METAL_API_BASE } from "./metals"
 import type { MetalCode } from "./metals"
 import { parseGoldApiPrice } from "./gold-api"
@@ -146,4 +146,16 @@ export async function getBuildTimeHistory(
   const series = seriesForTarget(rates, target)
   if (series.length === 0) return null
   return derivePeriodHistory(series, today, TIME_PERIODS)
+}
+
+// Pilot pages (Phase 7): the seven chart periods, from the same per-base
+// daily series as the table above (no extra request). Only the sampled lines
+// and per-period summaries are embedded, never the ~2,600-day daily series.
+export async function getBuildTimeChart(base: string, target: string): Promise<ChartPeriod[] | null> {
+  const today = new Date()
+  const rates = await baseSeries(base, today)
+  if (!rates) return null
+  const series = seriesForTarget(rates, target)
+  if (series.length === 0) return null
+  return deriveChartPeriods(series, today)
 }
