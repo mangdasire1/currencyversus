@@ -1,3 +1,12 @@
+// Explanatory text for the 15 currencies.
+//
+// Editorial policy (enforced by src/lib/editorial.test.ts):
+//   - no figures that go stale: no percentages, rankings ("third-largest",
+//     "Nth most traded"), production/reserve amounts or period averages;
+//   - no individual company names — sector and geography carry the meaning;
+//   - fixed historical facts (introduction years, redenominations) are fine.
+// Review dates live in src/lib/editorial.ts.
+
 export interface CurrencyInfo {
   code: string
   name: string
@@ -16,9 +25,9 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "$",
     country: "United States",
     description:
-      "The United States Dollar is the world's primary reserve currency and the most traded currency in the foreign exchange market. It serves as the standard unit of currency in international markets for commodities such as gold and oil.",
+      "The United States Dollar is the world's leading reserve currency and the anchor of the foreign exchange market. Much of international trade, commodity pricing and cross-border borrowing is carried out in dollars, including the pricing of gold and oil.",
     economy:
-      "The US has the largest economy in the world by nominal GDP. The Federal Reserve (Fed) manages monetary policy, and its interest rate decisions have a significant impact on the dollar's value globally.",
+      "The United States is one of the world's major economies and its financial markets are among the deepest anywhere. The Federal Reserve (Fed) manages monetary policy, and its interest rate decisions have a significant impact on the dollar's value globally.",
     factors: [
       "Federal Reserve interest rate decisions",
       "US employment and inflation data",
@@ -26,7 +35,7 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
       "US trade balance and fiscal policy",
     ],
     funFact:
-      "About 60% of all foreign exchange reserves held by central banks worldwide are denominated in US dollars.",
+      "Several countries outside the United States use the US dollar as their own official currency, and many others keep their currency pegged to it — a practice known as dollarization.",
   },
   EUR: {
     code: "EUR",
@@ -34,9 +43,9 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "€",
     country: "European Union",
     description:
-      "The Euro is the official currency of the Eurozone, used by 21 of the 27 European Union member states. It is the second most traded currency in the world after the US Dollar.",
+      "The Euro is the official currency of the euro area (Eurozone), shared by most European Union member states. It is one of the world's major trading and reserve currencies.",
     economy:
-      "The Eurozone represents one of the largest economic blocs globally, with Germany and France as its largest economies. The European Central Bank (ECB) sets monetary policy for all Eurozone members.",
+      "The euro area is one of the world's major economic blocs, anchored by economies such as Germany and France. The European Central Bank (ECB) sets a single monetary policy for all euro area members.",
     factors: [
       "ECB monetary policy and interest rates",
       "Economic performance of major Eurozone economies",
@@ -52,17 +61,17 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "£",
     country: "United Kingdom",
     description:
-      "The British Pound Sterling is the oldest currency still in use and the fourth most traded currency in the world. It is the official currency of the United Kingdom and its overseas territories.",
+      "The British Pound Sterling is the official currency of the United Kingdom and one of the world's major traded currencies, with a history that stretches back more than a thousand years.",
     economy:
-      "The UK has one of the largest economies in Europe, with London serving as a major global financial center. The Bank of England (BoE) sets monetary policy and inflation targets.",
+      "The UK is one of Europe's major economies, with London serving as a leading global financial center. The Bank of England (BoE) sets monetary policy to meet the government's inflation target.",
     factors: [
       "Bank of England interest rate decisions",
-      "UK economic data and Brexit-related developments",
+      "UK economic data and trade policy",
       "London financial market sentiment",
       "UK inflation and housing market trends",
     ],
     funFact:
-      "The pound sterling has been in continuous use since its inception around 775 AD, making it over 1,200 years old.",
+      "Sterling traces its origins to the silver pennies of Anglo-Saxon England — the name 'pound' comes from a pound weight of silver.",
   },
   JPY: {
     code: "JPY",
@@ -70,12 +79,12 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "¥",
     country: "Japan",
     description:
-      "The Japanese Yen is the third most traded currency in the forex market and is widely used as a reserve currency. It is known as a safe-haven currency that investors flock to during times of global uncertainty.",
+      "The Japanese Yen is one of the world's major traded and reserve currencies. It is often treated as a safe-haven currency that investors turn to during times of global uncertainty.",
     economy:
-      "Japan has the third-largest economy in the world and is a major exporter of automobiles, electronics, and technology. The Bank of Japan (BoJ) has maintained ultra-low interest rates for decades.",
+      "Japan is one of the world's major economies and a leading exporter of automobiles, electronics, and machinery. The Bank of Japan (BoJ) kept interest rates exceptionally low for a long period, and its policy decisions are closely watched by currency markets.",
     factors: [
-      "Bank of Japan monetary policy and yield curve control",
-      "Japan's trade surplus and export data",
+      "Bank of Japan monetary policy decisions",
+      "Japan's trade balance and export data",
       "Global risk appetite and safe-haven flows",
       "USD/JPY carry trade dynamics",
     ],
@@ -90,7 +99,7 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     description:
       "The Swiss Franc is the official currency of Switzerland and Liechtenstein. It is regarded as one of the world's most stable currencies and a safe-haven asset during financial turmoil.",
     economy:
-      "Switzerland has a highly developed and stable economy, known for its banking sector, pharmaceuticals, and precision manufacturing. The Swiss National Bank (SNB) actively manages the franc's value.",
+      "Switzerland has a highly developed and stable economy, known for its banking sector, pharmaceuticals, and precision manufacturing. The Swiss National Bank (SNB) sets monetary policy and has at times intervened in currency markets to influence the franc's value.",
     factors: [
       "Swiss National Bank interventions and interest rates",
       "Global geopolitical uncertainty and safe-haven demand",
@@ -106,13 +115,13 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "$",
     country: "Canada",
     description:
-      "The Canadian Dollar, often called the 'Loonie' after the loon bird on the one-dollar coin, is the fifth most held reserve currency in the world. It is closely tied to commodity prices, especially oil.",
+      "The Canadian Dollar, often called the 'Loonie' after the loon bird on the one-dollar coin, is one of the reserve currencies held by central banks around the world. It is closely tied to commodity prices, especially oil.",
     economy:
       "Canada has a resource-rich economy with significant exports of crude oil, natural gas, and minerals. The Bank of Canada sets monetary policy independently from the US despite close economic ties.",
     factors: [
       "Crude oil and commodity prices",
       "Bank of Canada interest rate decisions",
-      "US-Canada trade relations and USMCA",
+      "US–Canada trade relations",
       "Canadian housing market and employment data",
     ],
     funFact:
@@ -124,9 +133,9 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "$",
     country: "Australia",
     description:
-      "The Australian Dollar is the fifth most traded currency in the forex market. It is considered a commodity currency due to Australia's significant exports of iron ore, coal, and natural gas.",
+      "The Australian Dollar is one of the major currencies of the foreign exchange market. It is considered a commodity currency due to Australia's significant exports of iron ore, coal, and natural gas.",
     economy:
-      "Australia has enjoyed decades of uninterrupted economic growth and is a major exporter of natural resources, particularly to China. The Reserve Bank of Australia (RBA) manages monetary policy.",
+      "Australia is a major exporter of natural resources, with China among its most important trading partners. The Reserve Bank of Australia (RBA) manages monetary policy.",
     factors: [
       "Iron ore and commodity prices",
       "Chinese economic demand and trade relations",
@@ -142,7 +151,7 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "₺",
     country: "Turkey",
     description:
-      "The Turkish Lira is the official currency of Turkey. It has experienced significant volatility in recent years, making it a closely watched emerging market currency in global forex markets.",
+      "The Turkish Lira is the official currency of Turkey. Its history of high inflation and sharp exchange-rate swings makes it a closely watched emerging market currency in global forex markets.",
     economy:
       "Turkey has a large and diversified economy, strategically positioned between Europe and Asia. It is a major manufacturer and exporter of textiles, automotive parts, and agricultural products.",
     factors: [
@@ -160,9 +169,9 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "¥",
     country: "China",
     description:
-      "The Chinese Yuan (also known as Renminbi) is the official currency of the People's Republic of China. It has been increasingly used in international trade and was added to the IMF's SDR basket in 2016.",
+      "The Chinese Yuan (also known as Renminbi) is the official currency of the People's Republic of China. It is used in international trade and was added to the IMF's SDR basket in 2016.",
     economy:
-      "China has the second-largest economy in the world and is the largest global exporter. The People's Bank of China (PBoC) manages the yuan through a managed float exchange rate system.",
+      "China is one of the world's major economies and a leading global exporter. The People's Bank of China (PBoC) manages the yuan through a managed float exchange rate system.",
     factors: [
       "PBoC monetary policy and daily fixing rate",
       "US-China trade relations and tariffs",
@@ -178,9 +187,9 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "₹",
     country: "India",
     description:
-      "The Indian Rupee is the official currency of India, the world's most populous country. It is regulated by the Reserve Bank of India and has shown steady growth alongside India's expanding economy.",
+      "The Indian Rupee is the official currency of India and is managed by the Reserve Bank of India. Its exchange rate reflects India's large economy, its dependence on energy imports, and foreign investment flows.",
     economy:
-      "India has one of the fastest-growing major economies in the world, driven by IT services, pharmaceuticals, textiles, and a massive domestic consumer market.",
+      "India's economy is driven by IT services, pharmaceuticals, textiles, and a very large domestic consumer market.",
     factors: [
       "Reserve Bank of India interest rate and inflation targeting",
       "Crude oil prices (India is a major oil importer)",
@@ -196,7 +205,7 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "R$",
     country: "Brazil",
     description:
-      "The Brazilian Real is the official currency of Brazil, the largest economy in South America. It was introduced in 1994 as part of an economic stabilization plan that successfully curbed hyperinflation.",
+      "The Brazilian Real is the official currency of Brazil, one of South America's major economies. It was introduced in 1994 as part of an economic stabilization plan that successfully curbed hyperinflation.",
     economy:
       "Brazil has a diverse economy with strong agricultural exports (soybeans, coffee, beef), significant oil reserves, and a growing services sector. The Central Bank of Brazil sets monetary policy.",
     factors: [
@@ -206,7 +215,7 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
       "Global emerging market sentiment",
     ],
     funFact:
-      "Before the Real was introduced in 1994, Brazil had changed its currency eight times in less than a century due to chronic hyperinflation.",
+      "Before the Real was introduced in 1994, Brazil went through a long series of currency changes over the preceding decades as it battled chronic high inflation.",
   },
   KRW: {
     code: "KRW",
@@ -214,7 +223,7 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "₩",
     country: "South Korea",
     description:
-      "The South Korean Won is the official currency of South Korea. It reflects one of Asia's most advanced and technology-driven economies, home to global giants like Samsung, Hyundai, and LG.",
+      "The South Korean Won is the official currency of South Korea. It reflects one of Asia's most advanced and technology-driven economies, home to globally known electronics, automotive and shipbuilding industries.",
     economy:
       "South Korea is a major exporter of semiconductors, automobiles, ships, and electronics. Its economy transformed from war-torn to high-tech in what is often called the 'Miracle on the Han River.'",
     factors: [
@@ -224,7 +233,7 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
       "Trade relations with China, US, and Japan",
     ],
     funFact:
-      "South Korea's economic transformation from one of the poorest countries in the 1960s to a top-15 global economy is one of the most remarkable growth stories in modern history.",
+      "South Korea's transformation from one of the poorest countries in the 1960s into one of the world's most advanced industrial economies is one of the most remarkable growth stories in modern history.",
   },
   SEK: {
     code: "SEK",
@@ -250,17 +259,17 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     symbol: "$",
     country: "Mexico",
     description:
-      "The Mexican Peso is the most traded currency in Latin America and among the most traded emerging market currencies globally. It is the eighth most traded currency in the world by daily turnover.",
+      "The Mexican Peso is one of the most widely traded currencies in Latin America and among emerging markets, and is often used by investors as a liquid gauge of emerging-market sentiment.",
     economy:
       "Mexico has a large, diversified economy closely linked to the United States through trade and manufacturing. It is a major exporter of vehicles, electronics, and oil.",
     factors: [
       "Banxico (Bank of Mexico) interest rate decisions",
-      "US-Mexico trade relations and USMCA",
-      "Oil prices and Pemex production data",
+      "US–Mexico trade relations",
+      "Oil prices and domestic oil production",
       "Remittance flows from the US to Mexico",
     ],
     funFact:
-      "The Mexican peso was the first currency in the world to use the '$' sign, which was later adopted by the United States dollar.",
+      "Silver coins minted in Mexico circulated far beyond its borders for centuries, serving as a trade currency across the Americas and Asia.",
   },
   SGD: {
     code: "SGD",
@@ -270,7 +279,7 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
     description:
       "The Singapore Dollar is the official currency of Singapore, one of Asia's major financial hubs. The Monetary Authority of Singapore (MAS) uniquely manages monetary policy through the exchange rate rather than interest rates.",
     economy:
-      "Singapore has a highly developed free-market economy known for its financial services, electronics manufacturing, and port operations. It consistently ranks among the world's most competitive economies.",
+      "Singapore has a highly developed free-market economy known for its financial services, electronics manufacturing, and port operations.",
     factors: [
       "MAS exchange rate policy adjustments",
       "Global trade flows and port activity",

@@ -13,8 +13,7 @@ test("unreviewed records never show a review date", () => {
   assert.match(editorialReviewLabel(["USD", "EUR"]), /review pending/)
 })
 
-test("eurozone membership count is 21 of 27 (Bulgaria joined 2026-01-01)", () => {
-  const m = CURRENCY_INFO.EUR.description.match(/used by (\d+) of the 27 European Union member states/)
-  assert.ok(m, "eurozone sentence present")
-  assert.equal(m![1], "21")
+test("EUR makes no member-count claim (the Bulgaria error class: counts go stale)", () => {
+  assert.doesNotMatch(CURRENCY_INFO.EUR.description, /\b\d+ of the \d+\b/)
+  assert.match(CURRENCY_INFO.EUR.description, /shared by most European Union member states/)
 })
