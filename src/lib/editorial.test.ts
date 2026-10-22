@@ -2,25 +2,33 @@
 //
 // The explanatory texts in currency-info.ts and metal-info.ts are not
 // refreshed like prices, so they must not depend on facts that go stale.
-// Every claim falls into one of three categories:
 //
+// Standard (Phase 5): a figure, ranking or comparison is published only as a
+// SourcedClaim (src/lib/claims.ts) with source, period (asOf), review date and
+// reviewer. Plain text carries none of them — and removing the number from a
+// ranking ("most held reserve currency") does not make it a non-ranking.
+//
+// When reviewing, every claim falls into one of three categories:
 //   A — factually wrong: rewrite in durable terms; do not research and insert
-//       a "correct" number (it will be wrong again later).
-//   B — possibly true but volatile (rankings, percentages, production or
-//       reserve amounts, period averages, member counts): keep the
-//       information, drop the figure ("one of the leading producers").
+//       a "correct" number without a source.
+//   B — possibly true but volatile or comparative (rankings with or without
+//       numbers, percentages, amounts, averages, member counts): either move
+//       it to a SourcedClaim or rewrite it without the comparison.
 //   C — unsourced or unverifiable (incl. company names, tax claims and
 //       investment calls): remove, and replace with a durable statement.
+// The measure of a block is the user question it answers, not its length.
 //
-// The guard below scans every text field and fails with the record, field,
-// matched phrase and policy rule. ALLOWLIST holds deliberate, justified
-// exceptions only — it is empty today; add an entry only with a reason.
+// The guard below scans every plain text field and fails with the record,
+// field, matched phrase and policy rule. ALLOWLIST holds deliberate, justified
+// exceptions only; each entry states why it is allowed.
 
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import { EDITORIAL_REVIEWED, editorialReviewDate, editorialReviewLabel } from "./editorial.ts"
 import { CURRENCY_INFO } from "./currency-info.ts"
 import { METAL_INFO, GOLD_SILVER_RATIO_INFO } from "./metal-info.ts"
+import { claimProblems } from "./claims.ts"
+import type { SourcedClaim } from "./claims.ts"
 
 interface Rule {
   id: string
@@ -62,6 +70,37 @@ const RULES: Rule[] = [
     why: "no individual company or fund names — they rename, merge and fail",
   },
   { id: "tax-claim", category: "C", pattern: /\b(tax|taxed|exempt|exemption|GST|VAT|IOF)\b/i, why: "tax rules change; no tax claims" },
+  // Phase 5: rankings and comparisons without numbers are still rankings.
+  {
+    id: "numberless-ranking",
+    category: "B",
+    pattern: /\b(most|leading|premier|primary|foremost|dominant|oldest|newest|poorest|richest|deepest|strongest|weakest|highest|lowest)\b/i,
+    why: "a ranking without a number is still a ranking; source it as a SourcedClaim or rewrite without the comparison",
+  },
+  {
+    id: "priority-claim",
+    category: "B",
+    pattern: /\b(first (country|currency|nation|to)|pioneer\w*|unique(ly)?)\b/i,
+    why: "'first'/'unique' claims need a source; rewrite or move to a SourcedClaim",
+  },
+  {
+    id: "primacy",
+    category: "B",
+    pattern: /\bthe (centre|center|anchor|hub)\b/i,
+    why: "'the centre / the anchor' asserts primacy; use 'a centre' or source it",
+  },
+  {
+    id: "comparison",
+    category: "B",
+    pattern: /\b(more|less|smaller|larger|bigger|higher|lower|cheaper|better|worse)\b[^.]{0,40}?(?<!rather )\bthan\b/i,
+    why: "comparisons need a source; rewrite or move to a SourcedClaim",
+  },
+  {
+    id: "unsourced-figure",
+    category: "B",
+    pattern: /\d/,
+    why: "figures are published only as SourcedClaims (source, asOf, reviewedOn, reviewedBy)",
+  },
   {
     id: "investment-call",
     category: "C",
@@ -70,8 +109,23 @@ const RULES: Rule[] = [
   },
 ]
 
-// [record.field, rule id, reason]. Empty on purpose.
-const ALLOWLIST: Array<[string, string, string]> = []
+// [record.field, rule id, reason]. Every entry is a known, listed exception.
+const PENDING_SOURCE = "kept and flagged in the Phase 5 review: needs a SourcedClaim (source, asOf, reviewer) — owner decides"
+const HISTORICAL_DATE = "fixed historical date, not volatile — flagged in the Phase 5 review as still needing a source; owner decides"
+const ALLOWLIST: Array<[string, string, string]> = [
+  ["METAL_INFO.XAG.description", "comparison", `silver more volatile than / more growth-sensitive than gold — ${PENDING_SOURCE}`],
+  ["METAL_INFO.XAG.factors[1]", "comparison", `silver demand more growth-sensitive than gold — ${PENDING_SOURCE}`],
+  ["METAL_INFO.XAG.funFact", "numberless-ranking", "physical property of silver (highest electrical conductivity of any metal); does not change over time"],
+  ["CURRENCY_INFO.EUR.funFact", "unsourced-figure", `1999 / 2002 euro introduction — ${HISTORICAL_DATE}`],
+  ["CURRENCY_INFO.CHF.funFact", "unsourced-figure", `1934 banking act — ${HISTORICAL_DATE}`],
+  ["CURRENCY_INFO.TRY.funFact", "unsourced-figure", `2005 redenomination (1,000,000 → 1) — ${HISTORICAL_DATE}`],
+  ["CURRENCY_INFO.CNY.description", "unsourced-figure", `2016 SDR inclusion — ${HISTORICAL_DATE}`],
+  ["CURRENCY_INFO.INR.funFact", "unsourced-figure", `2010 rupee symbol — ${HISTORICAL_DATE}`],
+  ["CURRENCY_INFO.BRL.description", "unsourced-figure", `1994 Real Plan — ${HISTORICAL_DATE}`],
+  ["CURRENCY_INFO.BRL.funFact", "unsourced-figure", `1994 Real Plan — ${HISTORICAL_DATE}`],
+  ["CURRENCY_INFO.SEK.funFact", "unsourced-figure", `1668 Riksbank founding — ${HISTORICAL_DATE}`],
+  ["GOLD_SILVER_RATIO_INFO.funFact", "unsourced-figure", `1792 Coinage Act 15:1 — ${HISTORICAL_DATE}`],
+]
 
 function editorialFields(): Array<{ where: string; text: string }> {
   const out: Array<{ where: string; text: string }> = []
@@ -145,6 +199,11 @@ test("editorial guard catches each rule (self-test)", () => {
     "company-name": "Northvolt's factory",
     "tax-claim": "exempt from the IOF",
     "investment-call": "silver is historically cheap",
+    "numberless-ranking": "the dollar is the most held reserve currency",
+    "priority-claim": "Australia was the first country to adopt polymer notes",
+    primacy: "London is the centre of the gold market",
+    comparison: "silver is more volatile than gold",
+    "unsourced-figure": "introduced in 1999",
   }
   for (const rule of RULES) {
     const v = findPolicyViolations([{ where: `sample.${rule.id}`, text: samples[rule.id] }])
@@ -175,5 +234,48 @@ test("review dates are real ISO dates, not in the future, and drive the page lab
 
 test("EUR makes no member-count claim (the Bulgaria error class: counts go stale)", () => {
   assert.doesNotMatch(CURRENCY_INFO.EUR.description, /\b\d+ of the \d+\b/)
-  assert.match(CURRENCY_INFO.EUR.description, /shared by most European Union member states/)
+  assert.match(CURRENCY_INFO.EUR.description, /shared by many European Union member states/)
+})
+
+// --- Phase 5: source-backed claims ------------------------------------------
+
+function allClaims(): Array<{ where: string; claim: SourcedClaim }> {
+  const out: Array<{ where: string; claim: SourcedClaim }> = []
+  for (const [code, c] of Object.entries(CURRENCY_INFO)) (c.claims ?? []).forEach((claim, i) => out.push({ where: `CURRENCY_INFO.${code}.claims[${i}]`, claim }))
+  for (const [code, m] of Object.entries(METAL_INFO)) (m.claims ?? []).forEach((claim, i) => out.push({ where: `METAL_INFO.${code}.claims[${i}]`, claim }))
+  return out
+}
+
+test("sourced claims: every published claim has source, period, review date and reviewer", () => {
+  const claims = allClaims()
+  const problems = claims.flatMap(({ where, claim }) => claimProblems(claim).map((p) => `${where}: ${p}`))
+  console.log(`    sourced claims in content: ${claims.length}`)
+  assert.deepEqual(problems, [])
+})
+
+test("sourced claims: validator requires all four fields (self-test)", () => {
+  const ok: SourcedClaim = {
+    text: "Example figure",
+    source: { name: "Example statistics office", url: "https://example.org/report" },
+    asOf: "2025-Q4",
+    reviewedOn: "2026-10-22",
+    reviewedBy: "site editor",
+  }
+  assert.deepEqual(claimProblems(ok, "2026-10-22"), [])
+  assert.match(claimProblems({ ...ok, source: { name: "", url: "" } }, "2026-10-22").join(), /source.name.*source.url/)
+  assert.match(claimProblems({ ...ok, asOf: "recently" }, "2026-10-22").join(), /asOf/)
+  assert.match(claimProblems({ ...ok, reviewedOn: "2027-01-01" }, "2026-10-22").join(), /future/)
+  assert.match(claimProblems({ ...ok, reviewedBy: " " }, "2026-10-22").join(), /reviewedBy/)
+})
+
+test("review log: every shown review date is backed by a log entry for that record", async () => {
+  const { EDITORIAL_REVIEW_LOG } = await import("./editorial.ts")
+  for (const [key, date] of Object.entries(EDITORIAL_REVIEWED)) {
+    if (date === null) continue
+    const covered = EDITORIAL_REVIEW_LOG.some(
+      (e) => e.date === date && (e.records === "all" || e.records.includes(key))
+    )
+    assert.ok(covered, `${key}: shown review date ${date} has no matching log entry`)
+  }
+  for (const e of EDITORIAL_REVIEW_LOG) assert.ok(e.checked.length > 10 && e.reviewedBy.length > 3, `log entry ${e.date} is incomplete`)
 })

@@ -7,8 +7,8 @@
 // after the record's factual claims have actually been checked. Do not fill
 // these in to make the page look current.
 
-// 2026-10-22: full sweep of all records against the durable-wording policy
-// (Phase 4); src/lib/editorial.test.ts guards the result.
+// 2026-10-22: full sweep of all records (Phases 4 and 5, see
+// EDITORIAL_REVIEW_LOG); src/lib/editorial.test.ts guards the result.
 export const EDITORIAL_REVIEWED: Record<string, string | null> = {
   USD: "2026-10-22",
   EUR: "2026-10-22",
@@ -29,6 +29,40 @@ export const EDITORIAL_REVIEWED: Record<string, string | null> = {
   XAG: "2026-10-22",
   GOLD_SILVER_RATIO: "2026-10-22",
 }
+
+// What was checked, when and by whom. EDITORIAL_REVIEWED keeps only the date
+// shown on the page; this log says what that date covers. Dates are entered
+// by hand when a review happens — never derived from the build date.
+export interface ReviewLogEntry {
+  date: string // YYYY-MM-DD
+  records: string[] | "all"
+  checked: string // which claims / which rule
+  reviewedBy: string
+}
+
+const AI_REVIEW = "Claude Code (AI assistant) at the site owner's request — not an independent fact-check"
+
+export const EDITORIAL_REVIEW_LOG: ReviewLogEntry[] = [
+  {
+    date: "2026-10-18",
+    records: ["EUR"],
+    checked: "eurozone member count (Bulgaria joined 2026-01-01); later removed as a volatile count",
+    reviewedBy: AI_REVIEW,
+  },
+  {
+    date: "2026-10-22",
+    records: "all",
+    checked: "Phase 4: figures that go stale, numeric rankings, company/fund names, tax claims, investment calls removed",
+    reviewedBy: AI_REVIEW,
+  },
+  {
+    date: "2026-10-22",
+    records: "all",
+    checked:
+      "Phase 5: rankings and comparisons without numbers rewritten; silver-vs-gold comparisons and fixed historical dates kept and flagged as needing a SourcedClaim",
+    reviewedBy: AI_REVIEW,
+  },
+]
 
 // For a page that shows several records: the oldest review date, or null if
 // any of them is unreviewed.
