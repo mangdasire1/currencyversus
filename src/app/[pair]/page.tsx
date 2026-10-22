@@ -90,7 +90,7 @@ export async function generateMetadata({
     return {
       title: "Gold/Silver Ratio Today — Compare Gold and Silver Prices | CurrencyVersus",
       description:
-        "Track the gold/silver ratio from frequently updated spot prices. Learn what the ratio means, its historical range, and how investors use it to compare the relative value of gold and silver.",
+        "Track the gold/silver ratio from current gold and silver prices. Learn what the ratio measures and how it behaves in different market conditions.",
       alternates: { canonical: "https://currencyversus.com/gold-vs-silver/" },
     }
   }
@@ -99,13 +99,13 @@ export async function generateMetadata({
   const metalName = metal === "XAU" ? "Gold" : "Silver"
   return {
     title: `${metalName} Price in ${target} Today — Convert ${metalName} to ${target} | CurrencyVersus`,
-    description: `${metalName} spot price in ${target} per ounce and per gram, from a frequently updated spot feed${target === "USD" ? "" : " converted at the daily ECB reference rate"}. Free precious metals converter.`,
+    description: `${metalName} price in ${target} per ounce and per gram, from gold-api.com${target === "USD" ? "" : " converted at the daily ECB reference rate"}. Free precious metals converter.`,
     alternates: {
       canonical: `https://currencyversus.com/${metal === "XAU" ? "gold" : "silver"}-vs-${target.toLowerCase()}/`,
     },
     openGraph: {
       title: `${metalName} Price in ${target} — CurrencyVersus`,
-      description: `${metalName} spot price in ${target} per ounce and per gram.`,
+      description: `${metalName} price in ${target} per ounce and per gram.`,
       url: `https://currencyversus.com/${metal === "XAU" ? "gold" : "silver"}-vs-${target.toLowerCase()}`,
       images: [{ url: "https://currencyversus.com/logo.png", width: 1200, height: 630, alt: `${metalName} Price in ${target}` }],
     },

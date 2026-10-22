@@ -6,7 +6,7 @@ export function getWebApplicationSchema() {
     url: "https://currencyversus.com",
     applicationCategory: "FinanceApplication",
     description:
-      "Compare 15 major world currencies including USD, EUR, GBP, TRY, and more using the latest published European Central Bank reference rates, updated each business day, plus gold and silver spot prices. Historical trends span up to 10 years.",
+      "Compare 15 major world currencies including USD, EUR, GBP, TRY, and more using the latest published European Central Bank reference rates, updated each business day, plus gold and silver prices. Historical trends span up to 10 years.",
     offers: {
       "@type": "Offer",
       price: "0",
@@ -50,7 +50,7 @@ export function getFAQItems(
     },
     {
       question: `Where does CurrencyVersus get its ${base}/${target} data?`,
-      answer: `CurrencyVersus sources all exchange rate data from the Frankfurter API, which provides European Central Bank (ECB) reference rates. The ECB publishes these once per business day, around 16:00 CET; they are not live market quotes. Gold and silver prices come separately from gold-api.com and update more frequently.`,
+      answer: `CurrencyVersus sources all exchange rate data from the Frankfurter API, which provides European Central Bank (ECB) reference rates. The ECB publishes these once per business day, around 16:00 CET; they are not live market quotes. Gold and silver prices come separately from gold-api.com and update more often than the daily ECB reference rates.`,
     },
     {
       question: `Can I view historical ${base} to ${target} exchange rates?`,
