@@ -19,7 +19,7 @@ export interface MetalInfo {
   description: string
   factors: string[]
   funFact: string
-  localContext: Record<string, string>
+  localContext: Record<string, string> // currencies without a specific context are left out
   claims?: SourcedClaim[] // figures/rankings, only with source + period + review
 }
 
@@ -68,8 +68,6 @@ export const METAL_INFO: Record<"XAU" | "XAG", MetalInfo> = {
         "South Korean investors can hold gold through bank gold accounts, exchange-traded products and the Korea Exchange gold market. The country's large electronics industry also uses gold in components, linking local industry to global gold demand.",
       SEK:
         "Swedish investors can hold gold through physical bullion and exchange-traded products, and Sweden's central bank keeps gold among its reserves. When the krona weakens, gold priced in SEK tends to rise, which is why some Swedish savers treat gold as a currency hedge.",
-      MXN:
-        "Mexico mines gold as well as silver, often from the same deposits. The MXN gold price reflects Mexico's position as a commodity-exporting economy and the dynamics of the USD/MXN exchange rate.",
       SGD:
         "Singapore is one of Asia's main precious-metals trading and storage hubs, and investors across Southeast Asia use its vaults to hold physical gold. The SGD gold price combines international gold prices with the Singapore dollar's managed exchange rate.",
     },
@@ -81,10 +79,10 @@ export const METAL_INFO: Record<"XAU" | "XAG", MetalInfo> = {
     symbol: "Ag",
     icon: "🥈",
     description:
-      "Silver bridges the worlds of precious metals and industrial commodities. While it shares gold's monetary heritage as a store of value and safe haven, a large share of silver demand comes from industrial applications — solar panels, electronics, electric vehicles, medical devices, and more. This dual role makes silver more volatile than gold and more sensitive to economic growth cycles and the global energy transition.",
+      "Silver bridges the worlds of precious metals and industrial commodities. While it shares gold's monetary heritage as a store of value and safe haven, a large share of silver demand comes from industrial applications — solar panels, electronics, electric vehicles, medical devices, and more. Because a large part of its demand comes from industry, silver's price responds to manufacturing activity and the pace of the energy transition as well as to investment demand.",
     factors: [
       "Solar panel manufacturing — silver paste is used in photovoltaic cells, so growth in solar capacity adds to demand",
-      "Industrial production cycles — silver demand is more sensitive to economic growth than gold",
+      "Industrial production cycles — much of silver demand comes from manufacturing, so the price also reacts to factory activity, not only to investment demand",
       "Gold prices — silver often moves with gold, but with larger swings in both directions",
       "US Dollar strength and real interest rates — same inverse relationship as gold",
       "Mining supply — much of the world's silver is produced as a by-product of copper, lead, and zinc mining, so supply responds slowly to silver prices",
@@ -101,8 +99,6 @@ export const METAL_INFO: Record<"XAU" | "XAG", MetalInfo> = {
         "London is a central hub of the global over-the-counter silver market, and the London benchmark silver price is a widely used reference for contracts around the world.",
       JPY:
         "Japan's electronics and components industries use silver in contacts, capacitors and conductive pastes, so Japanese industrial activity is one of the factors behind silver demand.",
-      CHF:
-        "Swiss precision engineering and medical technology make use of silver, including for its antibacterial properties. As with gold, silver priced in francs also reflects the Swiss franc's role as a safe-haven currency.",
       CAD:
         "Canada mines silver mostly alongside base metals and gold, and many mining companies with silver operations are listed in Canada. The CAD silver price therefore links global silver prices with Canada's resource sector.",
       AUD:
@@ -113,8 +109,6 @@ export const METAL_INFO: Record<"XAU" | "XAG", MetalInfo> = {
         "China is a major source of silver demand, largely because of its very large solar-panel manufacturing industry, which makes Chinese industrial activity one of the key drivers of the silver market.",
       INR:
         "India imports much of the silver it uses for jewellery, silverware, religious items and industry. Silver buying typically rises around Diwali and the wedding season.",
-      BRL:
-        "In Brazil, silver is used in industry and held by investors as a hedge. The BRL silver price reflects both global metal prices and the real's exchange-rate swings against the dollar.",
       KRW:
         "South Korea's semiconductor and electronics industries use silver in components, linking Korean manufacturing activity to global silver demand.",
       SEK:

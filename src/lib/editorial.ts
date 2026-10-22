@@ -62,6 +62,13 @@ export const EDITORIAL_REVIEW_LOG: ReviewLogEntry[] = [
       "Phase 5: rankings and comparisons without numbers rewritten; silver-vs-gold comparisons and fixed historical dates kept and flagged as needing a SourcedClaim",
     reviewedBy: AI_REVIEW,
   },
+  {
+    date: "2026-10-22",
+    records: ["CAD", "KRW", "SGD", "XAU", "XAG"],
+    checked:
+      "Phase 6 (owner's decisions): removed 6 blocks without a user question (CAD/KRW/SGD fun facts, XAU-MXN, XAG-CHF, XAG-BRL local context); silver-vs-gold comparisons replaced by the demand mechanism; fixed dates reclassified as historical constants",
+    reviewedBy: AI_REVIEW,
+  },
 ]
 
 // For a page that shows several records: the oldest review date, or null if

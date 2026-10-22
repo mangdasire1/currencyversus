@@ -18,7 +18,7 @@ export interface CurrencyInfo {
   description: string
   economy: string
   factors: string[]
-  funFact: string
+  funFact?: string // omitted when it would only repeat another block
   claims?: SourcedClaim[] // figures/rankings, only with source + period + review
 }
 
@@ -128,8 +128,6 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
       "US–Canada trade relations",
       "Canadian housing market and employment data",
     ],
-    funFact:
-      "Canada's one-dollar coin features a common loon, which is why the Canadian dollar is nicknamed the 'Loonie.'",
   },
   AUD: {
     code: "AUD",
@@ -236,8 +234,6 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
       "North-South Korea geopolitical tensions",
       "Trade relations with China, US, and Japan",
     ],
-    funFact:
-      "Within a few decades after the Korean War, South Korea grew from a low-income, war-damaged economy into an advanced industrial economy.",
   },
   SEK: {
     code: "SEK",
@@ -290,7 +286,5 @@ export const CURRENCY_INFO: Record<string, CurrencyInfo> = {
       "Regional Asian economic conditions",
       "Financial services sector performance",
     ],
-    funFact:
-      "Singapore manages its monetary policy through the exchange rate rather than interest rates — the MAS adjusts the Singapore dollar's trading band against a basket of currencies.",
   },
 }

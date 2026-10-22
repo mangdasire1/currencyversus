@@ -15,6 +15,7 @@ import type { MetalCode } from "@/lib/metals"
 import type { ExchangeRate } from "@/lib/types"
 import { formatUtcTime } from "@/lib/utils"
 import { editorialReviewLabel } from "@/lib/editorial"
+import { localContextText } from "@/lib/editorial-sections"
 
 const ShaderBackground = dynamic(
   () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
@@ -89,7 +90,8 @@ export function MetalPageClient({
     { label: "10 oz", grams: null },
   ]
 
-  const localCtx = info.localContext[target]
+  // null when this metal has no context for the currency: no section, no heading
+  const localCtx = localContextText(info, target)
 
   return (
     <>

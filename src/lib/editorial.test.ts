@@ -110,21 +110,30 @@ const RULES: Rule[] = [
 ]
 
 // [record.field, rule id, reason]. Every entry is a known, listed exception.
-const PENDING_SOURCE = "kept and flagged in the Phase 5 review: needs a SourcedClaim (source, asOf, reviewer) — owner decides"
-const HISTORICAL_DATE = "fixed historical date, not volatile — flagged in the Phase 5 review as still needing a source; owner decides"
-const ALLOWLIST: Array<[string, string, string]> = [
-  ["METAL_INFO.XAG.description", "comparison", `silver more volatile than / more growth-sensitive than gold — ${PENDING_SOURCE}`],
-  ["METAL_INFO.XAG.factors[1]", "comparison", `silver demand more growth-sensitive than gold — ${PENDING_SOURCE}`],
-  ["METAL_INFO.XAG.funFact", "numberless-ranking", "physical property of silver (highest electrical conductivity of any metal); does not change over time"],
-  ["CURRENCY_INFO.EUR.funFact", "unsourced-figure", `1999 / 2002 euro introduction — ${HISTORICAL_DATE}`],
-  ["CURRENCY_INFO.CHF.funFact", "unsourced-figure", `1934 banking act — ${HISTORICAL_DATE}`],
-  ["CURRENCY_INFO.TRY.funFact", "unsourced-figure", `2005 redenomination (1,000,000 → 1) — ${HISTORICAL_DATE}`],
-  ["CURRENCY_INFO.CNY.description", "unsourced-figure", `2016 SDR inclusion — ${HISTORICAL_DATE}`],
-  ["CURRENCY_INFO.INR.funFact", "unsourced-figure", `2010 rupee symbol — ${HISTORICAL_DATE}`],
-  ["CURRENCY_INFO.BRL.description", "unsourced-figure", `1994 Real Plan — ${HISTORICAL_DATE}`],
-  ["CURRENCY_INFO.BRL.funFact", "unsourced-figure", `1994 Real Plan — ${HISTORICAL_DATE}`],
-  ["CURRENCY_INFO.SEK.funFact", "unsourced-figure", `1668 Riksbank founding — ${HISTORICAL_DATE}`],
-  ["GOLD_SILVER_RATIO_INFO.funFact", "unsourced-figure", `1792 Coinage Act 15:1 — ${HISTORICAL_DATE}`],
+// Every entry is a known, listed exception with an explicit category:
+//   historical-constant — a fixed date or legal ratio from the past; it does
+//                         not go stale (not a volatile statistic awaiting a source)
+//   physical-property   — a property of matter; does not change over time
+//   pending-source      — a claim kept until a SourcedClaim exists (none today)
+type AllowCategory = "historical-constant" | "physical-property" | "pending-source"
+interface AllowEntry {
+  where: string
+  rule: string
+  category: AllowCategory
+  reason: string
+}
+const HISTORICAL = "historical constant: a fixed date/ratio from the past that does not go stale"
+const ALLOWLIST: AllowEntry[] = [
+  { where: "METAL_INFO.XAG.funFact", rule: "numberless-ranking", category: "physical-property", reason: "silver has the highest electrical conductivity of any metal — a property of the element, not a market ranking" },
+  { where: "CURRENCY_INFO.EUR.funFact", rule: "unsourced-figure", category: "historical-constant", reason: `1999 / 2002 euro introduction — ${HISTORICAL}` },
+  { where: "CURRENCY_INFO.CHF.funFact", rule: "unsourced-figure", category: "historical-constant", reason: `1934 banking law — ${HISTORICAL}` },
+  { where: "CURRENCY_INFO.TRY.funFact", rule: "unsourced-figure", category: "historical-constant", reason: `2005 redenomination (1,000,000 → 1) — ${HISTORICAL}` },
+  { where: "CURRENCY_INFO.CNY.description", rule: "unsourced-figure", category: "historical-constant", reason: `2016 SDR inclusion — ${HISTORICAL}` },
+  { where: "CURRENCY_INFO.INR.funFact", rule: "unsourced-figure", category: "historical-constant", reason: `2010 rupee symbol — ${HISTORICAL}` },
+  { where: "CURRENCY_INFO.BRL.description", rule: "unsourced-figure", category: "historical-constant", reason: `1994 Real Plan — ${HISTORICAL}` },
+  { where: "CURRENCY_INFO.BRL.funFact", rule: "unsourced-figure", category: "historical-constant", reason: `1994 Real Plan — ${HISTORICAL}` },
+  { where: "CURRENCY_INFO.SEK.funFact", rule: "unsourced-figure", category: "historical-constant", reason: `1668 Riksbank founding — ${HISTORICAL}` },
+  { where: "GOLD_SILVER_RATIO_INFO.funFact", rule: "unsourced-figure", category: "historical-constant", reason: `1792 Coinage Act, 15:1 — ${HISTORICAL}` },
 ]
 
 function editorialFields(): Array<{ where: string; text: string }> {
@@ -133,7 +142,7 @@ function editorialFields(): Array<{ where: string; text: string }> {
     out.push({ where: `CURRENCY_INFO.${code}.description`, text: c.description })
     out.push({ where: `CURRENCY_INFO.${code}.economy`, text: c.economy })
     c.factors.forEach((f, i) => out.push({ where: `CURRENCY_INFO.${code}.factors[${i}]`, text: f }))
-    out.push({ where: `CURRENCY_INFO.${code}.funFact`, text: c.funFact })
+    if (c.funFact !== undefined) out.push({ where: `CURRENCY_INFO.${code}.funFact`, text: c.funFact })
   }
   for (const [code, m] of Object.entries(METAL_INFO)) {
     out.push({ where: `METAL_INFO.${code}.description`, text: m.description })
@@ -158,7 +167,7 @@ function findPolicyViolations(fields = editorialFields()): string[] {
     for (const rule of RULES) {
       const m = text.match(rule.pattern)
       if (!m) continue
-      if (ALLOWLIST.some(([w, id]) => w === where && id === rule.id)) continue
+      if (ALLOWLIST.some((a) => a.where === where && a.rule === rule.id)) continue
       const at = m.index ?? 0
       const context = text.slice(Math.max(0, at - 40), at + m[0].length + 40)
       violations.push(`${where}: "${m[0]}" — policy ${rule.category} (${rule.id}): ${rule.why}\n      …${context}…`)
@@ -176,12 +185,15 @@ test("editorial guard: no volatile figures, rankings, company names, tax or inve
 
 test("editorial guard: every allowlist entry still refers to a real violation", () => {
   // Keeps the allowlist from silently accumulating stale exceptions.
-  for (const [where, id, reason] of ALLOWLIST) {
+  for (const { where, rule: id, category, reason } of ALLOWLIST) {
     assert.ok(reason.length > 10, `${where}/${id}: allowlist entry needs a reason`)
+    assert.ok(["historical-constant", "physical-property", "pending-source"].includes(category), `${where}: unknown category ${category}`)
     const field = editorialFields().find((f) => f.where === where)
     const rule = RULES.find((r) => r.id === id)
     assert.ok(field && rule && rule.pattern.test(field.text), `${where}/${id}: allowlist entry no longer matches anything`)
   }
+  const byCategory = ALLOWLIST.reduce<Record<string, number>>((m, a) => ((m[a.category] = (m[a.category] ?? 0) + 1), m), {})
+  console.log(`    allowlist: ${ALLOWLIST.length} entries — ${Object.entries(byCategory).map(([k, n]) => `${k} ${n}`).join(", ")}`)
 })
 
 test("editorial guard catches each rule (self-test)", () => {

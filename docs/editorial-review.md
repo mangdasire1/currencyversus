@@ -35,7 +35,7 @@ decision pending with the site owner; nothing was deleted.
 | CAD.description | Why is the Canadian dollar called the Loonie and why does it follow oil? |
 | CAD.economy | What does Canada export and how independent is its central bank? |
 | CAD.factors | What usually moves the Canadian dollar? |
-| CAD.funFact | **no clear question** — repeats the "Loonie" explanation already in the description |
+| CAD.funFact | *removed in Phase 6* (repeated the description) |
 | AUD.description | Why is the Australian dollar called a commodity currency? |
 | AUD.economy | What does Australia export and to whom? |
 | AUD.factors | What usually moves the Australian dollar? |
@@ -59,7 +59,7 @@ decision pending with the site owner; nothing was deleted.
 | KRW.description | What kind of economy stands behind the won? |
 | KRW.economy | What does South Korea export? |
 | KRW.factors | What usually moves the won? |
-| KRW.funFact | **no clear question** — repeats the growth story already in the economy block ("Miracle on the Han River") |
+| KRW.funFact | *removed in Phase 6* (repeated the economy block) |
 | SEK.description | Why does Sweden, an EU member, not use the euro? |
 | SEK.economy | What does Sweden export? |
 | SEK.factors | What usually moves the krona? |
@@ -71,7 +71,7 @@ decision pending with the site owner; nothing was deleted.
 | SGD.description | How does Singapore run monetary policy (exchange-rate band)? |
 | SGD.economy | What is Singapore's economy built on? |
 | SGD.factors | What usually moves the Singapore dollar? |
-| SGD.funFact | **no clear question** — repeats the exchange-rate policy already in the description |
+| SGD.funFact | *removed in Phase 6* (repeated the description) |
 
 ## Metals (`src/lib/metal-info.ts`)
 
@@ -80,7 +80,7 @@ decision pending with the site owner; nothing was deleted.
 | XAU.description | Why is gold held as a store of value, and what roles does it play today? |
 | XAU.factors | What usually moves the gold price? |
 | XAU.funFact | Why is old gold still around (durability, recycling)? |
-| XAG.description | How is silver different from gold (precious and industrial)? |
+| XAG.description | How is silver different from gold, and why does its price react to manufacturing activity? |
 | XAG.factors | What usually moves the silver price? |
 | XAG.funFact | Why is silver hard to replace in electronics? |
 | XAU.localContext.USD | Why is the gold price quoted in dollars, and how does the dollar affect it? |
@@ -96,19 +96,19 @@ decision pending with the site owner; nothing was deleted.
 | XAU.localContext.BRL | Why can the BRL gold price move when the dollar price does not? |
 | XAU.localContext.KRW | How can Korean investors hold gold? |
 | XAU.localContext.SEK | How can Swedish investors hold gold, and why use it as a krona hedge? |
-| XAU.localContext.MXN | **no clear question** — "Mexico mines gold too" says little about the MXN gold price |
+| XAU.localContext.MXN | *removed in Phase 6* (generic); the page shows no local-context section |
 | XAU.localContext.SGD | Why is Singapore relevant for physical gold storage? |
 | XAG.localContext.USD | Why is silver quoted in dollars and why can it move sharply? |
 | XAG.localContext.EUR | Which European industries create silver demand? |
 | XAG.localContext.GBP | What role does London play in silver pricing? |
 | XAG.localContext.JPY | Which Japanese industries use silver? |
-| XAG.localContext.CHF | **no clear question** — generic; adds little about the CHF silver price |
+| XAG.localContext.CHF | *removed in Phase 6* (generic); the page shows no local-context section |
 | XAG.localContext.CAD | How is Canada's mining sector linked to silver? |
 | XAG.localContext.AUD | Where does Australia's silver come from? |
 | XAG.localContext.TRY | Why is silver popular with Turkish retail savers? |
 | XAG.localContext.CNY | Why does Chinese solar manufacturing matter for silver? |
 | XAG.localContext.INR | What does India use silver for, and when does buying rise? |
-| XAG.localContext.BRL | **no clear question** — generic sentence that would fit any currency |
+| XAG.localContext.BRL | *removed in Phase 6* (generic); the page shows no local-context section |
 | XAG.localContext.KRW | Which Korean industries use silver? |
 | XAG.localContext.SEK | Why could Sweden's electrification matter for silver demand? |
 | XAG.localContext.MXN | Why is silver especially relevant to Mexico's economy? |
@@ -123,19 +123,18 @@ decision pending with the site owner; nothing was deleted.
 | GOLD_SILVER_RATIO_INFO.interpretation | What does a rising or falling ratio indicate — and what does it not say? |
 | GOLD_SILVER_RATIO_INFO.funFact | When was the ratio fixed by law in the US? |
 
-## Blocks with no clear question (6) — decision pending
+## Phase 6 (2026-10-22) — owner's decisions applied
 
-CAD.funFact, KRW.funFact, SGD.funFact (each repeats another block on the same page),
-XAU.localContext.MXN, XAG.localContext.CHF, XAG.localContext.BRL (generic, little
-specific to that currency's metal price).
-
-## Flagged, kept, needing a source (SourcedClaim) — decision pending
-
-- XAG.description, XAG.factors[1]: silver "more volatile than" / "more sensitive to
-  economic growth than" gold.
-- Fixed historical figures: EUR.funFact (1999/2002), CHF.funFact (1934),
-  TRY.funFact (2005, 1,000,000 → 1), CNY.description (2016), INR.funFact (2010),
-  BRL.description + BRL.funFact (1994), SEK.funFact (1668),
-  GOLD_SILVER_RATIO_INFO.funFact (1792, 15:1).
-- Allowed as a physical property (not volatile): XAG.funFact "highest electrical
-  conductivity of any metal".
+- **Removed** the 6 blocks without a clear question: CAD.funFact, KRW.funFact,
+  SGD.funFact, XAU.localContext.MXN, XAG.localContext.CHF, XAG.localContext.BRL.
+  Pages for those pairs render no empty card or heading
+  (`src/lib/editorial-sections.ts`, tested).
+- **Silver comparisons replaced by the mechanism**: XAG.description and
+  XAG.factors[1] no longer say "more volatile / more sensitive than gold"; they
+  explain that a large part of silver demand comes from industry, so the price
+  reacts to manufacturing activity as well as to investment demand.
+- **Allowlist reclassified** (`src/lib/editorial.test.ts`): 10 entries — 9
+  `historical-constant` (fixed dates and the 1792 15:1 legal ratio; they do not
+  go stale) and 1 `physical-property` (silver's electrical conductivity).
+  `pending-source`: none.
+- "major" stays allowed: it states group membership, not a ranking.

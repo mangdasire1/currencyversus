@@ -16,6 +16,7 @@ import type { PeriodHistory } from "@/lib/history"
 import { formatUtcTime } from "@/lib/utils"
 import { getFAQItems } from "@/lib/structured-data"
 import { editorialReviewLabel } from "@/lib/editorial"
+import { funFactCards } from "@/lib/editorial-sections"
 import { navigateSelection, navigateSwap, pairPath } from "@/lib/routes"
 import type { PairNavigation } from "@/lib/routes"
 
@@ -317,22 +318,25 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
                     </div>
                   </section>
 
-                  {/* C: Did You Know? */}
-                  <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[baseInfo, targetInfo].map((info) => (
-                      <div
-                        key={info.code}
-                        className="glass-card p-5 flex flex-col gap-3 border border-[#6366f1]/20 bg-[#6366f1]/5"
-                      >
-                        <p className="text-xs font-mono uppercase tracking-wider text-[#6366f1]">
-                          💡 Did You Know? — {info.code}
-                        </p>
-                        <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
-                          {info.funFact}
-                        </p>
-                      </div>
-                    ))}
-                  </section>
+                  {/* C: Did You Know? — only for currencies that have a fun fact;
+                      no section at all when neither has one */}
+                  {funFactCards([baseInfo, targetInfo]).length > 0 && (
+                    <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {funFactCards([baseInfo, targetInfo]).map((card) => (
+                        <div
+                          key={card.code}
+                          className="glass-card p-5 flex flex-col gap-3 border border-[#6366f1]/20 bg-[#6366f1]/5"
+                        >
+                          <p className="text-xs font-mono uppercase tracking-wider text-[#6366f1]">
+                            💡 Did You Know? — {card.code}
+                          </p>
+                          <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
+                            {card.text}
+                          </p>
+                        </div>
+                      ))}
+                    </section>
+                  )}
 
                   {/* D: Economy Overview */}
                   <section className="glass-card p-6 flex flex-col gap-4">
