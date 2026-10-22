@@ -194,3 +194,17 @@ test("real run: 200 → one POST; 202 → not a failure; 429 → stop, not a fai
     assert.equal(res.exitCode, exit, `status ${status}`)
   }
 })
+
+test("selection: yesterday's lastmod is included (late deploy), two days ago is not", () => {
+  const entries = [
+    { loc: "https://currencyversus.com/today/", lastmod: "2026-10-23" },
+    { loc: "https://currencyversus.com/yesterday/", lastmod: "2026-10-22" },
+    { loc: "https://currencyversus.com/two-days-ago/", lastmod: "2026-10-21" },
+  ]
+  const s = selectChangedUrls(entries, "2026-10-23", HOST)
+  assert.deepEqual(s.urls, ["https://currencyversus.com/today/", "https://currencyversus.com/yesterday/"])
+  // month and year boundaries
+  assert.deepEqual(selectChangedUrls([{ loc: "https://currencyversus.com/a/", lastmod: "2026-10-31" }], "2026-11-01", HOST).urls, ["https://currencyversus.com/a/"])
+  assert.deepEqual(selectChangedUrls([{ loc: "https://currencyversus.com/a/", lastmod: "2025-12-31" }], "2026-01-01", HOST).urls, ["https://currencyversus.com/a/"])
+  console.log(`    lastmod 2026-10-23 → selected, 2026-10-22 → selected, 2026-10-21 → not selected`)
+})

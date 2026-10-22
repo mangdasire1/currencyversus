@@ -10,9 +10,12 @@
 //   key: 8–128 chars [a-zA-Z0-9-]; key file at https://<host>/<key>.txt
 //
 // Which URLs: the live sitemap already knows. Since Phase 5 a URL's
-// <lastmod> moves to today only when its visible content changed, and is
-// omitted when no reliable date exists. So: submit URLs whose live lastmod is
-// today; if none carry lastmod, submit nothing.
+// <lastmod> moves to the build date only when its visible content changed,
+// and is omitted when no reliable date exists. So: submit URLs whose live
+// lastmod is today or yesterday (UTC); if none carry lastmod, submit nothing.
+// Yesterday is included because the monitor runs at a fixed UTC hour: a
+// deploy that goes live after it would otherwise never be notified once the
+// date rolls over. Re-notifying a URL is harmless; missing one is not.
 
 import { checkBuildInfo } from "./freshness.ts"
 import type { BuildInfo } from "./freshness.ts"
@@ -43,20 +46,28 @@ export function parseSitemap(xml: string): SitemapEntry[] {
 }
 
 export interface Selection {
-  urls: string[] // lastmod is today and the URL belongs to host
+  urls: string[] // lastmod is today or yesterday and the URL belongs to host
   withLastmod: number // entries that carry any lastmod
-  foreign: string[] // lastmod today but on another host — never submitted
+  foreign: string[] // recent lastmod but on another host — never submitted
 }
 
 // lastmod may be a date (YYYY-MM-DD) or a W3C datetime; only its date counts.
+// [today, yesterday] as YYYY-MM-DD (UTC calendar days).
+export function recentDays(today: string): [string, string] {
+  const d = new Date(`${today}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - 1)
+  return [today, d.toISOString().slice(0, 10)]
+}
+
 export function selectChangedUrls(entries: SitemapEntry[], today: string, host: string): Selection {
+  const days = recentDays(today)
   const urls: string[] = []
   const foreign: string[] = []
   let withLastmod = 0
   for (const e of entries) {
     if (!e.lastmod) continue
     withLastmod++
-    if (e.lastmod.slice(0, 10) !== today) continue
+    if (!days.includes(e.lastmod.slice(0, 10))) continue
     let urlHost: string | null = null
     try {
       const u = new URL(e.loc)
@@ -125,7 +136,8 @@ export function planSubmission(input: PlanInput): Plan {
     return { action: "skip", reason: "no URL in the live sitemap carries lastmod (dates not yet known) — nothing is submitted" }
   }
   if (selection.urls.length === 0) {
-    return { action: "skip", reason: `no URL has lastmod ${input.today} (no content changed today) — nothing is submitted` }
+    const [today, yesterday] = recentDays(input.today)
+    return { action: "skip", reason: `no URL has lastmod ${today} or ${yesterday} (no recent content change) — nothing is submitted` }
   }
   return {
     action: "submit",
@@ -206,7 +218,7 @@ export async function runIndexNow(o: RunOptions): Promise<RunResult> {
   }
 
   const total = plan.payloads.reduce((n, p) => n + p.urlList.length, 0)
-  o.log(`indexnow: ${total} URL(s) with lastmod ${today}; ${plan.selection.withLastmod} URL(s) in the sitemap carry lastmod`)
+  o.log(`indexnow: ${total} URL(s) with lastmod ${recentDays(today).join(" or ")}; ${plan.selection.withLastmod} URL(s) in the sitemap carry lastmod`)
   if (plan.selection.foreign.length) o.log(`indexnow: ignored ${plan.selection.foreign.length} URL(s) on another host`)
   o.log(`indexnow: first URLs: ${plan.selection.urls.slice(0, 5).join(" ")}`)
 
