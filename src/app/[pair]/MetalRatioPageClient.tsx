@@ -44,15 +44,6 @@ export function MetalRatioPageClient({
   const staleAges = [goldAge, silverAge].filter((a): a is number => a !== null)
   const staleAge = staleAges.length > 0 ? Math.max(...staleAges) : null
 
-  const ratioCategory =
-    ratio === null
-      ? null
-      : ratio > 80
-      ? { label: "High — Silver historically cheap vs Gold", color: "text-amber-400" }
-      : ratio < 50
-      ? { label: "Low — Gold historically cheap vs Silver", color: "text-emerald-400" }
-      : { label: "In historical range (50–80)", color: "text-slate-400" }
-
   return (
     <>
       <ShaderBackground />
@@ -131,11 +122,6 @@ export function MetalRatioPageClient({
               <p className="text-7xl font-bold font-mono text-white">
                 {ratio !== null ? ratio.toFixed(1) : "—"}
               </p>
-              {ratioCategory && (
-                <p className={`text-sm font-mono ${ratioCategory.color}`}>
-                  {ratioCategory.label}
-                </p>
-              )}
               <div className="w-full mt-2 grid grid-cols-3 gap-3 text-center">
                 {[
                   { label: "Gold (USD/oz)", value: goldUsd !== null ? `$${goldUsd.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—" },
