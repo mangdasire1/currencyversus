@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { CURRENCIES } from "@/lib/currencies"
-import { getInitialRateData, getBuildTimeMetalPrice } from "@/lib/build-data"
+import { getInitialRateData, getBuildTimeMetalPrice, getBuildTimeHistory } from "@/lib/build-data"
 import { getFAQSchema } from "@/lib/structured-data"
 import { routeCatalog } from "@/lib/routes"
 import { PairPageClient } from "./PairPageClient"
@@ -123,7 +123,10 @@ export default async function PairPage({
   const currencyParsed = parsePair(pair)
   if (currencyParsed) {
     const { base, target } = currencyParsed
-    const rateData = await getInitialRateData(base, target)
+    const [rateData, history] = await Promise.all([
+      getInitialRateData(base, target),
+      getBuildTimeHistory(base, target),
+    ])
     if (rateData === null) {
       console.warn(`[pair/page] No build-time rate for ${base}/${target} — rendering without initial data`)
     }
@@ -139,6 +142,7 @@ export default async function PairPage({
           target={target}
           initialRate={rateData?.rate ?? null}
           initialDate={rateData?.date ?? null}
+          initialHistory={history}
         />
       </>
     )

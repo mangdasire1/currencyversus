@@ -34,6 +34,9 @@ function identityRows(today: Date): PeriodHistory<TimePeriod>[] {
       requestedDate,
       historicalDate: requestedDate,
       historicalRate: 1,
+      low: { date: requestedDate, rate: 1 },
+      high: { date: requestedDate, rate: 1 },
+      coverageStart: null,
       sparklineData: [
         { date: requestedDate, rate: 1 },
         { date: toISODate(today), rate: 1 },
@@ -58,13 +61,19 @@ function fromCache(rows: CachedHistoryRow[]): PeriodHistory<TimePeriod>[] | null
   return out
 }
 
+// initialRows: history embedded at build time (pair pages). It is rendered
+// immediately — in the server HTML and on first paint, no skeleton — and
+// refreshed silently in the background like the current rate.
 export function useHistoricalRates(
   base: string,
   target: string,
-  currentRate: number | null
+  currentRate: number | null,
+  initialRows?: PeriodHistory<TimePeriod>[] | null
 ): UseHistoricalRatesResult {
   const pairKey = `${base}_${target}`
-  const [state, setState] = useState<HistoryState | null>(null)
+  const [state, setState] = useState<HistoryState | null>(
+    initialRows && initialRows.length > 0 ? { pairKey, rows: initialRows, error: null } : null
+  )
 
   useEffect(() => {
     if (!base || !target) return
@@ -76,8 +85,9 @@ export function useHistoricalRates(
       return
     }
 
-    // v3: one entry per pair holding every period (derived from one series)
-    const cacheKey = `${base}_${target}_history_v3`
+    // v4: one entry per pair holding every period (derived from one series),
+    // now with daily low/high and coverage start
+    const cacheKey = `${base}_${target}_history_v4`
     const cached = cacheGet(cacheKey, isCachedHistory)
     const cachedRows = cached ? fromCache(cached) : null
     if (cachedRows) {
@@ -112,20 +122,25 @@ export function useHistoricalRates(
         if (cancelled) return
         const stale = cacheGetStale(cacheKey, isCachedHistory)
         const staleRows = stale ? fromCache(stale.data) : null
-        setState(
+        setState((prev) =>
           staleRows
             ? { pairKey, rows: staleRows, error: null }
-            : {
-                pairKey,
-                rows: TIME_PERIODS.map((period) => ({
-                  period,
-                  requestedDate: toISODate(subtractMonths(today, period.months)),
-                  historicalDate: null,
-                  historicalRate: null,
-                  sparklineData: [],
-                })),
-                error: err.message,
-              }
+            : prev?.pairKey === pairKey && prev.rows.length > 0
+              ? { ...prev, error: err.message } // keep the embedded/previous rows for this pair
+              : {
+                  pairKey,
+                  rows: TIME_PERIODS.map((period) => ({
+                    period,
+                    requestedDate: toISODate(subtractMonths(today, period.months)),
+                    historicalDate: null,
+                    historicalRate: null,
+                    low: null,
+                    high: null,
+                    coverageStart: null,
+                    sparklineData: [],
+                  })),
+                  error: err.message,
+                }
         )
       })
 
@@ -135,7 +150,9 @@ export function useHistoricalRates(
     }
   }, [base, target, pairKey])
 
-  const rows = state?.pairKey === pairKey ? state.rows : null
+  // initialRows always belong to the page's own pair, so they can stand in
+  // until this pair's state exists (e.g. after client-side navigation).
+  const rows = state?.pairKey === pairKey ? state.rows : initialRows && initialRows.length > 0 ? initialRows : null
   const now = base === target ? 1 : currentRate
 
   const comparisons: HistoricalComparison[] = (rows ?? []).map((r) => ({
@@ -150,6 +167,9 @@ export function useHistoricalRates(
         : now !== null && r.historicalRate !== null && r.historicalRate !== 0
           ? ((now - r.historicalRate) / r.historicalRate) * 100
           : null,
+    low: r.low,
+    high: r.high,
+    coverageStart: r.coverageStart,
     sparklineData: r.sparklineData,
   }))
 

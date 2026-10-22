@@ -11,7 +11,8 @@ import { HistoricalTable } from "@/components/HistoricalTable"
 import { useConversion } from "@/hooks/useConversion"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { CURRENCY_INFO } from "@/lib/currency-info"
-import type { ExchangeRate } from "@/lib/types"
+import type { ExchangeRate, TimePeriod } from "@/lib/types"
+import type { PeriodHistory } from "@/lib/history"
 import { formatUtcTime } from "@/lib/utils"
 import { getFAQItems } from "@/lib/structured-data"
 import { editorialReviewLabel } from "@/lib/editorial"
@@ -57,9 +58,10 @@ interface PairPageClientProps {
   target: string
   initialRate: number | null
   initialDate: string | null
+  initialHistory?: PeriodHistory<TimePeriod>[] | null // embedded in the server HTML
 }
 
-export function PairPageClient({ base, target, initialRate, initialDate }: PairPageClientProps) {
+export function PairPageClient({ base, target, initialRate, initialDate, initialHistory }: PairPageClientProps) {
   const router = useRouter()
 
   // Build a full ExchangeRate object from server-provided props so useState in
@@ -211,7 +213,7 @@ export function PairPageClient({ base, target, initialRate, initialDate }: PairP
               </div>
             </section>
 
-            <HistoricalTable base={base} target={target} current={conv} />
+            <HistoricalTable base={base} target={target} current={conv} initialRows={initialHistory} />
 
             {/* FAQ — same items as the FAQPage JSON-LD (src/lib/structured-data.ts).
                 At build time both render from the embedded rate, so the HTML

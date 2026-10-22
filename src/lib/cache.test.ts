@@ -96,11 +96,18 @@ test("metal and history payload validators", () => {
   assert.equal(isXau({ metal: "XAU", price: 4166.1, priceTime: "2026-10-18T14:14:45.000Z", fetchedAt: "2026-10-18T14:15:00.000Z" }), true)
   assert.equal(isXau({ metal: "XAG", price: 57, priceTime: null, fetchedAt: "2026-10-18T14:15:00.000Z" }), false)
   assert.equal(isXau({ metal: "XAU", price: 4166.1, date: "2026-10-18" }), false) // v1 shape
-  const row = { periodKey: "3m", requestedDate: "2026-07-18", historicalDate: "2026-07-17", historicalRate: 0.9, sparklineData: [{ date: "2026-07-17", rate: 0.9 }] }
+  const row = {
+    periodKey: "3m", requestedDate: "2026-07-18", historicalDate: "2026-07-17", historicalRate: 0.9,
+    low: { date: "2026-08-01", rate: 0.88 }, high: { date: "2026-09-01", rate: 0.93 }, coverageStart: null,
+    sparklineData: [{ date: "2026-07-17", rate: 0.9 }],
+  }
   assert.equal(isCachedHistory([row]), true)
-  assert.equal(isCachedHistory([{ ...row, historicalRate: null, historicalDate: null, sparklineData: [] }]), true)
+  assert.equal(isCachedHistory([{ ...row, historicalRate: null, historicalDate: null, low: null, high: null, sparklineData: [] }]), true)
   assert.equal(isCachedHistory([{ ...row, sparklineData: [{ date: "2026-07-17", rate: null }] }]), false)
   assert.equal(isCachedHistory([{ ...row, historicalRate: Infinity }]), false)
   assert.equal(isCachedHistory([{ historicalRate: 0.9, sparklineData: [] }]), false) // v2 per-period shape
+  const { low: _l, high: _h, coverageStart: _c, ...v3row } = row
+  void _l; void _h; void _c
+  assert.equal(isCachedHistory([v3row]), false) // v3 rows without low/high/coverage
   assert.equal(isCachedHistory([]), false)
 })

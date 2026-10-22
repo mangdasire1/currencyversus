@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run verify:routes && npm run verify:faq",
+    "build": "next build && npm run verify:routes && npm run verify:faq && npm run verify:history",
     "verify:routes": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-routes.mjs",
     "verify:faq": "node scripts/verify-faq.mjs",
+    "verify:history": "node scripts/verify-history.mjs",
     "start": "next start",
     "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"src/**/*.test.ts\""
   },

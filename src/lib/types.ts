@@ -38,6 +38,9 @@ export interface HistoricalComparison {
   historicalRate: number | null
   currentRate: number | null
   percentChange: number | null
+  low: HistoricalPoint | null // lowest daily reference rate in the period
+  high: HistoricalPoint | null // highest daily reference rate in the period
+  coverageStart: string | null // set when data does not reach back to requestedDate
   sparklineData: HistoricalPoint[]
 }
 

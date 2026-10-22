@@ -59,7 +59,14 @@ export interface CachedHistoryRow {
   requestedDate: string
   historicalDate: string | null
   historicalRate: number | null
+  low: HistoricalPoint | null
+  high: HistoricalPoint | null
+  coverageStart: string | null
   sparklineData: HistoricalPoint[]
+}
+
+function isPointOrNull(x: unknown): x is HistoricalPoint | null {
+  return x === null || (isObject(x) && isPlausibleDate(x.date) && isRate(x.rate))
 }
 
 function isCachedHistoryRow(x: unknown): x is CachedHistoryRow {
@@ -67,7 +74,8 @@ function isCachedHistoryRow(x: unknown): x is CachedHistoryRow {
   // A row is either complete (rate + date) or explicitly empty (both null).
   const complete = isRate(x.historicalRate) && isPlausibleDate(x.historicalDate)
   const empty = x.historicalRate === null && x.historicalDate === null
-  return (complete || empty) && isHistoricalPoints(x.sparklineData)
+  const coverageOk = x.coverageStart === null || isPlausibleDate(x.coverageStart)
+  return (complete || empty) && coverageOk && isPointOrNull(x.low) && isPointOrNull(x.high) && isHistoricalPoints(x.sparklineData)
 }
 
 export function isCachedHistory(x: unknown): x is CachedHistoryRow[] {

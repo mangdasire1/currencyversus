@@ -1,6 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { samplePoints, sampleFrequencyFor, sparklineIsUp, derivePeriodHistory, loadPeriodHistory, seriesRange } from "./history.ts"
+import { samplePoints, sampleFrequencyFor, sparklineIsUp, derivePeriodHistory, loadPeriodHistory, seriesRange, seriesForTarget } from "./history.ts"
 import { sharedRequest, requestStats } from "./inflight.ts"
 import { TIME_PERIODS } from "./currencies.ts"
 import { subtractMonths, toISODate } from "./utils.ts"
@@ -130,4 +130,56 @@ test("in-flight dedup: one caller aborting does not cancel the others; all abort
   await assert.rejects(p3, { name: "AbortError" })
   await assert.rejects(p4, { name: "AbortError" })
   assert.equal(sawAbort, true)
+})
+
+// --- Phase 5: server-embedded history (same derivation as the client) ------
+
+test("low/high are the extreme daily observations inside each period, with their dates", () => {
+  const today = new Date(Date.UTC(2026, 9, 21))
+  const series: HistoricalPoint[] = [
+    { date: "2026-09-18", rate: 1.0 }, // before the 1m window (Then candidate is 2026-09-21)
+    { date: "2026-09-21", rate: 1.1 },
+    { date: "2026-09-30", rate: 0.9 }, // low
+    { date: "2026-10-10", rate: 1.4 }, // high
+    { date: "2026-10-21", rate: 1.2 },
+  ]
+  const [m1] = derivePeriodHistory(series, today, [{ key: "1m", label: "1 Month", months: 1 }])
+  assert.equal(m1.historicalDate, "2026-09-21")
+  assert.deepEqual(m1.low, { date: "2026-09-30", rate: 0.9 })
+  assert.deepEqual(m1.high, { date: "2026-10-10", rate: 1.4 })
+  assert.equal(m1.coverageStart, null)
+})
+
+test("weekend start: 'Then' is the provider's last business day before it, shown as that date", () => {
+  // 2023-10-22 is a Sunday; the series has Friday 2023-10-20.
+  const today = new Date(Date.UTC(2026, 9, 22))
+  const series = [{ date: "2023-10-19", rate: 27.9 }, { date: "2023-10-20", rate: 28.02 }, { date: "2023-10-23", rate: 28.1 }, { date: "2026-10-21", rate: 49.6 }]
+  const [y3] = derivePeriodHistory(series, today, [{ key: "3y", label: "3 Years", months: 36 }])
+  assert.equal(y3.requestedDate, "2023-10-22")
+  assert.equal(y3.historicalDate, "2023-10-20")
+  assert.equal(y3.historicalRate, 28.02)
+})
+
+test("short coverage: no 'Then', no invented value, coverageStart says how far the data goes", () => {
+  const today = new Date(Date.UTC(2026, 9, 21))
+  const series = [{ date: "2018-03-01", rate: 2 }, { date: "2020-01-02", rate: 3 }, { date: "2026-10-21", rate: 5 }]
+  const [y10] = derivePeriodHistory(series, today, [{ key: "10y", label: "10 Years", months: 120 }])
+  assert.equal(y10.historicalRate, null)
+  assert.equal(y10.historicalDate, null)
+  assert.equal(y10.coverageStart, "2018-03-01")
+  assert.deepEqual(y10.low, { date: "2018-03-01", rate: 2 })
+  console.log(`    10y row with data only from ${y10.coverageStart}: Then=${y10.historicalRate}, low=${y10.low?.rate}, high=${y10.high?.rate}`)
+})
+
+test("seriesForTarget: picks one symbol out of a multi-symbol response, skips gaps, never fills", () => {
+  const rates = {
+    "2026-10-20": { EUR: 0.86, TRY: 49.5 },
+    "2026-10-16": { EUR: 0.85 }, // no TRY that day → left out
+    "2026-10-21": { EUR: 0.87, TRY: 49.6 },
+  }
+  assert.deepEqual(seriesForTarget(rates, "TRY"), [
+    { date: "2026-10-20", rate: 49.5 },
+    { date: "2026-10-21", rate: 49.6 },
+  ])
+  assert.equal(seriesForTarget(rates, "EUR").length, 3)
 })

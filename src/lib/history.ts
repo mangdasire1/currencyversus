@@ -75,7 +75,45 @@ export interface PeriodHistory<P extends PeriodSpec = PeriodSpec> {
   requestedDate: string // today − period (UTC calendar date)
   historicalDate: string | null // business day actually used for "Then"
   historicalRate: number | null
+  // Lowest / highest *daily reference rate* observed in the period (one
+  // observation per business day — not intraday extremes).
+  low: HistoricalPoint | null
+  high: HistoricalPoint | null
+  // Set when the series does not reach back to requestedDate: the first
+  // available observation. The period then has no "Then" value and the UI
+  // says how far the data actually goes.
+  coverageStart: string | null
   sparklineData: HistoricalPoint[]
+}
+
+// Statistics (Then, Now, low, high) use every daily observation; only the
+// drawn trend line is thinned (see sampleFrequencyFor).
+export const STATS_OBSERVATION_FREQUENCY = "daily" as const
+
+function extremes(points: HistoricalPoint[]): { low: HistoricalPoint | null; high: HistoricalPoint | null } {
+  if (points.length === 0) return { low: null, high: null }
+  let low = points[0]
+  let high = points[0]
+  for (const p of points) {
+    if (p.rate < low.rate) low = p
+    if (p.rate > high.rate) high = p
+  }
+  return { low, high }
+}
+
+// One pair's daily series out of a multi-symbol Frankfurter time-series
+// response ({ rates: { "YYYY-MM-DD": { EUR: 0.9, TRY: 41.7, … } } }).
+// Days without a value for `target` are skipped, never filled.
+export function seriesForTarget(
+  rates: Record<string, Record<string, number>>,
+  target: string
+): HistoricalPoint[] {
+  const out: HistoricalPoint[] = []
+  for (const [date, day] of Object.entries(rates)) {
+    const rate = day?.[target]
+    if (typeof rate === "number" && Number.isFinite(rate) && rate > 0) out.push({ date, rate })
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date))
 }
 
 function monthsBack(today: Date, months: number): string {
@@ -108,15 +146,32 @@ export function derivePeriodHistory<P extends PeriodSpec>(
       }
     }
     if (idx === -1) {
-      return { period, requestedDate, historicalDate: null, historicalRate: null, sparklineData: [] }
+      // The series does not reach back to the requested date: no "Then",
+      // no change figure; low/high/trend cover only what exists.
+      const { low, high } = extremes(sorted)
+      return {
+        period,
+        requestedDate,
+        historicalDate: null,
+        historicalRate: null,
+        low,
+        high,
+        coverageStart: sorted[0]?.date ?? null,
+        sparklineData: samplePoints(sorted, sampleFrequencyFor(period.months)),
+      }
     }
+    const window = sorted.slice(idx)
+    const { low, high } = extremes(window)
     return {
       period,
       requestedDate,
       historicalDate: sorted[idx].date,
       historicalRate: sorted[idx].rate,
+      low,
+      high,
+      coverageStart: null,
       // The line starts at the "Then" observation, so it agrees with the row's change.
-      sparklineData: samplePoints(sorted.slice(idx), sampleFrequencyFor(period.months)),
+      sparklineData: samplePoints(window, sampleFrequencyFor(period.months)),
     }
   })
 }

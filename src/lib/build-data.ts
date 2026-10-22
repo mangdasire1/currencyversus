@@ -1,5 +1,7 @@
-import type { ExchangeRate } from "./types"
-import { CURRENCIES } from "./currencies"
+import type { ExchangeRate, TimeSeriesRates, TimePeriod } from "./types"
+import { CURRENCIES, TIME_PERIODS } from "./currencies"
+import { derivePeriodHistory, seriesForTarget, seriesRange } from "./history"
+import type { PeriodHistory } from "./history"
 import { METAL_API_BASE } from "./metals"
 import type { MetalCode } from "./metals"
 import { parseGoldApiPrice } from "./gold-api"
@@ -96,4 +98,52 @@ export async function getInitialRateData(
     console.warn("[build-data] FAILED", base, detail)
     return null
   }
+}
+
+// ---------------------------------------------------------------------------
+// Historical comparison data for the server HTML.
+//
+// One long daily series per *base* currency (all 14 other currencies in a
+// single request) feeds every pair with that base: 15 requests for 210 pair
+// pages. ~0.5 MB per base, under the 2 MB per-entry limit of Next's data
+// cache, so build workers share it. Periods, "Then" business days, daily
+// low/high and the sampled trend line are derived with the same functions
+// the client uses (src/lib/history.ts).
+
+const seriesMemo = new Map<string, Promise<Record<string, Record<string, number>> | null>>()
+
+function baseSeries(base: string, today: Date): Promise<Record<string, Record<string, number>> | null> {
+  const { start, end } = seriesRange(today, TIME_PERIODS)
+  const key = `${base}_${start}_${end}`
+  let p = seriesMemo.get(key)
+  if (!p) {
+    const symbols = ALL_CODES.filter((c) => c !== base).join(",")
+    const url = `${BASE_URL}/${start}..${end}?base=${base}&symbols=${symbols}`
+    p = fetchWithRetry(url)
+      .then(async (res) => {
+        const data = (await res.json()) as TimeSeriesRates
+        if (data.base !== base || !data.rates) throw new Error("time series does not match the requested base")
+        console.log("[build-data] history OK", base, Object.keys(data.rates).length, "days")
+        return data.rates
+      })
+      .catch((err) => {
+        const detail = err instanceof Error ? err.message : String(err)
+        console.warn("[build-data] history FAILED", base, detail)
+        return null
+      })
+    seriesMemo.set(key, p)
+  }
+  return p
+}
+
+export async function getBuildTimeHistory(
+  base: string,
+  target: string
+): Promise<PeriodHistory<TimePeriod>[] | null> {
+  const today = new Date()
+  const rates = await baseSeries(base, today)
+  if (!rates) return null
+  const series = seriesForTarget(rates, target)
+  if (series.length === 0) return null
+  return derivePeriodHistory(series, today, TIME_PERIODS)
 }
