@@ -96,3 +96,29 @@ export async function fetchMetalPrice(
   cacheSet(cacheKey, result, FRESH_TTL.metal, "metal")
   return result
 }
+
+// Rate on a given date for one pair. The provider answers with the last
+// published business day on or before that date; `date` in the result is the
+// day actually used (weekends and holidays move it back).
+export async function fetchRateOn(
+  date: string,
+  base: string,
+  target: string,
+  signal?: AbortSignal
+): Promise<{ date: string; rate: number }> {
+  return sharedRequest(
+    `on_${date}_${base}_${target}`,
+    async (s) => {
+      const params = new URLSearchParams({ base, symbols: target })
+      const res = await fetch(`${BASE_URL}/${date}?${params}`, { signal: s })
+      if (!res.ok) throw new Error(`API error: ${res.status}`)
+      const json = (await res.json()) as ExchangeRate
+      const rate = json.rates?.[target]
+      if (json.base !== base || typeof rate !== "number" || !Number.isFinite(rate) || rate <= 0 || typeof json.date !== "string") {
+        throw new Error("rate response does not match the requested pair")
+      }
+      return { date: json.date, rate }
+    },
+    signal
+  )
+}

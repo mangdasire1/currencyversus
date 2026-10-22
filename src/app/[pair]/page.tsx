@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation"
 import { CURRENCIES } from "@/lib/currencies"
-import { getInitialRateData, getBuildTimeMetalPrice, getBuildTimeHistory } from "@/lib/build-data"
+import { getInitialRateData, getBuildTimeMetalPrice, getBuildTimeHistory, getBuildTimeChart } from "@/lib/build-data"
+import { isPilot } from "@/lib/pilot"
 import { getFAQSchema } from "@/lib/structured-data"
 import { routeCatalog } from "@/lib/routes"
 import { PairPageClient } from "./PairPageClient"
+import { PilotPairPageClient } from "./PilotPairPageClient"
 import { MetalPageClient } from "./MetalPageClient"
 import { MetalRatioPageClient } from "./MetalRatioPageClient"
 import type { MetalCode } from "@/lib/metals"
@@ -131,6 +133,30 @@ export default async function PairPage({
       console.warn(`[pair/page] No build-time rate for ${base}/${target} — rendering without initial data`)
     }
     const faqSchema = getFAQSchema(base, target, rateData?.rate ?? null, rateData?.date ?? null)
+
+    // Pilot set (src/lib/pilot.ts): new layout with the chart; everything else
+    // keeps the existing layout as the control group.
+    if (isPilot(pair)) {
+      const chart = await getBuildTimeChart(base, target)
+      return (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+          />
+          <PilotPairPageClient
+            base={base}
+            target={target}
+            initialRate={rateData?.rate ?? null}
+            initialDate={rateData?.date ?? null}
+            initialHistory={history}
+            chart={chart}
+            builtAt={new Date().toISOString()}
+          />
+        </>
+      )
+    }
+
     return (
       <>
         <script

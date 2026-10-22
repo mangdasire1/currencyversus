@@ -2,6 +2,7 @@
 // comparison in the static HTML — what a crawler gets before JavaScript runs.
 // For each page: 7 period rows, each with its label and numeric values, the
 // "Then" business day, and the note on observation frequency.
+// Works for both the standard layout and the Phase 7 pilot layout.
 //
 //   node scripts/verify-history.mjs [sampleSize]      (after `next build`)
 
@@ -17,24 +18,29 @@ const sampleSize = Number(process.argv[2] ?? 10)
 const text = (h) =>
   h.replace(/<!-- -->/g, "").replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim()
 
+// Row cells may be <th scope="row"> (pilot layout) or <td> (standard layout).
+const CELL = /<(td|th)\b[^>]*>([\s\S]*?)<\/\1>/g
+
 function check(dir) {
   const html = fs.readFileSync(path.join(outDir, dir, "index.html"), "utf8")
   const problems = []
   const tbody = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/)?.[1] ?? ""
-  const rows = [...tbody.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)].map((m) => [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((c) => text(c[1])))
+  const rows = [...tbody.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)].map((m) => [...m[1].matchAll(CELL)].map((c) => text(c[2])))
   const summary = []
   for (const label of PERIODS) {
     const row = rows.find((r) => r[0]?.startsWith(label))
     if (!row) { problems.push(`missing row "${label}"`); continue }
-    const numbers = row.slice(1).join(" ").match(/\d[\d,]*\.\d+/g) ?? []
-    const thenDate = row[1]?.match(/\d{4}-\d{2}-\d{2}/)?.[0]
+    const rest = row.slice(1).join(" ")
+    const numbers = rest.match(/\d[\d,]*\.\d+/g) ?? []
+    const thenDate = rest.match(/\d{4}-\d{2}-\d{2}/)?.[0]
     if (numbers.length === 0) problems.push(`"${label}" has no numeric value`)
     if (!thenDate && !/data only from/.test(row[0])) problems.push(`"${label}" has no Then business day`)
-    summary.push(`${label}: then ${row[1]?.split(" ")[0] ?? "—"} (${thenDate ?? "n/a"}), change ${row[3] ?? "—"}`)
+    summary.push(`${label}: then ${row[1]?.split(" ")[0] ?? "—"} (${thenDate ?? "n/a"})`)
   }
-  if (!/daily ECB reference rates \(one observation per business day, not intraday highs or lows\)/.test(text(html))) {
-    problems.push("observation-frequency note missing")
-  }
+  const page = text(html)
+  const standardNote = /daily ECB reference rates \(one observation per business day, not intraday highs or lows\)/.test(page)
+  const pilotNote = /daily ECB reference rate on the last business day on or before the start of the period \(not an intraday level\)/.test(page)
+  if (!standardNote && !pilotNote) problems.push("observation-frequency note missing")
   return { dir, problems, summary }
 }
 
