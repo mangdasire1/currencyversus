@@ -26,17 +26,15 @@ for (const metal of ["gold", "silver"]) {
 }
 metalPairs.push("gold-vs-silver")
 
-const today = new Date().toISOString().split("T")[0]
-
 const urls = [
-  `  <url>\n    <loc>${BASE_URL}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>`,
+  `  <url>\n    <loc>${BASE_URL}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>`,
   ...pairs.map(
     (pair) =>
-      `  <url>\n    <loc>${BASE_URL}/${pair}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>`
+      `  <url>\n    <loc>${BASE_URL}/${pair}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>`
   ),
   ...metalPairs.map(
     (pair) =>
-      `  <url>\n    <loc>${BASE_URL}/${pair}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>`
+      `  <url>\n    <loc>${BASE_URL}/${pair}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>`
   ),
 ]
 
@@ -46,8 +44,11 @@ ${urls.join("\n")}
 </urlset>`
 
 // Written to public/ so `next build` copies it into out/. Runs from
-// next.config.ts at build start (see there); also refreshes out/ when run by
-// hand after a build.
+// next.config.ts at build start (see there), so a sitemap exists however the
+// build is started. It has no <lastmod>: real dates are added after the
+// build by scripts/sitemap-lastmod.mjs (npm run build), which compares page
+// content with the previously published manifest. Never stamp every URL
+// with the build date.
 const root = path.join(__dirname, "..")
 fs.writeFileSync(path.join(root, "public", "sitemap.xml"), sitemap, "utf-8")
 if (fs.existsSync(path.join(root, "out"))) {
