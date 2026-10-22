@@ -5,10 +5,21 @@ name: Production freshness monitor
 #     successful build + deploy)?
 #   - is the embedded ECB rate behind (weekends/holidays not counted)?
 # A failed run makes GitHub send its failure notification.
+#
+# Then, only if that check passed, IndexNow is notified about pages whose
+# content changed today (live sitemap lastmod = today). The IndexNow script
+# repeats the deploy check itself and sends nothing unless the live build is
+# exactly main HEAD — notifying before the deploy is live would make engines
+# crawl the old page.
 on:
   schedule:
     - cron: "0 18 * * *" # daily, after the 16:30 UTC weekday rebuild has had time to deploy
   workflow_dispatch:
+    inputs:
+      indexnow_dry_run:
+        description: "IndexNow: show what would be submitted, send nothing"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -28,3 +39,12 @@ jobs:
           export EXPECTED_SHA="$(git rev-parse HEAD)"
           export EXPECTED_SHA_TIME="$(git log -1 --format=%cI HEAD)"
           node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-production.mjs https://currencyversus.com/build-info.json
+
+      # Runs only when the step above succeeded (default `if: success()`).
+      - name: Notify IndexNow of pages changed today (after verified deploy)
+        env:
+          INDEXNOW_DRY_RUN: ${{ inputs.indexnow_dry_run && '1' || '' }}
+        run: |
+          export EXPECTED_SHA="$(git rev-parse HEAD)"
+          export EXPECTED_SHA_TIME="$(git log -1 --format=%cI HEAD)"
+          node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/indexnow.mjs https://currencyversus.com
