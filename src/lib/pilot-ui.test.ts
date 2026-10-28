@@ -5,6 +5,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { formatBadgeDate, usedDayNote, directionNote, currencyNoun, pairTitle } from "./pilot-format.ts"
+import { directionOf } from "./chart.ts"
 
 const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
 const read = (rel: string) => fs.readFileSync(path.join(SRC, rel), "utf8")
@@ -30,14 +31,62 @@ test("direction colours: no green/red token or class in the pilot layout", () =>
   assert.deepEqual(hits, [])
 })
 
-test("direction colours: up/down are the amber/teal tokens and Direction uses ▲/▼ with a sign", () => {
+test("direction colours: up/down are the amber/teal tokens and the arrows are ▲/▼", () => {
   const palette = read(`${PILOT_DIR}/palette.ts`)
   assert.match(palette, /up: "#D99A4E"/)
   assert.match(palette, /down: "#52B6C4"/)
   const direction = read(`${PILOT_DIR}/Direction.tsx`)
-  assert.match(direction, /"▲"/)
-  assert.match(direction, /"▼"/)
-  assert.match(direction, /signedPercent/)
+  assert.match(direction, /directionOf\(value\)/)
+  const chart = read("lib/chart.ts")
+  assert.match(chart, /arrow: "▲"/)
+  assert.match(chart, /arrow: "▼"/)
+})
+
+test("direction: no arrow and no sign when the change rounds to 0.00%", () => {
+  const cases: Array<[number, string | null, string, string]> = [
+    [0, null, "0.00%", "unchanged"],
+    [0.004, null, "0.00%", "unchanged"], // was "▲ +0.00%"
+    [-0.0049, null, "0.00%", "unchanged"], // was "▼ -0.00%"
+    [0.006, "▲", "+0.01%", "up"],
+    [-0.006, "▼", "-0.01%", "down"],
+    [1511.4, "▲", "+1511.40%", "up"],
+    [-93.74, "▼", "-93.74%", "down"],
+  ]
+  for (const [p, arrow, text, kind] of cases) {
+    assert.deepEqual(directionOf(p), { kind, arrow, text }, String(p))
+  }
+  console.log(`    ${cases.map(([p]) => `${p} → ${directionOf(p).arrow ?? "(no arrow)"} ${directionOf(p).text}`).join(" | ")}`)
+  const direction = read(`${PILOT_DIR}/Direction.tsx`)
+  assert.match(direction, /\{d\.arrow && </) // the arrow element is not rendered at all
+})
+
+// WCAG 2 relative luminance / contrast ratio
+function contrast(a: string, b: string): number {
+  const lum = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl
+  }
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+test("selected period tab: white on #4F46E5 meets WCAG AA (white on #6366F1 did not)", () => {
+  const palette = read(`${PILOT_DIR}/palette.ts`)
+  assert.match(palette, /selectedFill: "#4F46E5"/)
+  const chart = read(`${PILOT_DIR}/PairChart.tsx`)
+  assert.match(chart, /background: p\.key === period\.key \? PV\.selectedFill : PV\.raised/)
+  assert.match(chart, /color: p\.key === period\.key \? "#FFFFFF"/)
+  const now = contrast("#FFFFFF", "#4F46E5")
+  const before = contrast("#FFFFFF", "#6366F1")
+  console.log(`    white on #6366F1 ${before.toFixed(2)}:1 (before) → white on #4F46E5 ${now.toFixed(2)}:1; 14px text needs 4.5:1`)
+  assert.ok(before < 4.5)
+  assert.ok(now >= 4.5)
+})
+
+test("pair title: currency codes only, no flag emoji", () => {
+  const page = read("app/[pair]/PilotPairPageClient.tsx")
+  assert.doesNotMatch(page, /\.flag/)
+  assert.match(page, /\{base\} \/ \{target\}/)
 })
 
 test("period tabs: one single-choice group (tablist/tab/aria-selected), keyboard, no toggle buttons", () => {

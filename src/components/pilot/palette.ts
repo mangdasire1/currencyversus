@@ -11,6 +11,9 @@ export const PV = {
   faint: "#868E9C",
   accentText: "#8B8DF7",
   accentFill: "#6366F1",
+  // Fill behind white text (selected period tab): white on #6366F1 is 4.47:1,
+  // below WCAG AA for 14px text; white on #4F46E5 passes (pilot-ui.test.ts).
+  selectedFill: "#4F46E5",
   up: "#D99A4E",
   down: "#52B6C4",
 } as const

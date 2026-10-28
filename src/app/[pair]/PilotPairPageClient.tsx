@@ -6,7 +6,6 @@ import { ArrowLeft, TrendingUp } from "lucide-react"
 import { useConversion } from "@/hooks/useConversion"
 import { usePairNavigation, takeCarriedView } from "@/hooks/usePairNavigation"
 import { parseAmount } from "@/lib/amount"
-import { CURRENCY_MAP } from "@/lib/currencies"
 import { CURRENCY_INFO } from "@/lib/currency-info"
 import { getFAQItems } from "@/lib/structured-data"
 import { editorialReviewLabel } from "@/lib/editorial"
@@ -92,7 +91,8 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
           <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>Exchange rate</p>
           <h1 className="text-[28px] sm:text-4xl font-bold leading-tight">{pairTitle(base, target)}</h1>
           <p className="text-sm" style={{ ...MONO, color: PV.dim }}>
-            {CURRENCY_MAP[base]?.flag} {base} / {target} {CURRENCY_MAP[target]?.flag}
+            {/* codes only: flag emoji render as two letters on Windows ("US") */}
+            {base} / {target}
           </p>
           <p role="status" className="text-sm" style={{ color: PV.up }}>{swapNotice}</p>
         </div>

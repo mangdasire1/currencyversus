@@ -45,8 +45,23 @@ export function chartGeometry(points: HistoricalPoint[], box: ChartBox = DEFAULT
   return { path, domain: [min, max], vertices }
 }
 
+// A change shown as 0.00% has no visible direction: no sign, no arrow
+// (+0.004 % would otherwise read "▲ +0.00%").
+export function roundsToZeroPercent(p: number): boolean {
+  return Number(p.toFixed(2)) === 0
+}
+
 function signedPercent(p: number): string {
-  return `${p > 0 ? "+" : p < 0 ? "" : "±"}${p.toFixed(2)}%`
+  if (roundsToZeroPercent(p)) return "0.00%"
+  return `${p > 0 ? "+" : ""}${p.toFixed(2)}%`
+}
+
+export type DirectionKind = "up" | "down" | "unchanged"
+
+// What Direction shows: an arrow only when the displayed figure is non-zero.
+export function directionOf(p: number): { kind: DirectionKind; arrow: string | null; text: string } {
+  if (roundsToZeroPercent(p)) return { kind: "unchanged", arrow: null, text: signedPercent(p) }
+  return p > 0 ? { kind: "up", arrow: "▲", text: signedPercent(p) } : { kind: "down", arrow: "▼", text: signedPercent(p) }
 }
 
 // "USD to TRY from 2016-10 to 2026-10, rising from 3.0798 to 49.6280, a change of +1511.40%"

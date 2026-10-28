@@ -83,9 +83,9 @@ export function PairChart({ base, target, periods, selected, onSelect }: PairCha
               className="min-w-[44px] min-h-[44px] px-3 rounded-lg text-sm"
               style={{
                 ...MONO,
-                background: p.key === period.key ? PV.accentFill : PV.raised,
+                background: p.key === period.key ? PV.selectedFill : PV.raised,
                 color: p.key === period.key ? "#FFFFFF" : PV.dim,
-                border: `1px solid ${p.key === period.key ? PV.accentFill : PV.border}`,
+                border: `1px solid ${p.key === period.key ? PV.selectedFill : PV.border}`,
               }}
             >
               {p.short}
