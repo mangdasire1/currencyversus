@@ -1,11 +1,11 @@
 "use client"
 
-import dynamic from "next/dynamic"
 import { useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HistoricalTable } from "@/components/HistoricalTable"
+import { MetalIcon } from "@/components/MetalIcon"
 import { useConversion } from "@/hooks/useConversion"
 import { useMetalRate } from "@/hooks/useMetalRate"
 import type { ConversionResult } from "@/lib/conversion"
@@ -26,11 +26,6 @@ const POPULAR_PAIRS = [
   { base: "AUD", target: "USD" },
   { base: "USD", target: "BRL" },
 ]
-
-const ShaderBackground = dynamic(
-  () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
-  { ssr: false }
-)
 
 interface HomeClientProps {
   initialGoldUsd: number | null
@@ -66,8 +61,8 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
 
   return (
     <>
-      <ShaderBackground />
-      <div className="relative z-10 min-h-screen flex flex-col">
+      {/* Plain surface: no decorative background behind prices and text (Phase 8) */}
+      <div className="plain-page relative z-10 min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex flex-col gap-6">
@@ -89,6 +84,7 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
                   onBaseChange={setBase}
                   onTargetChange={setTarget}
                   includeMetals={true}
+                  showFlags={false}
                 />
               </div>
 
@@ -144,7 +140,7 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl">🥇</span>
+                      <MetalIcon code="XAU" className="w-6 h-6" />
                       <span className="text-base font-bold text-white font-heading group-hover:text-[#6366f1] transition-colors">
                         Gold (XAU)
                       </span>
@@ -176,7 +172,7 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl">🥈</span>
+                      <MetalIcon code="XAG" className="w-6 h-6" />
                       <span className="text-base font-bold text-white font-heading group-hover:text-[#6366f1] transition-colors">
                         Silver (XAG)
                       </span>
@@ -219,13 +215,6 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
                       className="glass-card p-4 flex flex-col gap-2 hover:border-[#6366f1]/40 hover:scale-[1.02] transition-all group cursor-pointer"
                       style={{ animationDelay: `${i * 40}ms` }}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-2xl">
-                          <span>{bc?.flag}</span>
-                          <span className="text-slate-600 text-sm mx-0.5">/</span>
-                          <span>{tc?.flag}</span>
-                        </div>
-                      </div>
                       <div className="text-xs font-mono font-semibold text-white group-hover:text-[#6366f1] transition-colors">
                         {b} → {t}
                       </div>

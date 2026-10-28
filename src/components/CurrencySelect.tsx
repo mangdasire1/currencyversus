@@ -6,18 +6,22 @@ import { ChevronDown, Search } from "lucide-react"
 import { CURRENCIES } from "@/lib/currencies"
 import { METALS } from "@/lib/metals"
 import { cn } from "@/lib/utils"
+import { MetalIcon } from "@/components/MetalIcon"
 
 interface CurrencySelectProps {
   value: string
   onChange: (code: string) => void
   label: string
   includeMetals?: boolean
+  // Flag emoji next to currency codes. Some systems draw them as two letters
+  // ("US"), so the home and metal pages turn them off; the code is always shown.
+  showFlags?: boolean
 }
 
 interface Option {
   code: string
   name: string
-  icon: string
+  flag: string | null // null for metals (drawn icon instead)
 }
 
 interface OptionGroup {
@@ -25,8 +29,14 @@ interface OptionGroup {
   items: Option[]
 }
 
-const CURRENCY_OPTIONS: Option[] = CURRENCIES.map((c) => ({ code: c.code, name: c.name, icon: c.flag }))
-const METAL_OPTIONS: Option[] = METALS.map((m) => ({ code: m.code, name: m.name, icon: m.icon }))
+const CURRENCY_OPTIONS: Option[] = CURRENCIES.map((c) => ({ code: c.code, name: c.name, flag: c.flag }))
+const METAL_OPTIONS: Option[] = METALS.map((m) => ({ code: m.code, name: m.name, flag: null }))
+
+function OptionIcon({ option, showFlags, className }: { option: Option | null; showFlags: boolean; className: string }) {
+  if (!option) return null
+  if (option.flag === null) return <MetalIcon code={option.code} className="w-5 h-5" />
+  return showFlags ? <span className={className} aria-hidden="true">{option.flag}</span> : null
+}
 
 function matches(option: Option, query: string): boolean {
   const q = query.trim().toLowerCase()
@@ -37,7 +47,7 @@ function matches(option: Option, query: string): boolean {
 // the ARIA combobox/listbox semantics (aria-expanded, aria-controls,
 // role="option", aria-selected), label association and keyboard handling
 // (arrows to move, Enter to select, Escape to close).
-export function CurrencySelect({ value, onChange, label, includeMetals = false }: CurrencySelectProps) {
+export function CurrencySelect({ value, onChange, label, includeMetals = false, showFlags = true }: CurrencySelectProps) {
   const [query, setQuery] = useState("")
   const searchId = `${useId()}-search`
   const searchLabel = includeMetals ? "Search currencies and metals" : "Search currencies"
@@ -79,7 +89,7 @@ export function CurrencySelect({ value, onChange, label, includeMetals = false }
             "focus:outline-none focus:border-[#6366f1] data-[popup-open]:border-[#6366f1]/50"
           )}
         >
-          <span className="text-xl" aria-hidden="true">{selected?.icon}</span>
+          <OptionIcon option={selected} showFlags={showFlags} className="text-xl" />
           <span className="flex flex-col flex-1 min-w-0">
             <span className="text-lg font-bold text-white font-mono leading-tight">{value}</span>
             <span className="text-xs text-slate-400 truncate">{selected?.name ?? value}</span>
@@ -137,7 +147,7 @@ export function CurrencySelect({ value, onChange, label, includeMetals = false }
                           "data-[highlighted]:bg-white/10 data-[selected]:bg-[#6366f1]/10 data-[selected]:text-[#6366f1]"
                         )}
                       >
-                        <span className="text-base" aria-hidden="true">{o.icon}</span>
+                        <OptionIcon option={o} showFlags={showFlags} className="text-base" />
                         <span className="font-mono font-semibold text-white w-10">{o.code}</span>
                         <span className="text-slate-400 truncate">{o.name}</span>
                       </Combobox.Item>

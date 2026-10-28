@@ -5,6 +5,7 @@ import { ArrowLeftRight, ArrowUpDown } from "lucide-react"
 import { CurrencySelect } from "./CurrencySelect"
 import { SkeletonConverter } from "./SkeletonLoaders"
 import { DataFreshness } from "./DataFreshness"
+import { MetalIcon } from "./MetalIcon"
 import { useConversion } from "@/hooks/useConversion"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { METAL_INFO } from "@/lib/metal-info"
@@ -24,6 +25,7 @@ interface CurrencyConverterProps {
   initialOzPriceBaseUsd?: number | null
   initialOzPriceTargetUsd?: number | null
   initialMetalPriceTime?: string | null // provider time of the seeded metal price
+  showFlags?: boolean // flag emoji next to codes (see CurrencySelect)
 }
 
 export function CurrencyConverter({
@@ -36,6 +38,7 @@ export function CurrencyConverter({
   initialOzPriceBaseUsd,
   initialOzPriceTargetUsd,
   initialMetalPriceTime,
+  showFlags = true,
 }: CurrencyConverterProps) {
   const [amount, setAmount] = useState("1")
   const [metalUnit, setMetalUnit] = useState<MetalUnit>("g")
@@ -70,7 +73,6 @@ export function CurrencyConverter({
   // Convenience
   const baseCurrency = CURRENCY_MAP[base]
   const targetCurrency = CURRENCY_MAP[target]
-  const baseMetalInfo = baseIsMetal ? METAL_INFO[base as MetalCode] : null
   const targetMetalInfo = targetIsMetal ? METAL_INFO[target as MetalCode] : null
 
   // Pair identity: only render a result computed for the current selection.
@@ -130,13 +132,22 @@ export function CurrencyConverter({
       )
     }
 
-    const prefix = targetIsMetal ? targetMetalInfo?.icon : targetCurrency?.flag
-    const suffix = targetIsMetal ? ` ${metalUnit}` : ""
+    // Without flags the currency code follows the number, so the unit is never implicit.
+    const resultLine = targetIsMetal ? (
+      <>
+        <MetalIcon code={target} className="w-8 h-8 mr-2 align-[-0.1em]" />
+        {`${formatResult(conv.amount)} ${metalUnit}`}
+      </>
+    ) : showFlags ? (
+      `${targetCurrency?.flag ?? ""} ${formatResult(conv.amount)}`
+    ) : (
+      `${formatResult(conv.amount)} ${target}`
+    )
 
     return (
       <div className="flex flex-col gap-1">
         <div className="rate-value text-4xl font-bold text-white font-mono tracking-tight">
-          {`${prefix ?? ""} ${formatResult(conv.amount)}${suffix}`}
+          {resultLine}
         </div>
         <div className="text-sm text-slate-400 font-mono">{conv.rateLabel}</div>
         <DataFreshness conv={conv} onRefresh={base !== target ? conv.refresh : undefined} refreshing={conv.refreshing} />
@@ -168,6 +179,7 @@ export function CurrencyConverter({
             onChange={onBaseChange}
             label="From"
             includeMetals={includeMetals}
+            showFlags={showFlags}
           />
         </div>
 
@@ -188,6 +200,7 @@ export function CurrencyConverter({
             onChange={onTargetChange}
             label="To"
             includeMetals={includeMetals}
+            showFlags={showFlags}
           />
         </div>
       </div>
@@ -217,9 +230,7 @@ export function CurrencyConverter({
                 </button>
               ))}
               {(baseIsMetal || (!baseIsMetal && targetIsMetal)) && (
-                <span className="text-slate-600 ml-1">
-                  {baseIsMetal ? baseMetalInfo?.icon : targetMetalInfo?.icon}
-                </span>
+                <MetalIcon code={baseIsMetal ? base : target} className="w-3.5 h-3.5 ml-1" />
               )}
             </div>
           )}
@@ -227,7 +238,7 @@ export function CurrencyConverter({
 
         <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus-within:border-[#6366f1]/50 transition-colors min-w-0">
           <span className="text-slate-400 font-mono text-sm flex-shrink-0">
-            {baseIsMetal ? baseMetalInfo?.icon : baseCurrency?.flag}
+            {baseIsMetal ? <MetalIcon code={base} className="w-4 h-4" /> : showFlags ? baseCurrency?.flag : null}
           </span>
           {/* type="text" + inputMode="decimal": with type="number" the browser
               turns invalid input into "" and we could not tell "abc" from empty. */}

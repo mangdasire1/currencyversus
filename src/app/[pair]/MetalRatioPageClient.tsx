@@ -1,18 +1,13 @@
 "use client"
 
-import dynamic from "next/dynamic"
 import Link from "next/link"
+import { MetalIcon } from "@/components/MetalIcon"
 import { TrendingUp, ArrowLeft, RefreshCw } from "lucide-react"
 import { useMetalRate } from "@/hooks/useMetalRate"
 import { GOLD_SILVER_RATIO_INFO } from "@/lib/metal-info"
 import { formatUtcTime } from "@/lib/utils"
 import { formatAge } from "@/lib/format"
 import { editorialReviewLabel } from "@/lib/editorial"
-
-const ShaderBackground = dynamic(
-  () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
-  { ssr: false }
-)
 
 interface MetalRatioPageClientProps {
   initialGoldUsd: number | null
@@ -46,8 +41,8 @@ export function MetalRatioPageClient({
 
   return (
     <>
-      <ShaderBackground />
-      <div className="relative z-10 min-h-screen flex flex-col">
+      {/* Plain surface: no decorative background behind prices and text (Phase 8) */}
+      <div className="plain-page relative z-10 min-h-screen flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -72,12 +67,12 @@ export function MetalRatioPageClient({
             {/* Title */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <span className="text-4xl">🥇</span>
+                <MetalIcon code="XAU" className="w-9 h-9" />
                 <h1 className="text-3xl md:text-4xl font-bold text-white font-heading">
                   Gold <span className="text-slate-500">/</span>{" "}
                   <span className="text-[#6366f1]">Silver</span> Ratio
                 </h1>
-                <span className="text-4xl">🥈</span>
+                <MetalIcon code="XAG" className="w-9 h-9" />
               </div>
               {ratio !== null ? (
                 <p className="text-slate-300 font-mono text-sm">
@@ -185,9 +180,9 @@ export function MetalRatioPageClient({
                   <Link
                     key={cur}
                     href={`/gold-vs-${cur.toLowerCase()}`}
-                    className="glass-card p-3 text-center text-sm font-mono text-slate-300 hover:text-[#6366f1] hover:border-[#6366f1]/40 transition-all"
+                    className="glass-card p-3 flex items-center justify-center gap-1.5 text-sm font-mono text-slate-300 hover:text-[#6366f1] hover:border-[#6366f1]/40 transition-all"
                   >
-                    🥇 Gold / {cur}
+                    <MetalIcon code="XAU" className="w-4 h-4" /> Gold / {cur}
                   </Link>
                 ))}
               </div>

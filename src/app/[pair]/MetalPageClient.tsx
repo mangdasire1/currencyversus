@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import dynamic from "next/dynamic"
 import Link from "next/link"
 import { TrendingUp, ArrowLeft } from "lucide-react"
 import { useConversionInputs } from "@/hooks/useConversion"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { DataFreshness } from "@/components/DataFreshness"
+import { MetalIcon } from "@/components/MetalIcon"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { METAL_INFO } from "@/lib/metal-info"
 import { computeConversion } from "@/lib/conversion"
@@ -16,11 +16,6 @@ import type { ExchangeRate } from "@/lib/types"
 import { formatUtcTime } from "@/lib/utils"
 import { editorialReviewLabel } from "@/lib/editorial"
 import { localContextText } from "@/lib/editorial-sections"
-
-const ShaderBackground = dynamic(
-  () => import("@/components/ShaderBackground").then((m) => m.ShaderBackground),
-  { ssr: false }
-)
 
 interface MetalPageClientProps {
   metal: MetalCode
@@ -95,8 +90,8 @@ export function MetalPageClient({
 
   return (
     <>
-      <ShaderBackground />
-      <div className="relative z-10 min-h-screen flex flex-col">
+      {/* Plain surface: no decorative background behind prices and text (Phase 8) */}
+      <div className="plain-page relative z-10 min-h-screen flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -121,13 +116,12 @@ export function MetalPageClient({
             {/* Page title */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-4xl">{info.icon}</span>
+                <MetalIcon code={metal} className="w-9 h-9" />
                 <h1 className="text-3xl md:text-4xl font-bold text-white font-heading">
                   {info.name} Price{" "}
                   <span className="text-slate-500">in</span>{" "}
                   <span className="text-[#6366f1]">{target}</span>
                 </h1>
-                {targetCurrency && <span className="text-4xl">{targetCurrency.flag}</span>}
               </div>
 
               {ozPriceTarget !== null && gramPriceTarget !== null ? (
@@ -170,6 +164,7 @@ export function MetalPageClient({
                 onBaseChange={setConvBase}
                 onTargetChange={setConvTarget}
                 includeMetals={true}
+                showFlags={false}
                 initialOzPriceBaseUsd={metal === convBase ? initialOzPriceUsd : undefined}
                 initialOzPriceTargetUsd={metal === convTarget ? initialOzPriceUsd : undefined}
                 initialMetalPriceTime={initialPriceTime}
@@ -307,8 +302,8 @@ export function MetalPageClient({
             {/* Local context */}
             {localCtx && (
               <section className="glass-card p-5 flex flex-col gap-3 border border-[#6366f1]/20 bg-[#6366f1]/5">
-                <p className="text-xs font-mono uppercase tracking-wider text-[#6366f1]">
-                  {info.icon} {info.name} &amp; {targetCurrency?.flag} {target} — Local Context
+                <p className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-[#6366f1]">
+                  <MetalIcon code={metal} className="w-3.5 h-3.5" /> {info.name} &amp; {target} — Local Context
                 </p>
                 <p className="text-sm text-slate-300 leading-relaxed font-body">
                   {localCtx}

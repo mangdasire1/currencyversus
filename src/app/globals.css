@@ -132,6 +132,33 @@
   transform: translateY(-2px);
 }
 
+/* Plain surfaces (Phase 8) for the home, metal and gold/silver pages: the
+   Phase 7 pair-layout palette (src/components/pilot/palette.ts) instead of
+   the animated WebGL background behind translucent cards. Scoped to
+   .plain-page so the pair pages are untouched. Text colours that measured
+   below WCAG AA on these surfaces are lifted to the palette's dim/faint/
+   accent tokens (contrast measured before and after, Phase 8 report). */
+.plain-page {
+  background: #0C0D10;
+  color: #EDEEF2;
+}
+.plain-page .glass-card,
+.plain-page .glass-card:hover {
+  background: #14161B;
+  border: 1px solid #262A33;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  transform: none;
+}
+.plain-page .text-slate-500 { color: #9AA1AE; } /* dim  */
+.plain-page .text-slate-600 { color: #868E9C; } /* faint */
+.plain-page .text-\[\#6366f1\] { color: #8B8DF7; } /* accent text (#6366F1 is a fill colour) */
+.plain-page .placeholder\:text-slate-500::placeholder { color: #868E9C; }
+/* selected g/oz toggle in the converter: accent text on an accent tint measured
+   2.9:1, white on #6366F1 4.47:1; white on #4F46E5 passes */
+.plain-page .bg-\[\#6366f1\]\/30 { background-color: #4F46E5; color: #FFFFFF; }
+
 /* Fade-in-up animation */
 @keyframes fadeInUp {
   from {
