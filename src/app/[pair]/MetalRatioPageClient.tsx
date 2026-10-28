@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { MetalIcon } from "@/components/MetalIcon"
+import { MetalUnitConverter } from "@/components/MetalUnitConverter"
+import { METAL_SIGNIFICANT } from "@/lib/metal-units"
 import { TrendingUp, ArrowLeft, RefreshCw } from "lucide-react"
 import { useMetalRate } from "@/hooks/useMetalRate"
 import { GOLD_SILVER_RATIO_INFO } from "@/lib/metal-info"
@@ -100,7 +102,7 @@ export function MetalRatioPageClient({
                   }}
                   disabled={refreshing}
                   aria-label="Check for updated prices now"
-                  className="inline-flex items-center gap-1 text-[#6366f1] hover:underline disabled:opacity-60"
+                  className="inline-flex items-center gap-1 min-h-[44px] min-w-[44px] px-2 text-[#6366f1] hover:underline disabled:opacity-60"
                 >
                   <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
                   Refresh
@@ -108,6 +110,15 @@ export function MetalRatioPageClient({
                 <span role="status">{refreshing ? "Updating…" : ""}</span>
               </p>
             </div>
+
+            {/* Gold weight ⇄ silver weight of the same value (Phase 8) */}
+            <MetalUnitConverter
+              metalName="Gold"
+              quote={{ kind: "weight", code: "XAG", name: "Silver" }}
+              pricePerTroyOunce={ratio}
+              significant={Math.min(METAL_SIGNIFICANT.XAU, METAL_SIGNIFICANT.XAG)}
+              status={ratio === null ? "Loading prices…" : null}
+            />
 
             {/* Ratio card */}
             <div className="glass-card p-8 flex flex-col items-center gap-4 text-center">

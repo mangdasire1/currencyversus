@@ -1,10 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { TrendingUp, ArrowLeft } from "lucide-react"
 import { useConversionInputs } from "@/hooks/useConversion"
-import { CurrencyConverter } from "@/components/CurrencyConverter"
+import { MetalUnitConverter } from "@/components/MetalUnitConverter"
 import { DataFreshness } from "@/components/DataFreshness"
 import { MetalIcon } from "@/components/MetalIcon"
 import { CURRENCY_MAP } from "@/lib/currencies"
@@ -16,6 +15,8 @@ import type { ExchangeRate } from "@/lib/types"
 import { formatUtcTime } from "@/lib/utils"
 import { editorialReviewLabel } from "@/lib/editorial"
 import { localContextText } from "@/lib/editorial-sections"
+import { METAL_SIGNIFICANT } from "@/lib/metal-units"
+import { pairSignificantDigits } from "@/lib/ecb"
 
 interface MetalPageClientProps {
   metal: MetalCode
@@ -44,10 +45,6 @@ export function MetalPageClient({
   initialUsdToTargetRate,
   initialFxDate,
 }: MetalPageClientProps) {
-  // Local converter state (pre-set to this metal/currency pair)
-  const [convBase, setConvBase] = useState<string>(metal)
-  const [convTarget, setConvTarget] = useState<string>(target)
-
   // Build-time FX seed (USD→target) so the first paint has a price.
   const initialFx: ExchangeRate | null =
     target !== "USD" && initialUsdToTargetRate !== null && initialFxDate !== null
@@ -69,6 +66,8 @@ export function MetalPageClient({
   const gramDecimals = ozDecimals === 0 ? 0 : 2
 
   const ozPriceTarget = perOz.rate
+  // Least precise input: the metal price, and the ECB USD→target leg if any
+  const resultSignificant = Math.min(METAL_SIGNIFICANT[metal] ?? 5, target === "USD" ? Infinity : pairSignificantDigits("USD", target))
   const gramPriceTarget = perGram.rate
   const livePriceUsd = inputs.metals?.[metal]?.usdPerOz ?? null
   const priceTimeLabel = formatUtcTime(perOz.metalPriceTime)
@@ -153,23 +152,16 @@ export function MetalPageClient({
               )}
             </div>
 
-            {/* Converter pre-set to this metal/currency pair */}
-            <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold text-white font-heading">
-                {info.name} Converter
-              </h2>
-              <CurrencyConverter
-                base={convBase}
-                target={convTarget}
-                onBaseChange={setConvBase}
-                onTargetChange={setConvTarget}
-                includeMetals={true}
-                showFlags={false}
-                initialOzPriceBaseUsd={metal === convBase ? initialOzPriceUsd : undefined}
-                initialOzPriceTargetUsd={metal === convTarget ? initialOzPriceUsd : undefined}
-                initialMetalPriceTime={initialPriceTime}
-              />
-            </section>
+            {/* Weight ⇄ value converter (Phase 8): the page's single converter, at
+                the top. Price per troy ounce in the target currency comes from the
+                same conversion model as the figures above. */}
+            <MetalUnitConverter
+              metalName={info.name}
+              quote={{ kind: "money", code: target }}
+              pricePerTroyOunce={ozPriceTarget}
+              significant={resultSignificant}
+              status={perOz.status === "loading" ? "Loading price…" : ozPriceTarget === null ? "Price unavailable right now." : null}
+            />
 
             {/* Quick Stats */}
             <div className="glass-card p-6 flex flex-col gap-4">
