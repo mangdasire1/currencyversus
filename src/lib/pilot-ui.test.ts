@@ -83,10 +83,26 @@ test("selected period tab: white on #4F46E5 meets WCAG AA (white on #6366F1 did 
   assert.ok(now >= 4.5)
 })
 
-test("pair title: currency codes only, no flag emoji", () => {
+// Regional-indicator pairs (🇺🇸 …) — what a flag emoji is made of.
+const FLAG_EMOJI = /\p{Regional_Indicator}{2}/u
+
+test("new layout: no flag emoji anywhere — title, From/To selectors, every component", () => {
   const page = read("app/[pair]/PilotPairPageClient.tsx")
-  assert.doesNotMatch(page, /\.flag/)
-  assert.match(page, /\{base\} \/ \{target\}/)
+  assert.match(page, /\{base\} \/ \{target\}/) // title: codes only
+  const hits: string[] = []
+  for (const f of PILOT_FILES) {
+    const src = read(f)
+    if (/\.flag\b/.test(src)) hits.push(`${f}: reads .flag`)
+    if (FLAG_EMOJI.test(src)) hits.push(`${f}: flag emoji in source`)
+    // a shared selector shows flags unless told not to
+    for (const m of src.matchAll(/<CurrencySelect\b[^>]*\/>/g)) {
+      if (!/showFlags=\{false\}/.test(m[0])) hits.push(`${f}: ${m[0]}`)
+    }
+  }
+  const selects = PILOT_FILES.reduce((n, f) => n + (read(f).match(/<CurrencySelect\b/g) ?? []).length, 0)
+  console.log(`    scanned ${PILOT_FILES.length} new-layout files; CurrencySelect uses: ${selects}, all with showFlags={false}; hits: ${hits.length}`)
+  assert.equal(selects, 2) // From and To
+  assert.deepEqual(hits, [])
 })
 
 test("period tabs: one single-choice group (tablist/tab/aria-selected), keyboard, no toggle buttons", () => {

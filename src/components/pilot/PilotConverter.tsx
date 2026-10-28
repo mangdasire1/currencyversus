@@ -66,9 +66,10 @@ export function PilotConverter({ base, target, amount, onAmountChange, conv, onB
             </p>
           )}
         </div>
+        {/* codes only, no flag emoji (two letters on Windows) — as in the title */}
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 sm:gap-3">
           <div className="min-w-0">
-            <CurrencySelect value={base} onChange={onBaseChange} label="From" />
+            <CurrencySelect value={base} onChange={onBaseChange} label="From" showFlags={false} />
           </div>
           <button
             type="button"
@@ -80,7 +81,7 @@ export function PilotConverter({ base, target, amount, onAmountChange, conv, onB
             <ArrowLeftRight className="w-4 h-4" aria-hidden="true" />
           </button>
           <div className="min-w-0">
-            <CurrencySelect value={target} onChange={onTargetChange} label="To" />
+            <CurrencySelect value={target} onChange={onTargetChange} label="To" showFlags={false} />
           </div>
         </div>
       </div>
