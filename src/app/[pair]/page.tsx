@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { CURRENCIES } from "@/lib/currencies"
 import { getInitialRateData, getBuildTimeMetalPrice, getBuildTimeHistory, getBuildTimeChart } from "@/lib/build-data"
-import { isPilot } from "@/lib/pilot"
+import { hasNewLayout } from "@/lib/pilot"
 import { getFAQSchema } from "@/lib/structured-data"
 import { routeCatalog } from "@/lib/routes"
 import { PairPageClient } from "./PairPageClient"
@@ -134,9 +134,9 @@ export default async function PairPage({
     }
     const faqSchema = getFAQSchema(base, target, rateData?.rate ?? null, rateData?.date ?? null)
 
-    // Pilot set (src/lib/pilot.ts): new layout with the chart; everything else
-    // keeps the existing layout as the control group.
-    if (isPilot(pair)) {
+    // NEW_LAYOUT_PAIRS (src/lib/pilot.ts): new layout with the chart; all
+    // other pages keep the existing layout.
+    if (hasNewLayout(pair)) {
       const chart = await getBuildTimeChart(base, target)
       return (
         <>

@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, TrendingUp } from "lucide-react"
 import { useConversion } from "@/hooks/useConversion"
-import { usePairNavigation } from "@/hooks/usePairNavigation"
+import { usePairNavigation, takeCarriedView } from "@/hooks/usePairNavigation"
 import { parseAmount } from "@/lib/amount"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { CURRENCY_INFO } from "@/lib/currency-info"
@@ -12,6 +12,8 @@ import { getFAQItems } from "@/lib/structured-data"
 import { editorialReviewLabel } from "@/lib/editorial"
 import { funFactCards } from "@/lib/editorial-sections"
 import { pairTitle } from "@/lib/pilot-format"
+import { pairPath } from "@/lib/routes"
+import { DEFAULT_CHART_PERIOD } from "@/lib/history"
 import type { ChartPeriod, PeriodHistory } from "@/lib/history"
 import type { ExchangeRate, TimePeriod } from "@/lib/types"
 import { PilotConverter } from "@/components/pilot/PilotConverter"
@@ -43,11 +45,25 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
   const forThisPair = conv.base === base && conv.quote === target
   const currentRate = forThisPair ? conv.rate : null
   const fxDate = (forThisPair ? conv.fxDate : null) ?? initialDate
-  const { handleBaseChange, handleTargetChange, handleSwapNav, swapNotice } = usePairNavigation(base, target)
+
+  const tenYear = chart?.find((p) => p.key === "10y") ?? null
+  const defaultThenDate = tenYear?.requestedStart ?? builtAt.slice(0, 10)
+  // Chart period and two-dates date live here so a swap can carry them to the
+  // reverse pair (usePairNavigation). Server render: the defaults (10Y, ten
+  // years ago); a carried view is applied after mount.
+  const [period, setPeriod] = useState(DEFAULT_CHART_PERIOD)
+  const [thenDate, setThenDate] = useState(defaultThenDate)
+  const carry = useCallback(() => ({ period, date: thenDate }), [period, thenDate])
+  const { handleBaseChange, handleTargetChange, handleSwapNav, swapNotice } = usePairNavigation(base, target, carry)
+  useEffect(() => {
+    const view = takeCarriedView(pairPath(base, target))
+    if (!view) return
+    if (chart?.some((p) => p.key === view.period)) setPeriod(view.period)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(view.date)) setThenDate(view.date)
+  }, [base, target, chart])
 
   const baseInfo = CURRENCY_INFO[base]
   const targetInfo = CURRENCY_INFO[target]
-  const tenYear = chart?.find((p) => p.key === "10y") ?? null
   const cards = funFactCards([baseInfo, targetInfo])
 
   return (
@@ -102,7 +118,7 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
         />
 
         {/* 5. Chart */}
-        {chart && <PairChart base={base} target={target} periods={chart} />}
+        {chart && <PairChart base={base} target={target} periods={chart} selected={period} onSelect={setPeriod} />}
 
         {/* AD SLOT (reserved, intentionally empty): a full-width block can be
             placed here, between the chart and the two-dates tool. No ad code
@@ -112,8 +128,10 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
         <TwoDatesTool
           base={base}
           target={target}
-          defaultRequested={tenYear?.requestedStart ?? builtAt.slice(0, 10)}
+          defaultRequested={defaultThenDate}
           defaultUsed={tenYear?.start ?? null}
+          date={thenDate}
+          onDateChange={setThenDate}
           currentRate={currentRate ?? initialRate}
           currentDate={fxDate}
           builtAt={builtAt}

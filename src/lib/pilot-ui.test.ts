@@ -40,7 +40,31 @@ test("direction colours: up/down are the amber/teal tokens and Direction uses â–
   assert.match(direction, /signedPercent/)
 })
 
-test("layout contract: one converter, accessible swap, pressed tabs, 44px targets, details in DOM, ad slot reserved", () => {
+test("period tabs: one single-choice group (tablist/tab/aria-selected), keyboard, no toggle buttons", () => {
+  const chart = read(`${PILOT_DIR}/PairChart.tsx`)
+  assert.doesNotMatch(chart, /aria-pressed/, "toggle buttons announce seven independent on/off controls")
+  assert.doesNotMatch(chart, /role="(checkbox|switch|group)"/)
+  assert.match(chart, /role="tablist"/)
+  assert.match(chart, /role="tab"/)
+  assert.match(chart, /aria-selected=\{p\.key === period\.key\}/)
+  assert.match(chart, /aria-controls=\{panelId\}/)
+  assert.match(chart, /role="tabpanel"/)
+  assert.match(chart, /tabIndex=\{p\.key === period\.key \? 0 : -1\}/) // roving tab stop
+  for (const key of ["ArrowRight", "ArrowLeft", "Home", "End"]) assert.match(chart, new RegExp(`"${key}"`))
+})
+
+test("swap carries period and date to the reverse pair, not the amount", () => {
+  const nav = read("hooks/usePairNavigation.ts")
+  assert.match(nav, /nav\.path === pairPath\(target, base\)/)
+  assert.match(nav, /period: string\n\s+date: string\n\}/) // CarriedView has no amount
+  const page = read("app/[pair]/PilotPairPageClient.tsx")
+  assert.match(page, /usePairNavigation\(base, target, carry\)/)
+  assert.match(page, /takeCarriedView\(pairPath\(base, target\)\)/)
+  assert.match(page, /selected=\{period\} onSelect=\{setPeriod\}/)
+  assert.match(page, /date=\{thenDate\}/)
+})
+
+test("layout contract: one converter, accessible swap, 44px targets, details in DOM, ad slot reserved", () => {
   const page = read("app/[pair]/PilotPairPageClient.tsx")
   assert.equal((page.match(/<PilotConverter\b/g) ?? []).length, 1, "exactly one control set")
   assert.doesNotMatch(page, /<CurrencyConverter\b/)
@@ -48,7 +72,6 @@ test("layout contract: one converter, accessible swap, pressed tabs, 44px target
   assert.match(converter, /aria-label=\{`Swap currencies/)
   assert.match(converter, /min-w-\[44px\] min-h-\[44px\]/)
   const chart = read(`${PILOT_DIR}/PairChart.tsx`)
-  assert.match(chart, /aria-pressed=\{/)
   assert.match(chart, /min-w-\[44px\] min-h-\[44px\]/)
   assert.match(chart, /overflow-x-auto/)
   assert.match(chart, /height: BOX\.height/) // fixed plot height (no layout shift)

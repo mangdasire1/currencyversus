@@ -38,16 +38,53 @@ function takeSwapNotice(path: string): string | null {
   }
 }
 
-export function usePairNavigation(base: string, target: string) {
+// What the new layout keeps when the user lands on the reverse pair (USD/TRY
+// → TRY/USD): the chart period and the two-dates tool's date. Both mean the
+// same thing in either direction. Amounts are not carried: 1,000 USD and
+// 1,000 TRY are different quantities, so the next page starts from its own
+// defaults ("1 TRY =", 100 TRY) with the currency code next to the number.
+// sessionStorage, read once by the next page; no URL parameters.
+export interface CarriedView {
+  period: string
+  date: string
+}
+
+const CARRY_KEY = "cv_carry_view"
+
+function rememberView(path: string, view: CarriedView) {
+  try {
+    sessionStorage.setItem(CARRY_KEY, JSON.stringify({ path, ...view }))
+  } catch {
+    // storage unavailable — the next page shows its defaults
+  }
+}
+
+export function takeCarriedView(path: string): CarriedView | null {
+  try {
+    const raw = sessionStorage.getItem(CARRY_KEY)
+    if (!raw) return null
+    sessionStorage.removeItem(CARRY_KEY)
+    const v = JSON.parse(raw) as { path?: unknown; period?: unknown; date?: unknown }
+    if (v.path !== path || typeof v.period !== "string" || typeof v.date !== "string") return null
+    return { period: v.period, date: v.date }
+  } catch {
+    return null
+  }
+}
+
+// carry: current view, kept only when the navigation lands on the reverse pair
+// (swap button, or picking the code that is already on the other side).
+export function usePairNavigation(base: string, target: string, carry?: () => CarriedView) {
   const router = useRouter()
 
   const go = useCallback(
     (nav: PairNavigation | null, picked?: string) => {
       if (!nav) return
       if (picked) rememberSwapNotice(nav, picked)
+      if (carry && nav.path === pairPath(target, base)) rememberView(nav.path, carry())
       router.push(nav.path)
     },
-    [router]
+    [router, carry, base, target]
   )
 
   const handleBaseChange = useCallback(

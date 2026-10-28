@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useId, useRef } from "react"
+import type { KeyboardEvent } from "react"
 import type { ChartPeriod } from "@/lib/history"
-import { DEFAULT_CHART_PERIOD, observationSentence } from "@/lib/history"
+import { observationSentence } from "@/lib/history"
 import { chartGeometry, chartAriaLabel, DEFAULT_CHART_BOX } from "@/lib/chart"
 import { formatRateValue } from "@/lib/format"
 import { usedDayNote } from "@/lib/pilot-format"
@@ -11,12 +12,41 @@ import { PV, MONO, SANS } from "./palette"
 
 const BOX = DEFAULT_CHART_BOX
 
+interface PairChartProps {
+  base: string
+  target: string
+  periods: ChartPeriod[]
+  selected: string // period key, owned by the page (carried across a swap)
+  onSelect: (key: string) => void
+}
+
 // One chart, seven period tabs. The default period is rendered on the server
 // (the SVG path is computed from embedded data, no client measuring), and the
 // plot area has a fixed height so hydration does not shift the page.
-export function PairChart({ base, target, periods }: { base: string; target: string; periods: ChartPeriod[] }) {
-  const [selected, setSelected] = useState(DEFAULT_CHART_PERIOD)
+//
+// The periods are one single-choice group: WAI-ARIA tabs (tablist / tab /
+// aria-selected, one tabpanel). Only the selected tab is in the Tab order;
+// arrow keys, Home and End move the selection and the focus together.
+export function PairChart({ base, target, periods, selected, onSelect }: PairChartProps) {
+  const id = useId()
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   const period = periods.find((p) => p.key === selected) ?? periods[periods.length - 1]
+  const tabId = (key: string) => `${id}-tab-${key}`
+  const panelId = `${id}-panel`
+
+  const onTabKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const last = periods.length - 1
+    const next =
+      e.key === "ArrowRight" || e.key === "ArrowDown" ? (index === last ? 0 : index + 1)
+      : e.key === "ArrowLeft" || e.key === "ArrowUp" ? (index === 0 ? last : index - 1)
+      : e.key === "Home" ? 0
+      : e.key === "End" ? last
+      : null
+    if (next === null) return
+    e.preventDefault()
+    onSelect(periods[next].key)
+    tabRefs.current[next]?.focus()
+  }
   const g = chartGeometry(period.points, BOX)
   const first = period.points[0]
   const last = period.points.at(-1)
@@ -31,14 +61,22 @@ export function PairChart({ base, target, periods }: { base: string; target: str
       </div>
 
       {/* Tabs scroll sideways on narrow screens instead of wrapping or shrinking */}
-      <div className="relative -mx-1 overflow-x-auto" role="group" aria-label="Chart period">
-        <div className="flex gap-1.5 px-1 w-max">
-          {periods.map((p) => (
+      <div className="relative -mx-1 overflow-x-auto">
+        <div className="flex gap-1.5 px-1 w-max" role="tablist" aria-label="Chart period">
+          {periods.map((p, i) => (
             <button
               key={p.key}
+              ref={(el) => {
+                tabRefs.current[i] = el
+              }}
               type="button"
-              aria-pressed={p.key === period.key}
-              onClick={() => setSelected(p.key)}
+              role="tab"
+              id={tabId(p.key)}
+              aria-selected={p.key === period.key}
+              aria-controls={panelId}
+              tabIndex={p.key === period.key ? 0 : -1}
+              onClick={() => onSelect(p.key)}
+              onKeyDown={(e) => onTabKeyDown(e, i)}
               className="min-w-[44px] min-h-[44px] px-3 rounded-lg text-sm"
               style={{
                 ...MONO,
@@ -53,7 +91,14 @@ export function PairChart({ base, target, periods }: { base: string; target: str
         </div>
       </div>
 
-      <div className="rounded-2xl p-3 sm:p-4" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
+      <div
+        role="tabpanel"
+        id={panelId}
+        aria-labelledby={tabId(period.key)}
+        tabIndex={0 /* no focusable content inside the panel (APG tabs pattern) */}
+        className="rounded-2xl p-3 sm:p-4"
+        style={{ background: PV.surface, border: `1px solid ${PV.border}` }}
+      >
         {/* Fixed-height plot: series high top-left, low bottom-left, period ends below */}
         <div className="relative" style={{ height: BOX.height }}>
           <svg

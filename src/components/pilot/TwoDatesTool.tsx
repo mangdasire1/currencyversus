@@ -17,16 +17,18 @@ interface TwoDatesToolProps {
   // Server-rendered default: 100 units, ten years ago (from the embedded series)
   defaultRequested: string
   defaultUsed: HistoricalPoint | null
+  // Selected date, owned by the page so a swap can carry it to the reverse pair
+  date: string
+  onDateChange: (date: string) => void
   currentRate: number | null
   currentDate: string | null
   builtAt: string // ISO; server and first client render use it as "today"
 }
 
 // "Same amount, two dates": what an amount converted to on one date vs today.
-export function TwoDatesTool({ base, target, defaultRequested, defaultUsed, currentRate, currentDate, builtAt }: TwoDatesToolProps) {
+export function TwoDatesTool({ base, target, defaultRequested, defaultUsed, date, onDateChange, currentRate, currentDate, builtAt }: TwoDatesToolProps) {
   const id = useId()
   const [amount, setAmount] = useState("100")
-  const [date, setDate] = useState(defaultRequested)
   const [then, setThen] = useState<{ requested: string; used: HistoricalPoint } | null>(
     defaultUsed ? { requested: defaultRequested, used: defaultUsed } : null
   )
@@ -100,7 +102,7 @@ export function TwoDatesTool({ base, target, defaultRequested, defaultUsed, curr
             min={EARLIEST}
             max={today}
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => onDateChange(e.target.value)}
             aria-invalid={!dateValid}
             aria-describedby={!dateValid ? `${id}-date-error` : undefined}
             className="w-full min-w-0 rounded-xl px-4 py-3 min-h-[44px] focus:outline-none"

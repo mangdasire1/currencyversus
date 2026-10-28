@@ -1,32 +1,42 @@
-// Pilot set for the new pair-page layout (Phase 7).
+// Which pair pages get the new layout (Phase 7), and which of them are the
+// measurement cohort. Two different things — keep them apart:
 //
-// The same code serves every page; only the slugs below get the new layout.
-// The set is small and fixed on purpose: the other 233 pages are the control
-// group for a before/after comparison in Search Console. Do not grow it
-// without deciding to end the comparison.
+//   MEASUREMENT_COHORT  the 8 pages the 2026-11-20 Search Console read-out is
+//                       computed over (layout shipped 2026-10-22). Fixed.
+//   NEW_LAYOUT_PAIRS    every page that renders the new layout. The cohort
+//                       plus the reverse direction of each cohort pair (Phase
+//                       8), so a swap does not drop the user into the old
+//                       layout. May grow.
 //
-// Roll back the new layout for all pages: make PILOT_PAIRS an empty array.
+// The layout check uses NEW_LAYOUT_PAIRS only. MEASUREMENT_COHORT is
+// documentation and a test fixture: nothing in the UI branches on it.
+// The reverse pages are not a control group: together they had 8 impressions
+// in the three months before, too few to compare against. The control pages
+// are eur-vs-try and sek-vs-inr (owner's decision, 2026-10-23).
+//
+// Roll back the new layout for all pages: make NEW_LAYOUT_PAIRS an empty array.
 
 import { isValidPairRoute, parsePairSlug } from "./routes.ts"
 import { isMetalCode } from "./conversion.ts"
 
-export const PILOT_PAIRS: readonly string[] = [
-  "eur-vs-chf", // most impressions in Search Console (owner's export)
-  "usd-vs-try", // extreme long-run moves; traffic from Turkey
-  // No Search Console export in the repo, so the remaining six are major,
-  // heavily searched pairs (owner to approve):
-  "usd-vs-eur", // "exchange rate usd to eur" was among the observed queries (Phase 5 brief)
-  "gbp-vs-usd", // GBP/USD, quoted with GBP as base
-  "usd-vs-jpy", // USD/JPY, quoted with USD as base
-  "eur-vs-gbp", // EUR/GBP, quoted with EUR as base
-  "usd-vs-cad", // USD/CAD, quoted with USD as base
-  "aud-vs-usd", // AUD/USD, quoted with AUD as base
+// 20 November measurement cohort. DO NOT CHANGE.
+// Any change to this list invalidates the measurement.
+export const MEASUREMENT_COHORT: readonly string[] = [
+  "eur-vs-chf", "aud-vs-usd", "eur-vs-gbp", "usd-vs-eur",
+  "usd-vs-try", "usd-vs-jpy", "gbp-vs-usd", "usd-vs-cad",
 ]
 
-const PILOT = new Set(PILOT_PAIRS)
+// Pages that render the new layout. Additions are allowed.
+export const NEW_LAYOUT_PAIRS: readonly string[] = [
+  ...MEASUREMENT_COHORT,
+  "chf-vs-eur", "usd-vs-aud", "gbp-vs-eur", "eur-vs-usd",
+  "try-vs-usd", "jpy-vs-usd", "usd-vs-gbp", "cad-vs-usd",
+]
 
-export function isPilot(slug: string): boolean {
-  return PILOT.has(slug)
+const NEW_LAYOUT = new Set(NEW_LAYOUT_PAIRS)
+
+export function hasNewLayout(slug: string): boolean {
+  return NEW_LAYOUT.has(slug)
 }
 
 // Fiat pairs only: metal pages have no historical series to chart.
