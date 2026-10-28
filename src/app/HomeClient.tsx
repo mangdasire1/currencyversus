@@ -6,6 +6,7 @@ import { Header } from "@/components/Header"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HistoricalTable } from "@/components/HistoricalTable"
 import { MetalIcon } from "@/components/MetalIcon"
+import { MethodFooterLink } from "@/components/RelatedLinks"
 import { useConversion } from "@/hooks/useConversion"
 import { useMetalRate } from "@/hooks/useMetalRate"
 import type { ConversionResult } from "@/lib/conversion"
@@ -281,7 +282,8 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
           </div>
         </main>
 
-        <footer className="text-center py-6 flex flex-col gap-1">
+        <footer className="text-center py-6 flex flex-col items-center gap-1">
+          <MethodFooterLink />
           <p className="text-xs text-slate-500 font-mono">
             FX data from European Central Bank via{" "}
             <a

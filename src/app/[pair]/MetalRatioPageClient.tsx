@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { MetalIcon } from "@/components/MetalIcon"
 import { MetalUnitConverter } from "@/components/MetalUnitConverter"
+import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
+import { ratioRelatedLinks } from "@/lib/related"
 import { METAL_SIGNIFICANT } from "@/lib/metal-units"
 import { TrendingUp, ArrowLeft, RefreshCw } from "lucide-react"
 import { useMetalRate } from "@/hooks/useMetalRate"
@@ -200,11 +202,14 @@ export function MetalRatioPageClient({
             </section>
 
             <p className="text-xs text-slate-600 font-mono">{editorialReviewLabel(["GOLD_SILVER_RATIO"])}</p>
+
+            <RelatedLinks links={ratioRelatedLinks()} />
           </div>
         </main>
 
-        <footer className="text-center py-4 text-xs text-slate-600 font-mono">
-          CurrencyVersus · Metal prices from gold-api.com · For educational purposes only
+        <footer className="text-center py-4 text-xs text-slate-600 font-mono flex flex-col items-center">
+          <span>CurrencyVersus · Metal prices from gold-api.com · For educational purposes only</span>
+          <MethodFooterLink />
         </footer>
       </div>
     </>

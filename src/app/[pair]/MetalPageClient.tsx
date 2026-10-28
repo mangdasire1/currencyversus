@@ -4,6 +4,8 @@ import Link from "next/link"
 import { TrendingUp, ArrowLeft } from "lucide-react"
 import { useConversionInputs } from "@/hooks/useConversion"
 import { MetalUnitConverter } from "@/components/MetalUnitConverter"
+import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
+import { metalRelatedLinks } from "@/lib/related"
 import { DataFreshness } from "@/components/DataFreshness"
 import { MetalIcon } from "@/components/MetalIcon"
 import { CURRENCY_MAP } from "@/lib/currencies"
@@ -302,11 +304,14 @@ export function MetalPageClient({
                 </p>
               </section>
             )}
+
+            <RelatedLinks links={metalRelatedLinks(metal, target)} />
           </div>
         </main>
 
-        <footer className="text-center py-4 text-xs text-slate-600 font-mono">
-          CurrencyVersus · Metal prices from gold-api.com · For educational purposes only
+        <footer className="text-center py-4 text-xs text-slate-600 font-mono flex flex-col items-center">
+          <span>CurrencyVersus · Metal prices from gold-api.com · For educational purposes only</span>
+          <MethodFooterLink />
         </footer>
       </div>
     </>
