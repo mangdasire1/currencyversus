@@ -7,7 +7,6 @@ import { TrendingUp } from "lucide-react"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HistoricalTable } from "@/components/HistoricalTable"
 import { useConversion } from "@/hooks/useConversion"
-import { CURRENCY_MAP } from "@/lib/currencies"
 import { CURRENCY_INFO } from "@/lib/currency-info"
 import type { ExchangeRate, TimePeriod } from "@/lib/types"
 import type { PeriodHistory } from "@/lib/history"
@@ -41,8 +40,6 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
   const conv = useConversion(base, target, { initialFx: serverRate })
   const forThisPair = conv.base === base && conv.quote === target
   const currentRate = forThisPair ? conv.rate : null
-  const baseCurrency = CURRENCY_MAP[base]
-  const targetCurrency = CURRENCY_MAP[target]
 
   const { handleBaseChange, handleTargetChange, handleSwapNav, swapNotice } = usePairNavigation(base, target)
 
@@ -77,7 +74,7 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
             {/* Page title */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-4xl">{baseCurrency?.flag}</span>
+                {/* codes only, no flag emoji (two letters on Windows) */}
                 <h1
                   className="text-3xl md:text-4xl font-bold text-white"
                   style={{ fontFamily: "var(--font-space-grotesk)" }}
@@ -86,7 +83,6 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
                   <span className="text-slate-500">vs</span>{" "}
                   <span className="text-[#6366f1]">{target}</span>
                 </h1>
-                <span className="text-4xl">{targetCurrency?.flag}</span>
               </div>
               {currentRate !== null && (
                 <p className="text-white font-semibold font-mono text-sm">{conv.rateLabel}</p>
@@ -111,6 +107,7 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
                 onBaseChange={handleBaseChange}
                 onTargetChange={handleTargetChange}
                 onSwap={handleSwapNav}
+                showFlags={false}
               />
 
               <div className="glass-card p-6 flex flex-col gap-4">
@@ -122,8 +119,8 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Base", value: `${baseCurrency?.flag} ${base}` },
-                    { label: "Target", value: `${targetCurrency?.flag} ${target}` },
+                    { label: "Base", value: base },
+                    { label: "Target", value: target },
                     {
                       label: "Current Rate",
                       value: currentRate !== null ? conv.rateLabel : conv.status === "loading" ? "…" : "Unavailable",
@@ -198,7 +195,7 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="flex flex-col gap-2">
                         <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
-                          {baseCurrency?.flag} {base} — {baseInfo.name}
+                          {base} — {baseInfo.name}
                         </p>
                         <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
                           {baseInfo.description}
@@ -206,7 +203,7 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
                       </div>
                       <div className="flex flex-col gap-2">
                         <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
-                          {targetCurrency?.flag} {target} — {targetInfo.name}
+                          {target} — {targetInfo.name}
                         </p>
                         <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
                           {targetInfo.description}
@@ -226,7 +223,7 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="flex flex-col gap-3">
                         <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
-                          {baseCurrency?.flag} {base} Drivers
+                          {base} Drivers
                         </p>
                         <ul className="flex flex-col gap-2">
                           {baseInfo.factors.map((f) => (
@@ -239,7 +236,7 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
                       </div>
                       <div className="flex flex-col gap-3">
                         <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
-                          {targetCurrency?.flag} {target} Drivers
+                          {target} Drivers
                         </p>
                         <ul className="flex flex-col gap-2">
                           {targetInfo.factors.map((f) => (
@@ -284,7 +281,7 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="flex flex-col gap-2 p-4 rounded-xl bg-white/5 border border-white/5">
                         <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
-                          {baseCurrency?.flag} {baseInfo.country}
+                          {baseInfo.country}
                         </p>
                         <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
                           {baseInfo.economy}
@@ -292,7 +289,7 @@ export function PairPageClient({ base, target, initialRate, initialDate, initial
                       </div>
                       <div className="flex flex-col gap-2 p-4 rounded-xl bg-white/5 border border-white/5">
                         <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
-                          {targetCurrency?.flag} {targetInfo.country}
+                          {targetInfo.country}
                         </p>
                         <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "var(--font-dm-sans)" }}>
                           {targetInfo.economy}
