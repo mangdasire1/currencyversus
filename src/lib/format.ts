@@ -46,6 +46,22 @@ export function formatRateValue(n: number): string {
   return belowStep(n, d) ?? fixed(n, d)
 }
 
+// Decimals that show at most `sig` significant digits (1 → 49.738 for sig 5).
+export function significantDecimals(n: number, sig: number): number {
+  return Math.max(0, sig - Math.floor(Math.log10(Math.abs(n))) - 1)
+}
+
+// Currency-to-currency rates: the adaptive rate decimals above, capped so the
+// text never claims more significant digits than the ECB data carries
+// (`sig` from pairSignificantDigits in ecb.ts). 49.7378 with sig 5 → 49.738,
+// not 49.7380; EUR/CHF with sig 4 → 0.9247, not 0.92470.
+export function formatFxRate(n: number, sig: number): string {
+  if (!Number.isFinite(n)) return "—"
+  if (n === 0) return "0"
+  const d = Math.min(rateDecimals(n), significantDecimals(n, sig))
+  return belowStep(n, d) ?? fixed(n, d)
+}
+
 // Money: the currency's own minor units (2 for most, 0 for JPY/KRW).
 export function formatMoney(n: number, currencyDecimals: number): string {
   if (!Number.isFinite(n)) return "—"

@@ -10,7 +10,8 @@
 
 import type { HistoricalPoint } from "./types.ts"
 import type { ChartPeriod } from "./history.ts"
-import { formatRateValue } from "./format.ts"
+import { formatFxRate } from "./format.ts"
+import { pairSignificantDigits } from "./ecb.ts"
 
 export interface ChartBox {
   width: number
@@ -57,7 +58,8 @@ export function chartAriaLabel(base: string, target: string, p: Pick<ChartPeriod
   const to = p.end ?? last
   const direction = to.rate > from.rate ? "rising" : to.rate < from.rate ? "falling" : "unchanged"
   const change = p.changePct !== null ? `, a change of ${signedPercent(p.changePct)}` : ""
-  return `${base} to ${target} from ${from.date.slice(0, 7)} to ${to.date.slice(0, 7)}, ${direction} from ${formatRateValue(from.rate)} to ${formatRateValue(to.rate)}${change}`
+  const sig = pairSignificantDigits(base, target)
+  return `${base} to ${target} from ${from.date.slice(0, 7)} to ${to.date.slice(0, 7)}, ${direction} from ${formatFxRate(from.rate, sig)} to ${formatFxRate(to.rate, sig)}${change}`
 }
 
 export { signedPercent }

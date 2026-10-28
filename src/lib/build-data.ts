@@ -5,6 +5,7 @@ import type { PeriodHistory, ChartPeriod } from "./history"
 import { METAL_API_BASE } from "./metals"
 import type { MetalCode } from "./metals"
 import { parseGoldApiPrice } from "./gold-api"
+import { eurSymbols, crossRate, crossSeries } from "./ecb"
 
 const BASE_URL = "https://api.frankfurter.dev/v1"
 const ALL_CODES = CURRENCIES.map((c) => c.code)
@@ -75,63 +76,89 @@ export async function getBuildTimeMetalPrice(
   }
 }
 
-// Fetches all rates for a given base in one request.
-// The data cache (see fetchWithRetry) deduplicates identical URLs across build workers.
+// All FX data comes from the ECB's own euro rates; pairs are derived with
+// src/lib/ecb.ts (the provider's per-base answers are crosses it has already
+// rounded, separately for each direction — see the comment there). One
+// request for the latest rates and one for the series serve every page; the
+// data cache (see fetchWithRetry) deduplicates the URL across build workers.
+const EUR_SYMBOLS = eurSymbols(ALL_CODES).join(",")
+
+let latestMemo: Promise<ExchangeRate | null> | null = null
+
+function latestEuroRates(): Promise<ExchangeRate | null> {
+  latestMemo ??= fetchWithRetry(`${BASE_URL}/latest?symbols=${EUR_SYMBOLS}`)
+    .then(async (res) => {
+      const data = (await res.json()) as ExchangeRate
+      if (data.base !== "EUR" || !data.rates) throw new Error("expected euro reference rates")
+      console.log("[build-data] OK latest euro rates", data.date)
+      return data
+    })
+    .catch((err) => {
+      latestMemo = null // let the next page retry
+      console.warn("[build-data] FAILED latest euro rates", err instanceof Error ? err.message : String(err))
+      return null
+    })
+  return latestMemo
+}
+
 export async function getInitialRateData(
   base: string,
   target: string
 ): Promise<{ rate: number; date: string } | null> {
-  const symbols = ALL_CODES.filter((c) => c !== base).join(",")
-  const url = `${BASE_URL}/latest?base=${base}&symbols=${symbols}`
-  try {
-    const res = await fetchWithRetry(url)
-    const data = (await res.json()) as ExchangeRate
-    const rate = data.rates?.[target]
-    if (typeof rate === "number") {
-      console.log("[build-data] OK", base)
-      return { rate, date: data.date }
-    }
-    console.warn("[build-data] FAILED", base, "rate not found in response")
-    return null
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err)
-    console.warn("[build-data] FAILED", base, detail)
+  const data = await latestEuroRates()
+  if (!data) return null
+  const rate = crossRate(data.rates, base, target)
+  if (rate === null) {
+    console.warn("[build-data] FAILED", base, target, "rate not found in response")
     return null
   }
+  return { rate, date: data.date }
 }
 
 // ---------------------------------------------------------------------------
 // Historical comparison data for the server HTML.
 //
-// One long daily series per *base* currency (all 14 other currencies in a
-// single request) feeds every pair with that base: 15 requests for 210 pair
-// pages. ~0.5 MB per base, under the 2 MB per-entry limit of Next's data
-// cache, so build workers share it. Periods, "Then" business days, daily
+// One long daily series of the euro rates (all 14 other currencies in a
+// single request) feeds every pair: 1 request for 210 pair pages. ~0.5 MB,
+// under the 2 MB per-entry limit of Next's data cache, so build workers share
+// it. Each base's view is derived from it in memory. Periods, "Then" business days, daily
 // low/high and the sampled trend line are derived with the same functions
 // the client uses (src/lib/history.ts).
 
-const seriesMemo = new Map<string, Promise<Record<string, Record<string, number>> | null>>()
+type DailyRates = Record<string, Record<string, number>>
 
-function baseSeries(base: string, today: Date): Promise<Record<string, Record<string, number>> | null> {
-  const { start, end } = seriesRange(today, TIME_PERIODS)
-  const key = `${base}_${start}_${end}`
-  let p = seriesMemo.get(key)
+const euroSeriesMemo = new Map<string, Promise<DailyRates | null>>()
+const baseSeriesMemo = new Map<string, Promise<DailyRates | null>>()
+
+function euroSeries(start: string, end: string): Promise<DailyRates | null> {
+  const key = `${start}_${end}`
+  let p = euroSeriesMemo.get(key)
   if (!p) {
-    const symbols = ALL_CODES.filter((c) => c !== base).join(",")
-    const url = `${BASE_URL}/${start}..${end}?base=${base}&symbols=${symbols}`
-    p = fetchWithRetry(url)
+    p = fetchWithRetry(`${BASE_URL}/${start}..${end}?symbols=${EUR_SYMBOLS}`)
       .then(async (res) => {
         const data = (await res.json()) as TimeSeriesRates
-        if (data.base !== base || !data.rates) throw new Error("time series does not match the requested base")
-        console.log("[build-data] history OK", base, Object.keys(data.rates).length, "days")
+        if (data.base !== "EUR" || !data.rates) throw new Error("expected euro reference rates")
+        console.log("[build-data] history OK euro rates", Object.keys(data.rates).length, "days")
         return data.rates
       })
       .catch((err) => {
         const detail = err instanceof Error ? err.message : String(err)
-        console.warn("[build-data] history FAILED", base, detail)
+        console.warn("[build-data] history FAILED", detail)
         return null
       })
-    seriesMemo.set(key, p)
+    euroSeriesMemo.set(key, p)
+  }
+  return p
+}
+
+// { date: { target: 1 base in target } } for every other currency.
+function baseSeries(base: string, today: Date): Promise<DailyRates | null> {
+  const { start, end } = seriesRange(today, TIME_PERIODS)
+  const key = `${base}_${start}_${end}`
+  let p = baseSeriesMemo.get(key)
+  if (!p) {
+    p = euroSeries(start, end).then((eur) => (eur ? crossSeries(eur, base, ALL_CODES) : null))
+    baseSeriesMemo.set(key, p)
   }
   return p
 }
@@ -148,7 +175,7 @@ export async function getBuildTimeHistory(
   return derivePeriodHistory(series, today, TIME_PERIODS)
 }
 
-// Pilot pages (Phase 7): the seven chart periods, from the same per-base
+// New-layout pages (Phase 7): the seven chart periods, from the same
 // daily series as the table above (no extra request). Only the sampled lines
 // and per-period summaries are embedded, never the ~2,600-day daily series.
 export async function getBuildTimeChart(base: string, target: string): Promise<ChartPeriod[] | null> {

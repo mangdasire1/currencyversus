@@ -6,21 +6,36 @@ import { cacheGet, cacheSet, FRESH_TTL } from "./cache.ts"
 import { isExchangeRateFor, isMetalPriceFor } from "./cache-schemas.ts"
 import { parseGoldApiPrice } from "./gold-api.ts"
 import { sharedRequest } from "./inflight.ts"
+import { eurSymbols, crossRates, crossSeries } from "./ecb.ts"
 
 const BASE_URL = "https://api.frankfurter.dev/v1"
+
+// Every FX request asks for the ECB's own euro rates (no `base=`) and derives
+// the pair here (src/lib/ecb.ts): the provider's per-base answers are crosses
+// it has already rounded, separately for each direction.
+function eurParams(base: string, symbols: string[]): URLSearchParams {
+  return new URLSearchParams({ symbols: eurSymbols([base, ...symbols]).join(",") })
+}
+
+function assertEuro(json: { base?: unknown }) {
+  if (json.base !== "EUR") throw new Error("expected euro reference rates")
+}
 
 export async function fetchLatestRates(
   base: string,
   symbols: string[]
 ): Promise<ExchangeRate> {
-  const params = new URLSearchParams({ base, symbols: symbols.join(",") })
-  const res = await fetch(`${BASE_URL}/latest?${params}`)
+  const res = await fetch(`${BASE_URL}/latest?${eurParams(base, symbols)}`)
   if (!res.ok) throw new Error(`API error: ${res.status}`)
-  return res.json()
+  const json = (await res.json()) as ExchangeRate
+  assertEuro(json)
+  return { base, date: json.date, rates: crossRates(json.rates ?? {}, base, symbols) }
 }
 
+// v2: values are now derived from the euro rates (v1 held the provider's
+// rounded per-base cross).
 export function latestCacheKey(base: string, target: string): string {
-  return `${base}_${target}_latest`
+  return `${base}_${target}_latest_v2`
 }
 
 // Latest FX rate for one pair. A fresh cache entry is returned without a
@@ -50,10 +65,11 @@ export async function fetchTimeSeries(
   symbols: string[],
   signal?: AbortSignal
 ): Promise<TimeSeriesRates> {
-  const params = new URLSearchParams({ base, symbols: symbols.join(",") })
-  const res = await fetch(`${BASE_URL}/${startDate}..${endDate}?${params}`, { signal })
+  const res = await fetch(`${BASE_URL}/${startDate}..${endDate}?${eurParams(base, symbols)}`, { signal })
   if (!res.ok) throw new Error(`API error: ${res.status}`)
-  return res.json()
+  const json = (await res.json()) as TimeSeriesRates
+  assertEuro(json)
+  return { ...json, base, rates: crossSeries(json.rates ?? {}, base, symbols) }
 }
 
 export interface MetalPrice {
@@ -109,12 +125,11 @@ export async function fetchRateOn(
   return sharedRequest(
     `on_${date}_${base}_${target}`,
     async (s) => {
-      const params = new URLSearchParams({ base, symbols: target })
-      const res = await fetch(`${BASE_URL}/${date}?${params}`, { signal: s })
+      const res = await fetch(`${BASE_URL}/${date}?${eurParams(base, [target])}`, { signal: s })
       if (!res.ok) throw new Error(`API error: ${res.status}`)
       const json = (await res.json()) as ExchangeRate
-      const rate = json.rates?.[target]
-      if (json.base !== base || typeof rate !== "number" || !Number.isFinite(rate) || rate <= 0 || typeof json.date !== "string") {
+      const rate = json.base === "EUR" ? crossRates(json.rates ?? {}, base, [target])[target] : undefined
+      if (typeof rate !== "number" || !Number.isFinite(rate) || rate <= 0 || typeof json.date !== "string") {
         throw new Error("rate response does not match the requested pair")
       }
       return { date: json.date, rate }

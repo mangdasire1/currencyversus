@@ -26,7 +26,8 @@ globalThis.fetch = (async (input: string | URL) => {
     return new Response(JSON.stringify({ price: 4000 + calls.gold, symbol: "XAU", updatedAt: new Date().toISOString() }))
   }
   calls.fx++
-  return new Response(JSON.stringify({ base: "USD", date: "2026-10-16", rates: { EUR: 0.88 + calls.fx / 1000 } }))
+  // euro reference rates, as the client now requests them (src/lib/ecb.ts)
+  return new Response(JSON.stringify({ base: "EUR", date: "2026-10-16", rates: { USD: 1.13 + calls.fx / 1000 } }))
 }) as typeof fetch
 
 const { startAutoRefresh } = await import("./refresh.ts")

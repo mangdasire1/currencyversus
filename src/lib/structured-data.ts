@@ -1,3 +1,6 @@
+import { significantDecimals } from "./format.ts"
+import { pairSignificantDigits } from "./ecb.ts"
+
 export function getWebApplicationSchema() {
   return {
     "@context": "https://schema.org",
@@ -30,7 +33,9 @@ export function getFAQItems(
   rate: number | null,
   date: string | null
 ): FAQItem[] {
-  const rateStr = rate !== null ? rate.toFixed(4) : null
+  // Four decimals as before, but never more significant digits than the ECB
+  // data carries (49.7378 → 49.738; 0.0201 keeps four decimals).
+  const rateStr = rate !== null ? rate.toFixed(Math.min(4, significantDecimals(rate, pairSignificantDigits(base, target)))) : null
   const dateStr = date ?? "today"
 
   return [

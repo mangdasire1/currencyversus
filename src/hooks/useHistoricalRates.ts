@@ -87,7 +87,7 @@ export function useHistoricalRates(
 
     // v4: one entry per pair holding every period (derived from one series),
     // now with daily low/high and coverage start
-    const cacheKey = `${base}_${target}_history_v4`
+    const cacheKey = `${base}_${target}_history_v5` // v5: derived from euro rates (src/lib/ecb.ts)
     const cached = cacheGet(cacheKey, isCachedHistory)
     const cachedRows = cached ? fromCache(cached) : null
     if (cachedRows) {

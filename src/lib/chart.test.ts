@@ -131,5 +131,5 @@ test("aria-label carries the real numbers", () => {
     end: { date: "2026-10-22", rate: 49.628 },
     changePct: ((49.628 - 3.0798) / 3.0798) * 100,
   }
-  assert.equal(chartAriaLabel("USD", "TRY", p), "USD to TRY from 2016-10 to 2026-10, rising from 3.0798 to 49.6280, a change of +1511.40%") // the brief's example text
+  assert.equal(chartAriaLabel("USD", "TRY", p), "USD to TRY from 2016-10 to 2026-10, rising from 3.0798 to 49.628, a change of +1511.40%") // the Phase 7 brief's example; since Phase 8 no trailing digit beyond the ECB precision (was 49.6280)
 })

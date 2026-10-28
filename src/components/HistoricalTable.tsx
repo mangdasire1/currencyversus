@@ -4,7 +4,8 @@ import { useHistoricalRates } from "@/hooks/useHistoricalRates"
 import { PercentChange } from "./PercentChange"
 import { Sparkline } from "./Sparkline"
 import { SkeletonTableRow } from "./SkeletonLoaders"
-import { formatRateValue, formatPercentChange } from "@/lib/format"
+import { formatFxRate, formatPercentChange } from "@/lib/format"
+import { pairSignificantDigits } from "@/lib/ecb"
 import { TIME_PERIODS } from "@/lib/currencies"
 import type { ConversionResult } from "@/lib/conversion"
 import type { PeriodHistory } from "@/lib/history"
@@ -22,6 +23,7 @@ export function HistoricalTable({ base, target, current, initialRows }: Historic
   // Pair identity: a "now" rate for another pair is never compared against this history.
   const currentRate = current.base === base && current.quote === target ? current.rate : null
   const { comparisons, loading } = useHistoricalRates(base, target, currentRate, initialRows)
+  const sig = pairSignificantDigits(base, target)
 
   return (
     <div className="glass-card p-6 flex flex-col gap-4">
@@ -74,7 +76,7 @@ export function HistoricalTable({ base, target, current, initialRows }: Historic
                           : null,
                       ].filter(Boolean).join(" · ") || undefined}
                     >
-                      {c.historicalRate !== null ? formatRateValue(c.historicalRate) : "—"}
+                      {c.historicalRate !== null ? formatFxRate(c.historicalRate, sig) : "—"}
                       {c.historicalDate && (
                         <div className="text-[10px] text-slate-600">{c.historicalDate}</div>
                       )}
@@ -83,7 +85,7 @@ export function HistoricalTable({ base, target, current, initialRows }: Historic
                       className="py-3 px-4 text-right text-white font-mono text-xs font-semibold"
                       title={c.currentRate !== null ? `Rate ${c.currentRate}` : undefined}
                     >
-                      {c.currentRate !== null ? formatRateValue(c.currentRate) : "—"}
+                      {c.currentRate !== null ? formatFxRate(c.currentRate, sig) : "—"}
                     </td>
                     <td className="py-3 px-4 text-right">
                       <PercentChange value={c.percentChange} />
@@ -94,7 +96,7 @@ export function HistoricalTable({ base, target, current, initialRows }: Historic
                         className="py-3 px-4 text-right text-slate-400 font-mono text-xs"
                         title={point ? `Daily ECB reference rate ${point.rate} on ${point.date}` : undefined}
                       >
-                        {point ? formatRateValue(point.rate) : "—"}
+                        {point ? formatFxRate(point.rate, sig) : "—"}
                         {point && <div className="text-[10px] text-slate-600">{point.date}</div>}
                       </td>
                     ))}

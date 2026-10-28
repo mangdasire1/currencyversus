@@ -1,7 +1,8 @@
 "use client"
 
 import { useHistoricalRates } from "@/hooks/useHistoricalRates"
-import { formatRateValue } from "@/lib/format"
+import { formatFxRate } from "@/lib/format"
+import { pairSignificantDigits } from "@/lib/ecb"
 import { directionNote } from "@/lib/pilot-format"
 import type { PeriodHistory } from "@/lib/history"
 import type { TimePeriod } from "@/lib/types"
@@ -21,6 +22,7 @@ interface PilotHistoryTableProps {
 // the table instead of repeating it on all seven rows.
 export function PilotHistoryTable({ base, target, currentRate, currentLabel, currentDate, initialRows }: PilotHistoryTableProps) {
   const { comparisons } = useHistoricalRates(base, target, currentRate, initialRows)
+  const sig = pairSignificantDigits(base, target)
 
   return (
     <section aria-labelledby="history-heading" className="flex flex-col gap-3">
@@ -51,7 +53,7 @@ export function PilotHistoryTable({ base, target, currentRate, currentLabel, cur
                   )}
                 </th>
                 <td className="text-right py-3 px-4" style={{ ...MONO, color: PV.text }}>
-                  {c.historicalRate !== null ? formatRateValue(c.historicalRate) : "—"}
+                  {c.historicalRate !== null ? formatFxRate(c.historicalRate, sig) : "—"}
                 </td>
                 <td className="text-right py-3 px-4" style={{ ...MONO, color: PV.dim }}>
                   {c.historicalDate ?? "—"}

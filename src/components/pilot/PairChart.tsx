@@ -5,7 +5,8 @@ import type { KeyboardEvent } from "react"
 import type { ChartPeriod } from "@/lib/history"
 import { observationSentence } from "@/lib/history"
 import { chartGeometry, chartAriaLabel, DEFAULT_CHART_BOX } from "@/lib/chart"
-import { formatRateValue } from "@/lib/format"
+import { formatFxRate } from "@/lib/format"
+import { pairSignificantDigits } from "@/lib/ecb"
 import { usedDayNote } from "@/lib/pilot-format"
 import { Direction } from "./Direction"
 import { PV, MONO, SANS } from "./palette"
@@ -31,6 +32,8 @@ export function PairChart({ base, target, periods, selected, onSelect }: PairCha
   const id = useId()
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   const period = periods.find((p) => p.key === selected) ?? periods[periods.length - 1]
+  const sig = pairSignificantDigits(base, target)
+  const fmt = (n: number) => formatFxRate(n, sig)
   const tabId = (key: string) => `${id}-tab-${key}`
   const panelId = `${id}-panel`
 
@@ -115,10 +118,10 @@ export function PairChart({ base, target, periods, selected, onSelect }: PairCha
             <path d={g.path} fill="none" stroke={PV.accentText} strokeWidth="2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           </svg>
           <span className="absolute left-1 top-0 -translate-y-1/2 px-1 text-xs" style={{ ...MONO, color: PV.dim, background: PV.surface }}>
-            {formatRateValue(g.domain[1])}
+            {fmt(g.domain[1])}
           </span>
           <span className="absolute left-1 bottom-0 translate-y-1/2 px-1 text-xs" style={{ ...MONO, color: PV.dim, background: PV.surface }}>
-            {formatRateValue(g.domain[0])}
+            {fmt(g.domain[0])}
           </span>
         </div>
         <div className="mt-3 flex justify-between text-xs" style={{ ...MONO, color: PV.faint }}>
@@ -133,7 +136,7 @@ export function PairChart({ base, target, periods, selected, onSelect }: PairCha
           <p className="mt-1 text-xl"><Direction value={period.changePct} /></p>
           <p className="mt-1 text-xs" style={{ ...MONO, color: PV.dim }}>
             {period.start && period.end
-              ? `${formatRateValue(period.start.rate)} → ${formatRateValue(period.end.rate)}`
+              ? `${fmt(period.start.rate)} → ${fmt(period.end.rate)}`
               : period.coverageStart
                 ? `Data only from ${period.coverageStart}`
                 : "—"}
@@ -147,7 +150,7 @@ export function PairChart({ base, target, periods, selected, onSelect }: PairCha
         ).map(([label, point]) => (
           <div key={label} className="rounded-xl p-4" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
             <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>{label}</p>
-            <p className="mt-1 text-xl" style={{ ...MONO, color: PV.text }}>{point ? formatRateValue(point.rate) : "—"}</p>
+            <p className="mt-1 text-xl" style={{ ...MONO, color: PV.text }}>{point ? fmt(point.rate) : "—"}</p>
             <p className="mt-1 text-xs" style={{ ...MONO, color: PV.dim }}>{point?.date ?? ""}</p>
           </div>
         ))}

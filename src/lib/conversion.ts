@@ -7,7 +7,8 @@
 // assembling its own numbers and strings.
 
 import { METALS, OZ_TO_GRAM } from "./metals.ts"
-import { formatRateValue } from "./format.ts"
+import { formatRateValue, formatFxRate } from "./format.ts"
+import { pairSignificantDigits } from "./ecb.ts"
 
 export type MetalUnit = "oz" | "g"
 export type Unit = "currency" | MetalUnit
@@ -96,17 +97,19 @@ export function unitLabel(code: string, unit: Unit): string {
 }
 
 // Label number formatting: integers stay bare ("1 EUR = 1 EUR"); everything
-// else uses the adaptive rate precision from format.ts.
-export function formatLabelNumber(n: number): string {
+// else uses the adaptive rate precision from format.ts. `sig` (currency pairs
+// only) caps the digits at what the ECB data carries.
+export function formatLabelNumber(n: number, sig?: number): string {
   if (!Number.isFinite(n)) return "—"
   if (Number.isInteger(n)) return n.toLocaleString("en-US")
-  return formatRateValue(n)
+  return sig !== undefined ? formatFxRate(n, sig) : formatRateValue(n)
 }
 
 function buildLabel(base: string, baseUnit: Unit, quote: string, quoteUnit: Unit, rate: number | null): string {
   const left = `1 ${unitLabel(base, baseUnit)}`
   const right = unitLabel(quote, quoteUnit)
-  return `${left} = ${rate !== null ? formatLabelNumber(rate) : "—"} ${right}`
+  const sig = baseUnit === "currency" && quoteUnit === "currency" && base !== quote ? pairSignificantDigits(base, quote) : undefined
+  return `${left} = ${rate !== null ? formatLabelNumber(rate, sig) : "—"} ${right}`
 }
 
 // Returns the quote only if it is for exactly this pair.
