@@ -27,9 +27,8 @@ export const EDITORIAL_REVIEWED: Record<string, string | null> = {
   SGD: "2026-10-22",
   XAU: "2026-10-22",
   XAG: "2026-10-22",
-  // Phase 10: not reviewed against sources yet — the pages say so.
-  XPT: null,
-  XPD: null,
+  XPT: "2026-11-08",
+  XPD: "2026-11-08",
   GOLD_SILVER_RATIO: "2026-10-22",
 }
 
@@ -71,6 +70,13 @@ export const EDITORIAL_REVIEW_LOG: ReviewLogEntry[] = [
     checked:
       "Phase 6 (owner's decisions): removed 6 blocks without a user question (CAD/KRW/SGD fun facts, XAU-MXN, XAG-CHF, XAG-BRL local context); silver-vs-gold comparisons replaced by the demand mechanism; fixed dates reclassified as historical constants",
     reviewedBy: AI_REVIEW,
+  },
+  {
+    date: "2026-11-08",
+    records: ["XPT", "XPD"],
+    checked:
+      "Phase 10: platinum and palladium texts written by mechanism (demand from catalytic converters, emission rules, battery electric vehicles, substitution, by-product and concentrated supply, retail-market notes); no figures, rankings or comparisons with gold (editorial guard passes). Marked reviewed on the site owner's instruction",
+    reviewedBy: "Site owner's decision; text written by Claude Code (AI assistant) — not an independent fact-check",
   },
 ]
 
