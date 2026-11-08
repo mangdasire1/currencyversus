@@ -33,7 +33,7 @@ test("home page: the default pair's rate and history are build-time data seeding
   // the seed reaches every surface that shows the default pair
   assert.match(home, /useConversion\(base, target, \{ metalUnit: "g", initialFx \}\)/)
   assert.match(home, /<CurrencyConverter[\s\S]*?initialFx=\{initialFx\}[\s\S]*?\/>/)
-  assert.match(home, /<HistoricalTable [^>]*initialRows=\{isDefaultPair \? initialHistory : null\}/)
+  assert.match(home, /<HomeHistoryTable[^>]*initialRows=\{isDefaultPair \? initialHistory : null\}/)
   // Phase 7 trap: never filled from an effect
   assert.doesNotMatch(home, /useEffect/)
   const hook = fs.readFileSync(path.join(app, "..", "hooks", "useExchangeRate.ts"), "utf8")

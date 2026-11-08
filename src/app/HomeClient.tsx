@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
-import { HistoricalTable } from "@/components/HistoricalTable"
+import { HomeHistoryTable } from "@/components/HomeHistoryTable"
 import { PairChart } from "@/components/pilot/PairChart"
 import { usePairChart } from "@/hooks/usePairChart"
 import { DEFAULT_CHART_BOX } from "@/lib/chart"
@@ -104,6 +104,7 @@ export function HomeClient({
   const isDefaultPair = base === defaultBase && target === defaultTarget
   // Quick Stats quotes metals per gram so the unit is always explicit.
   const conv = useConversion(base, target, { metalUnit: "g", initialFx })
+  const forPair = conv.base === base && conv.quote === target // never show another pair's rate
   // The pair pages' chart (Phase 7), for the selected pair. The default pair's
   // periods are embedded, so its default period is in the server HTML.
   const fxPair = base !== target && !isMetal(base) && !isMetal(target)
@@ -208,7 +209,14 @@ export function HomeClient({
             {/* Historical table — hidden when a metal is selected */}
             {!isMetal(base) && !isMetal(target) && (
               <div className="animate-fade-in-up" style={{ animationDelay: "100ms" }}>
-                <HistoricalTable base={base} target={target} current={conv} initialRows={isDefaultPair ? initialHistory : null} />
+                <HomeHistoryTable
+                  base={base}
+                  target={target}
+                  currentRate={forPair ? conv.rate : null}
+                  currentLabel={forPair && conv.rate !== null ? conv.rateLabel : null}
+                  currentDate={forPair ? conv.fxDate : null}
+                  initialRows={isDefaultPair ? initialHistory : null}
+                />
               </div>
             )}
 

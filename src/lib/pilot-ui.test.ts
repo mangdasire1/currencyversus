@@ -31,6 +31,58 @@ test("direction colours: no green/red token or class in the pilot layout", () =>
   assert.deepEqual(hits, [])
 })
 
+// Phase 9: the home page follows the same rule. Every file it imports
+// (transitively, within src) is scanned — not a fixed list, so a component
+// added later is covered too.
+function importGraph(entry: string): string[] {
+  const seen = new Set<string>()
+  const stack = [path.join(SRC, entry)]
+  const resolve = (from: string, spec: string) => {
+    const base = spec.startsWith("@/") ? path.join(SRC, spec.slice(2)) : spec.startsWith(".") ? path.resolve(path.dirname(from), spec) : null
+    if (!base) return null
+    for (const ext of ["", ".ts", ".tsx"]) if (fs.existsSync(base + ext) && fs.statSync(base + ext).isFile()) return base + ext
+    return null
+  }
+  while (stack.length) {
+    const f = stack.pop()!
+    if (seen.has(f)) continue
+    seen.add(f)
+    for (const m of fs.readFileSync(f, "utf8").matchAll(/(?:import|export)[^"']*?from\s+["']([^"']+)["']/g)) {
+      const r = resolve(f, m[1])
+      if (r && /\.tsx?$/.test(r)) stack.push(r)
+    }
+  }
+  return [...seen].map((f) => path.relative(SRC, f).split(path.sep).join("/")).sort()
+}
+// Red as an error colour is not a direction: the shared converter's
+// "unavailable" message (also on the old layout's 194 pages, left as is).
+const ERROR_RED = new Set(["components/CurrencyConverter.tsx: <p className=\"text-red-400 text-sm\">{missingMessage()}</p>"])
+
+test("direction colours: no green/red in anything the home page renders (whole import graph)", () => {
+  const files = importGraph("app/HomeClient.tsx")
+  const hits: string[] = []
+  for (const f of files) {
+    read(f).split("\n").forEach((line, i) => {
+      const isComment = /^\s*(\/\/|\*|\/\*|\{\/\*)/.test(line)
+      if (!isComment && GREEN_RED.test(line) && !ERROR_RED.has(`${f}: ${line.trim()}`)) hits.push(`${f}:${i + 1}: ${line.trim()}`)
+    })
+  }
+  console.log(`    home import graph: ${files.length} files; green/red direction hits: ${hits.length}`)
+  assert.ok(files.includes("components/HomeHistoryTable.tsx") && files.includes("components/Sparkline.tsx"))
+  assert.ok(!files.includes("components/PercentChange.tsx"), "the green/red change badge is not used on the home page")
+  assert.deepEqual(hits, [])
+})
+
+test("home table: no repeated Now column; the current rate is stated once above the table", () => {
+  const t = read("components/HomeHistoryTable.tsx")
+  const heads = [...t.matchAll(/<th className="[^"]*">([^<]+)<\/th>/g)].map((m) => m[1])
+  assert.deepEqual(heads, ["Period", "Then", "Change", "Low", "High", "Trend"])
+  assert.equal((t.match(/Now: \{currentLabel/g) ?? []).length, 1)
+  assert.match(t, /<Direction value=\{c\.percentChange\} \/>/)
+  assert.match(t, /upColor=\{PV\.up\}\s+downColor=\{PV\.down\}/)
+  assert.match(t, /<div className="overflow-x-auto">/) // the table scrolls sideways on phones, not squeezed
+})
+
 test("direction colours: up/down are the amber/teal tokens and the arrows are ▲/▼", () => {
   const palette = read(`${PILOT_DIR}/palette.ts`)
   assert.match(palette, /up: "#D99A4E"/)

@@ -15,15 +15,19 @@ interface SparklineProps {
   // chart carries information, so it gets an SVG <title> rather than being
   // hidden as decoration.
   title: string
+  // Line colour by direction (first vs last drawn point). Set by the caller:
+  // the old pair layout passes its own colours, the home page amber/teal.
+  upColor: string
+  downColor: string
 }
 
-export function Sparkline({ data, title }: SparklineProps) {
+export function Sparkline({ data, title, upColor, downColor }: SparklineProps) {
   if (!data || data.length < 2) {
     return <div className="rounded bg-white/5 animate-pulse" style={{ width: WIDTH, height: HEIGHT }} />
   }
 
   // Colour comes from the drawn line's own first/last point.
-  const color = sparklineIsUp(data) ? "#10b981" : "#ef4444"
+  const color = sparklineIsUp(data) ? upColor : downColor
 
   return (
     <LineChart

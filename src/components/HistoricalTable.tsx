@@ -105,6 +105,8 @@ export function HistoricalTable({ base, target, current, initialRows }: Historic
                       <div className="flex justify-end">
                         <Sparkline
                           data={c.sparklineData}
+                          upColor="#10b981"
+                          downColor="#ef4444"
                           title={`${base}/${target}, ${
                             c.coverageStart ? `since ${c.coverageStart}` : `last ${c.period.label.toLowerCase()}`
                           }, ${c.percentChange !== null ? formatPercentChange(c.percentChange) : "change unavailable"}`}
