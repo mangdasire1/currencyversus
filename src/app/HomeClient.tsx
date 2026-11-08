@@ -212,8 +212,8 @@ export function HomeClient({
               </div>
             )}
 
-            {/* Precious Metals */}
-            <section className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: "150ms" }}>
+            {/* Precious Metals — target of the header's "Metals" link */}
+            <section id="metals" className="flex flex-col gap-4 scroll-mt-4 animate-fade-in-up" style={{ animationDelay: "150ms" }}>
               <h2 className="text-lg font-semibold text-slate-300 font-heading">
                 Precious Metals
               </h2>
@@ -258,8 +258,8 @@ export function HomeClient({
               </div>
             </section>
 
-            {/* Popular pairs */}
-            <section className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+            {/* Popular pairs — target of the header's "Currencies" link */}
+            <section id="currencies" className="flex flex-col gap-4 scroll-mt-4 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
               <h2 className="text-lg font-semibold text-slate-300 font-heading">
                 Popular Pairs
               </h2>

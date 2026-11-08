@@ -62,3 +62,22 @@ test("home chart: reuses the pair pages' PairChart (no copy), seeded from build-
   assert.match(hist, /fetchPairSeries\(base, target, start, end, signal\)/)
   assert.match(hook, /fetchPairSeries\(base, target, start, end, controller\.signal\)/)
 })
+
+test("home header: real links to the pairs and metals sections and the method page, 44px targets, no ECB-only source label", async () => {
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const { fileURLToPath } = await import("node:url")
+  const src = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
+  const header = fs.readFileSync(path.join(src, "components", "Header.tsx"), "utf8")
+  const home = fs.readFileSync(path.join(src, "app", "HomeClient.tsx"), "utf8")
+  const nav = [...header.matchAll(/\{ href: "([^"]+)", label: "([^"]+)" \}/g)].map((m) => [m[1], m[2]])
+  assert.deepEqual(nav, [["#currencies", "Currencies"], ["#metals", "Metals"], ["/method/", "Method"]])
+  for (const [href] of nav.filter(([h]) => h.startsWith("#"))) assert.match(home, new RegExp(`<section id="${href.slice(1)}"`), href)
+  assert.ok(fs.existsSync(path.join(src, "app", "method", "page.tsx")))
+  for (const m of header.matchAll(/className="(inline-flex[^"]*)"/g)) assert.match(m[1], /min-h-\[44px\]/)
+  // same container as the content
+  assert.match(header, /<header className="[^"]*container mx-auto max-w-6xl px-4/)
+  assert.match(home, /<main className="[^"]*container mx-auto px-4[^"]*max-w-6xl/)
+  // code (not comments) never claims all data comes from the ECB
+  assert.doesNotMatch(header.replace(/\/\/.*$/gm, ""), /Powered by ECB/)
+})
