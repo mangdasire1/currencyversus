@@ -2,22 +2,46 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
   routeCatalog, isValidPairRoute, parsePairSlug, navigateSelection, navigateSwap,
+  FULL_COVERAGE_METALS, METAL_PAGE_CURRENCIES,
 } from "./routes.ts"
 import { CURRENCIES } from "./currencies.ts"
-import { METALS } from "./metals.ts"
 
-const ALL_CODES = [...CURRENCIES.map((c) => c.code), ...METALS.map((m) => m.code)] // 15 + 2
+// Codes a page-changing selector could offer. No such selector offers metals
+// today (pair pages: currencies only; metal pages: no selector; the home
+// converter does not navigate), so the scan keeps the metals with a page for
+// every currency and checks platinum/palladium pages separately below.
+const ALL_CODES = [...CURRENCIES.map((c) => c.code), ...FULL_COVERAGE_METALS] // 15 + 2
 const CATALOG = routeCatalog()
 
-test("catalog has 241 unique routes (210 currency + 30 metal + gold-vs-silver)", () => {
-  assert.equal(CATALOG.length, 241)
-  assert.equal(new Set(CATALOG).size, 241)
+test("catalog has 249 unique routes (210 currency + 30 gold/silver + 8 platinum/palladium + gold-vs-silver)", () => {
+  assert.equal(CATALOG.length, 249)
+  assert.equal(new Set(CATALOG).size, 249)
+})
+
+test("platinum and palladium: exactly USD, EUR, TRY, GBP; every page parses; no other currency", () => {
+  const pages = CATALOG.filter((s) => /^(platinum|palladium)-vs-/.test(s))
+  console.log(`    ${pages.length} pages: ${pages.join(" ")}`)
+  assert.deepEqual(pages, [
+    "platinum-vs-usd", "platinum-vs-eur", "platinum-vs-try", "platinum-vs-gbp",
+    "palladium-vs-usd", "palladium-vs-eur", "palladium-vs-try", "palladium-vs-gbp",
+  ])
+  for (const slug of pages) {
+    const p = parsePairSlug(slug)!
+    assert.ok(p && ["XPT", "XPD"].includes(p.base) && METAL_PAGE_CURRENCIES[p.base].includes(p.target), slug)
+    assert.equal(navigateSwap(p)!.path, `/${slug}/`) // only the metal-first page exists
+  }
+  assert.equal(isValidPairRoute("XPT", "JPY"), false)
+  assert.equal(parsePairSlug("palladium-vs-chf"), null)
+  // Selecting among the covered currencies stays on platinum pages
+  assert.equal(navigateSelection({ base: "XPT", target: "USD" }, "target", "TRY")!.path, "/platinum-vs-try/")
+  assert.deepEqual([...FULL_COVERAGE_METALS], ["XAU", "XAG"])
 })
 
 test("17×17 scan: every From/To selection from every page resolves to a catalog route", () => {
   let checked = 0
   const failures: string[] = []
-  for (const slug of CATALOG) {
+  // Platinum/palladium pages have no selector, so they are not starting points
+  for (const slug of CATALOG.filter((s) => { const p = parsePairSlug(s)!; return ALL_CODES.includes(p.base) && ALL_CODES.includes(p.target) })) {
     const current = parsePairSlug(slug)!
     for (const side of ["base", "target"] as const) {
       for (const code of ALL_CODES) {

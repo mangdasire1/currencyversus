@@ -33,6 +33,6 @@ test("new layout: 16 unique existing fiat pages, the whole cohort plus each reve
   assert.equal(isValidPilotSlug("gold-vs-usd"), false)
   assert.equal(isValidPilotSlug("gold-vs-silver"), false)
   const old = routeCatalog().filter((s) => !hasNewLayout(s))
-  assert.equal(old.length, 241 - 16)
+  assert.equal(old.length, 249 - 16) // 210 currency + 38 metal + gold-vs-silver, minus the new layout
   console.log(`    NEW_LAYOUT_PAIRS (${NEW_LAYOUT_PAIRS.length}): cohort + ${reverses.join(", ")}; old layout: ${old.length} pages`)
 })

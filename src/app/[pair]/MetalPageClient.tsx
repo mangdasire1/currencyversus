@@ -259,39 +259,45 @@ export function MetalPageClient({
               )}
             </section>
 
-            {/* About + Key Factors */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <section className="glass-card p-6 flex flex-col gap-4">
-                <h2 className="text-lg font-semibold text-white font-heading">
-                  About {info.name} as an Asset
-                </h2>
-                <p className="text-sm text-slate-300 leading-relaxed font-body">
-                  {info.description}
-                </p>
-                <p className="text-xs text-slate-500 italic font-body">
-                  💡 {info.funFact}
-                </p>
-              </section>
+            {/* About + Key Factors (left out while a metal has no text yet) */}
+            {info.description && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <section className="glass-card p-6 flex flex-col gap-4">
+                  <h2 className="text-lg font-semibold text-white font-heading">
+                    About {info.name} as an Asset
+                  </h2>
+                  <p className="text-sm text-slate-300 leading-relaxed font-body">
+                    {info.description}
+                  </p>
+                  {info.funFact && (
+                    <p className="text-xs text-slate-500 italic font-body">
+                      💡 {info.funFact}
+                    </p>
+                  )}
+                </section>
 
-              <section className="glass-card p-6 flex flex-col gap-4">
-                <h2 className="text-lg font-semibold text-white font-heading">
-                  What Drives {info.name} Prices
-                </h2>
-                <ul className="flex flex-col gap-2.5">
-                  {info.factors.map((f) => (
-                    <li
-                      key={f}
-                      className="flex items-start gap-2 text-sm text-slate-300 font-body"
-                    >
-                      <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#6366f1] flex-shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </div>
+                {info.factors.length > 0 && (
+                  <section className="glass-card p-6 flex flex-col gap-4">
+                    <h2 className="text-lg font-semibold text-white font-heading">
+                      What Drives {info.name} Prices
+                    </h2>
+                    <ul className="flex flex-col gap-2.5">
+                      {info.factors.map((f) => (
+                        <li
+                          key={f}
+                          className="flex items-start gap-2 text-sm text-slate-300 font-body"
+                        >
+                          <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#6366f1] flex-shrink-0" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </div>
+            )}
 
-            <p className="text-xs text-slate-600 font-mono">{editorialReviewLabel([metal])}</p>
+            {info.description && <p className="text-xs text-slate-600 font-mono">{editorialReviewLabel([metal])}</p>}
 
             {/* Local context */}
             {localCtx && (

@@ -225,7 +225,7 @@ test("editorial guard catches each rule (self-test)", () => {
 
 test("every currency with editorial content has a review entry", () => {
   for (const code of Object.keys(CURRENCY_INFO)) assert.ok(code in EDITORIAL_REVIEWED, code)
-  for (const code of ["XAU", "XAG", "GOLD_SILVER_RATIO"]) assert.ok(code in EDITORIAL_REVIEWED, code)
+  for (const code of [...Object.keys(METAL_INFO), "GOLD_SILVER_RATIO"]) assert.ok(code in EDITORIAL_REVIEWED, code)
 })
 
 test("unreviewed records never show a review date", () => {

@@ -5,14 +5,15 @@ import { useMetalRate } from "./useMetalRate"
 import { computeConversion, isMetalCode } from "@/lib/conversion"
 import type { ConversionInput, ConversionResult, FxQuote, MetalQuote, MetalUnit } from "@/lib/conversion"
 import type { ExchangeRate } from "@/lib/types"
+import type { MetalCode } from "@/lib/metals"
 
 interface UseConversionOptions {
   amount?: number | null
   metalUnit?: MetalUnit
   // Build-time seeds (no skeleton on first paint)
   initialFx?: ExchangeRate | null
-  initialMetalUsd?: Partial<Record<"XAU" | "XAG", number | null>>
-  initialMetalTime?: Partial<Record<"XAU" | "XAG", string | null>>
+  initialMetalUsd?: Partial<Record<MetalCode, number | null>>
+  initialMetalTime?: Partial<Record<MetalCode, string | null>>
 }
 
 // Data-layer controls that travel with the inputs.
@@ -60,10 +61,14 @@ export function useConversionInputs(
     needsFx ? initialFx : null
   )
 
-  const wantGold = !identity && (base === "XAU" || quote === "XAU")
-  const wantSilver = !identity && (base === "XAG" || quote === "XAG")
-  const gold = useMetalRate("XAU", initialMetalUsd?.XAU ?? null, wantGold, initialMetalTime?.XAU)
-  const silver = useMetalRate("XAG", initialMetalUsd?.XAG ?? null, wantSilver, initialMetalTime?.XAG)
+  // One hook per metal, always called (hook count must stay constant); a
+  // metal this pair does not use is disabled and fetches nothing.
+  const wants = (code: MetalCode) => !identity && (base === code || quote === code)
+  const gold = useMetalRate("XAU", initialMetalUsd?.XAU ?? null, wants("XAU"), initialMetalTime?.XAU)
+  const silver = useMetalRate("XAG", initialMetalUsd?.XAG ?? null, wants("XAG"), initialMetalTime?.XAG)
+  const platinum = useMetalRate("XPT", initialMetalUsd?.XPT ?? null, wants("XPT"), initialMetalTime?.XPT)
+  const palladium = useMetalRate("XPD", initialMetalUsd?.XPD ?? null, wants("XPD"), initialMetalTime?.XPD)
+  const used = ([["XAU", gold], ["XAG", silver], ["XPT", platinum], ["XPD", palladium]] as const).filter(([code]) => wants(code))
 
   const fxQuoteObj: FxQuote | null =
     needsFx && fx.data
@@ -78,13 +83,11 @@ export function useConversionInputs(
         }
       : null
 
-  const metals: Record<string, MetalQuote | null> = {
-    XAU: wantGold && gold.price !== null
-      ? { metal: "XAU", usdPerOz: gold.price, priceTime: gold.priceTime, fetchedAt: gold.fetchedAt, stale: gold.stale, staleAgeMs: gold.staleAgeMs }
-      : null,
-    XAG: wantSilver && silver.price !== null
-      ? { metal: "XAG", usdPerOz: silver.price, priceTime: silver.priceTime, fetchedAt: silver.fetchedAt, stale: silver.stale, staleAgeMs: silver.staleAgeMs }
-      : null,
+  const metals: Record<string, MetalQuote | null> = {}
+  for (const [code, m] of used) {
+    metals[code] = m.price !== null
+      ? { metal: code, usdPerOz: m.price, priceTime: m.priceTime, fetchedAt: m.fetchedAt, stale: m.stale, staleAgeMs: m.staleAgeMs }
+      : null
   }
 
   return {
@@ -95,12 +98,11 @@ export function useConversionInputs(
     fx: fxQuoteObj,
     metals,
     fxLoading: needsFx && fx.loading,
-    metalLoading: (wantGold && gold.loading) || (wantSilver && silver.loading),
+    metalLoading: used.some(([, m]) => m.loading),
     refresh: () => {
       if (needsFx) fx.refresh()
-      if (wantGold) gold.refresh()
-      if (wantSilver) silver.refresh()
+      for (const [, m] of used) m.refresh()
     },
-    refreshing: (needsFx && fx.refreshing) || (wantGold && gold.refreshing) || (wantSilver && silver.refreshing),
+    refreshing: (needsFx && fx.refreshing) || used.some(([, m]) => m.refreshing),
   }
 }

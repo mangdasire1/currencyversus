@@ -100,3 +100,19 @@ test("metal pages: one weight converter, default rendered from props (no effect)
   assert.equal(`${GRAMS_PER_TROY_OUNCE.toFixed(4)} / ${GRAMS_PER_AVOIRDUPOIS_OUNCE.toFixed(2)}`, "31.1035 / 28.35")
   assert.equal((c.match(/min-h-\[44px\]/g) ?? []).length, 2) // unit options and both inputs
 })
+
+test("platinum and palladium: same troy-ounce arithmetic, whole-dollar precision (4 significant digits)", () => {
+  assert.equal(METAL_SIGNIFICANT.XPT, 4)
+  assert.equal(METAL_SIGNIFICANT.XPD, 4)
+  const rows: string[] = []
+  for (const [code, price] of [["XPT", 1544], ["XPD", 1044]] as const) {
+    const sig = METAL_SIGNIFICANT[code]
+    const out = (["ozt", "g", "kg"] as const).map((u) => `1 ${u} = ${formatSignificant(valueOfWeight(1, u, price), sig)} USD`)
+    rows.push(`${code} @ ${price}/ozt: ${out.join(" | ")}`)
+  }
+  for (const r of rows) console.log(`    ${r}`)
+  assert.equal(formatSignificant(valueOfWeight(1, "ozt", 1544), 4), "1,544")
+  assert.equal(formatSignificant(valueOfWeight(1, "g", 1544), 4), "49.64")
+  assert.equal(formatSignificant(valueOfWeight(1, "kg", 1544), 4), "49,641") // integer digits are never dropped (Phase 8 rule)
+  assert.equal(formatSignificant(valueOfWeight(1, "g", 1044), 4), "33.57")
+})

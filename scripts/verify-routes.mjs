@@ -12,9 +12,8 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { routeCatalog, parsePairSlug, navigateSelection, navigateSwap } from "../src/lib/routes.ts"
+import { routeCatalog, parsePairSlug, navigateSelection, navigateSwap, FULL_COVERAGE_METALS } from "../src/lib/routes.ts"
 import { CURRENCIES } from "../src/lib/currencies.ts"
-import { METALS } from "../src/lib/metals.ts"
 
 const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "out")
 if (!fs.existsSync(outDir)) {
@@ -26,10 +25,16 @@ const generated = new Set(
   fs.readdirSync(outDir).filter((d) => d.includes("-vs-") && fs.existsSync(path.join(outDir, d, "index.html")))
 )
 
-const codes = [...CURRENCIES.map((c) => c.code), ...METALS.map((m) => m.code)]
+// Codes a page-changing selector could offer: the currencies and the metals
+// with a page for every currency. Platinum and palladium (four currencies
+// each) are not offered by any navigating selector and their pages have no
+// selector, so they are not starting points; they are still required in out/
+// through the catalog check below.
+const codes = [...CURRENCIES.map((c) => c.code), ...FULL_COVERAGE_METALS]
 const reachable = new Set()
 for (const slug of routeCatalog()) {
   const current = parsePairSlug(slug) // every catalog slug parses
+  if (!codes.includes(current.base) || !codes.includes(current.target)) continue
   for (const side of ["base", "target"]) {
     for (const code of codes) {
       const nav = navigateSelection(current, side, code)

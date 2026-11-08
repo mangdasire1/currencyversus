@@ -8,7 +8,22 @@ const CODES = CURRENCIES.map((c) => c.code)
 
 // Metal codes ↔ URL slugs. Metal pages are metal-first ("gold-vs-usd"); the
 // only metal/metal page is "gold-vs-silver".
-export const METAL_SLUGS: Record<string, string> = { XAU: "gold", XAG: "silver" }
+export const METAL_SLUGS: Record<string, string> = { XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium" }
+
+// Currencies each metal has a page for. Gold and silver: all 15. Platinum and
+// palladium (Phase 10): four, as a trial — widen only if these get impressions.
+export const METAL_PAGE_CURRENCIES: Record<string, readonly string[]> = {
+  XAU: CODES,
+  XAG: CODES,
+  XPT: ["USD", "EUR", "TRY", "GBP"],
+  XPD: ["USD", "EUR", "TRY", "GBP"],
+}
+
+// Metals with a page for every currency. Only these can be reached from any
+// page by a selector; no selector that navigates offers metals today.
+export const FULL_COVERAGE_METALS = Object.keys(METAL_PAGE_CURRENCIES).filter(
+  (m) => METAL_PAGE_CURRENCIES[m].length === CODES.length
+)
 const SLUG_TO_METAL: Record<string, string> = Object.fromEntries(
   Object.entries(METAL_SLUGS).map(([code, slug]) => [slug, code])
 )
@@ -29,8 +44,8 @@ export function pairPath(base: string, target: string): string {
   return `/${pairSlug(base, target)}/`
 }
 
-// Every /[pair] page the build generates (241 = 210 currency pairs + 30 metal
-// pages + gold-vs-silver).
+// Every /[pair] page the build generates (249 = 210 currency pairs + 30 gold
+// and silver pages + 8 platinum and palladium pages + gold-vs-silver).
 export function routeCatalog(): string[] {
   const slugs: string[] = []
   for (const base of CODES) {
@@ -39,7 +54,7 @@ export function routeCatalog(): string[] {
     }
   }
   for (const metal of Object.keys(METAL_SLUGS)) {
-    for (const currency of CODES) slugs.push(pairSlug(metal, currency))
+    for (const currency of METAL_PAGE_CURRENCIES[metal]) slugs.push(pairSlug(metal, currency))
   }
   slugs.push(pairSlug("XAU", "XAG"))
   return slugs

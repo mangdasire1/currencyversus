@@ -1,4 +1,4 @@
-// Explanatory text for gold, silver and the gold/silver ratio.
+// Explanatory text for gold, silver, platinum, palladium and the gold/silver ratio.
 //
 // Editorial policy (enforced by src/lib/editorial.test.ts):
 //   - plain text carries no figures and no ranking/comparison assertions
@@ -10,20 +10,21 @@
 // Review dates and the review log live in src/lib/editorial.ts.
 
 import type { SourcedClaim } from "./claims.ts"
+import type { MetalCode } from "./metals.ts"
 
 export interface MetalInfo {
-  code: "XAU" | "XAG"
+  code: MetalCode
   name: string
   symbol: string
   icon: string
-  description: string
+  description: string // "" = not written yet: the page leaves the section out
   factors: string[]
-  funFact: string
+  funFact: string // "" = none
   localContext: Record<string, string> // currencies without a specific context are left out
   claims?: SourcedClaim[] // figures/rankings, only with source + period + review
 }
 
-export const METAL_INFO: Record<"XAU" | "XAG", MetalInfo> = {
+export const METAL_INFO: Record<MetalCode, MetalInfo> = {
   XAU: {
     code: "XAU",
     name: "Gold",
@@ -119,6 +120,10 @@ export const METAL_INFO: Record<"XAU" | "XAG", MetalInfo> = {
         "Singapore's electronics and semiconductor manufacturers use silver, and the city-state's role as a regional precious-metals trading and storage hub extends to silver as well as gold.",
     },
   },
+
+  // Platinum and palladium (Phase 10): text is added in a separate step.
+  XPT: { code: "XPT", name: "Platinum", symbol: "Pt", icon: "", description: "", factors: [], funFact: "", localContext: {} },
+  XPD: { code: "XPD", name: "Palladium", symbol: "Pd", icon: "", description: "", factors: [], funFact: "", localContext: {} },
 }
 
 export const GOLD_SILVER_RATIO_INFO = {

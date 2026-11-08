@@ -27,6 +27,9 @@ export const EDITORIAL_REVIEWED: Record<string, string | null> = {
   SGD: "2026-10-22",
   XAU: "2026-10-22",
   XAG: "2026-10-22",
+  // Phase 10: not reviewed against sources yet — the pages say so.
+  XPT: null,
+  XPD: null,
   GOLD_SILVER_RATIO: "2026-10-22",
 }
 

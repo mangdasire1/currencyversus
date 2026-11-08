@@ -7,16 +7,15 @@ import { fileURLToPath } from "node:url"
 import { metalRelatedLinks, ratioRelatedLinks, pairRelatedLinks, METHOD_LINK } from "./related.ts"
 import type { RelatedLink } from "./related.ts"
 import { MEASUREMENT_COHORT, CONTROL_PAGES, REVERSE_PAIRS, isReversePair } from "./pilot.ts"
-import { routeCatalog, parsePairSlug } from "./routes.ts"
-import { CURRENCIES } from "./currencies.ts"
+import { routeCatalog, parsePairSlug, METAL_PAGE_CURRENCIES, METAL_SLUGS } from "./routes.ts"
 
 const CATALOG = new Set(routeCatalog())
 const MEASURED = new Set([...MEASUREMENT_COHORT, ...CONTROL_PAGES])
 
 function pages(): Array<{ page: string; links: RelatedLink[] }> {
   const out: Array<{ page: string; links: RelatedLink[] }> = []
-  for (const metal of ["XAU", "XAG"]) {
-    for (const c of CURRENCIES) out.push({ page: `${metal === "XAU" ? "gold" : "silver"}-vs-${c.code.toLowerCase()}`, links: metalRelatedLinks(metal, c.code) })
+  for (const metal of Object.keys(METAL_PAGE_CURRENCIES)) {
+    for (const c of METAL_PAGE_CURRENCIES[metal]) out.push({ page: `${METAL_SLUGS[metal]}-vs-${c.toLowerCase()}`, links: metalRelatedLinks(metal, c) })
   }
   out.push({ page: "gold-vs-silver", links: ratioRelatedLinks() })
   for (const slug of REVERSE_PAIRS) {
@@ -28,7 +27,7 @@ function pages(): Array<{ page: string; links: RelatedLink[] }> {
 
 test("related links: real pages, descriptive text, the method page, never a measured page or the page itself", () => {
   const all = pages()
-  assert.equal(all.length, 31 + 8)
+  assert.equal(all.length, 38 + 1 + 8) // metal pages + gold/silver ratio + reverse pairs
   let n = 0
   for (const { page, links } of all) {
     assert.ok(links.length >= 3, page)

@@ -11,6 +11,18 @@
 //     future (USD per troy ounce) 4052.1, 0.2 % apart; per avoirdupois ounce
 //     the troy price would have been 4436.6. Silver: 53.808 vs 53.695.
 //   So `price` is USD per TROY ounce. Every conversion below starts from it.
+//
+// Platinum and palladium (checked 2026-11-08, Phase 10), same answer:
+//   - /price/XPT {"name":"Platinum","price":1544.0,"symbol":"XPT",...} and
+//     /price/XPD {"name":"Palladium","price":1044.0,"symbol":"XPD",...}; no
+//     unit field. ISO 4217 defines XPT and XPD as one troy ounce of the metal.
+//   - Independent quote (Kitco, last trading session 2026-11-06 17:00 UTC,
+//     "unit":"OUNCE", "per troy ounce"): platinum bid 1534 / ask 1544 /
+//     mid 1539, palladium bid 1004 / ask 1044 / mid 1024. gold-api is 0.3 %
+//     and 2.0 % above the mid (equal to the ask); per avoirdupois ounce the
+//     troy prices would have been 1694.0 and 1145.4, 10 % and 12 % off.
+//   - The NYMEX futures on Yahoo had stopped updating on 2026-10-15, so they
+//     were not used as the reference.
 
 import { parseAmount, amountErrorMessage } from "./amount.ts"
 
@@ -60,7 +72,8 @@ export function weightForValue(value: number, unit: WeightUnit, pricePerTroyOunc
 // Significant digits the provider's prices carry. The JSON values are
 // float32 renderings of 2-decimal gold (4043.800049 = 4043.80) and 3-decimal
 // silver (53.855999 = 53.856) prices: ~6 and ~5 significant digits.
-export const METAL_SIGNIFICANT: Record<string, number> = { XAU: 6, XAG: 5 }
+// Platinum and palladium come in whole dollars (1544.0, 1044.0): 4.
+export const METAL_SIGNIFICANT: Record<string, number> = { XAU: 6, XAG: 5, XPT: 4, XPD: 4 }
 
 // Rounding for converter results (money and weights alike): by significant
 // digits, not fixed decimals. A result never shows more significant digits

@@ -3,7 +3,8 @@ import { CURRENCIES } from "@/lib/currencies"
 import { getInitialRateData, getBuildTimeMetalPrice, getBuildTimeHistory, getBuildTimeChart } from "@/lib/build-data"
 import { hasNewLayout } from "@/lib/pilot"
 import { getFAQSchema } from "@/lib/structured-data"
-import { routeCatalog } from "@/lib/routes"
+import { routeCatalog, METAL_SLUGS, isValidPairRoute, codeToSlug } from "@/lib/routes"
+import { METALS } from "@/lib/metals"
 import { PairPageClient } from "./PairPageClient"
 import { PilotPairPageClient } from "./PilotPairPageClient"
 import { MetalPageClient } from "./MetalPageClient"
@@ -12,9 +13,14 @@ import type { MetalCode } from "@/lib/metals"
 
 const CODES = CURRENCIES.map((c) => c.code)
 
-const METAL_URL: Record<string, MetalCode> = {
-  gold: "XAU",
-  silver: "XAG",
+// URL slug → metal code, from the route catalog's slugs (gold, silver,
+// platinum, palladium)
+const METAL_URL: Record<string, MetalCode> = Object.fromEntries(
+  Object.entries(METAL_SLUGS).map(([code, slug]) => [slug, code as MetalCode])
+)
+
+function metalName(code: MetalCode): string {
+  return METALS.find((m) => m.code === code)?.name ?? code
 }
 
 function parsePair(pair: string): { base: string; target: string } | null {
@@ -42,14 +48,15 @@ function parseMetalPair(pair: string): MetalPair | null {
   }
   if (leftMetal) {
     const target = right.toUpperCase()
-    if (!CODES.includes(target)) return null
+    // Platinum and palladium have pages for a few currencies only
+    if (!CODES.includes(target) || !isValidPairRoute(leftMetal, target)) return null
     return { type: "metal-currency", metal: leftMetal, target }
   }
   return null
 }
 
 // Same catalog the selectors navigate with (src/lib/routes.ts): 210 currency
-// pairs + 30 metal pages + gold-vs-silver.
+// pairs + 38 metal pages + gold-vs-silver.
 export async function generateStaticParams() {
   return routeCatalog().map((pair) => ({ pair }))
 }
@@ -98,18 +105,19 @@ export async function generateMetadata({
   }
 
   const { metal, target } = metalParsed
-  const metalName = metal === "XAU" ? "Gold" : "Silver"
+  const name = metalName(metal)
+  const slug = `${codeToSlug(metal)}-vs-${target.toLowerCase()}`
   return {
-    title: `${metalName} Price in ${target} Today — Convert ${metalName} to ${target} | CurrencyVersus`,
-    description: `${metalName} price in ${target} per ounce and per gram, from gold-api.com${target === "USD" ? "" : " converted at the daily ECB reference rate"}. Free precious metals converter.`,
+    title: `${name} Price in ${target} Today — Convert ${name} to ${target} | CurrencyVersus`,
+    description: `${name} price in ${target} per ounce and per gram, from gold-api.com${target === "USD" ? "" : " converted at the daily ECB reference rate"}. Free precious metals converter.`,
     alternates: {
-      canonical: `https://currencyversus.com/${metal === "XAU" ? "gold" : "silver"}-vs-${target.toLowerCase()}/`,
+      canonical: `https://currencyversus.com/${slug}/`,
     },
     openGraph: {
-      title: `${metalName} Price in ${target} — CurrencyVersus`,
-      description: `${metalName} price in ${target} per ounce and per gram.`,
-      url: `https://currencyversus.com/${metal === "XAU" ? "gold" : "silver"}-vs-${target.toLowerCase()}`,
-      images: [{ url: "https://currencyversus.com/logo.png", width: 1200, height: 630, alt: `${metalName} Price in ${target}` }],
+      title: `${name} Price in ${target} — CurrencyVersus`,
+      description: `${name} price in ${target} per ounce and per gram.`,
+      url: `https://currencyversus.com/${slug}`,
+      images: [{ url: "https://currencyversus.com/logo.png", width: 1200, height: 630, alt: `${name} Price in ${target}` }],
     },
   }
 }

@@ -6,7 +6,7 @@
 // internal link to a measured page would change it during the measurement.
 
 import { MEASURED_PAGES } from "./pilot.ts"
-import { pairSlug, isValidPairRoute } from "./routes.ts"
+import { pairSlug, isValidPairRoute, METAL_PAGE_CURRENCIES } from "./routes.ts"
 import { CURRENCIES } from "./currencies.ts"
 
 export interface RelatedLink {
@@ -17,8 +17,8 @@ export interface RelatedLink {
 export const METHOD_LINK: RelatedLink = { href: "/method/", text: "How the rates and prices are sourced and calculated" }
 
 const NAME: Record<string, string> = Object.fromEntries(CURRENCIES.map((c) => [c.code, c.name]))
-const METAL_SLUG: Record<string, string> = { XAU: "gold", XAG: "silver" }
-const METAL_NAME: Record<string, string> = { XAU: "Gold", XAG: "Silver" }
+const METAL_SLUG: Record<string, string> = { XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium" }
+const METAL_NAME: Record<string, string> = { XAU: "Gold", XAG: "Silver", XPT: "Platinum", XPD: "Palladium" }
 const MAJORS = ["USD", "EUR", "GBP", "JPY", "CHF"]
 
 function allowed(slug: string, self: string): boolean {
@@ -32,6 +32,7 @@ function link(slug: string, text: string): RelatedLink {
 // Metal page (gold-vs-try): the same metal in other currencies, the other
 // metal in this currency, the gold/silver ratio, the method page.
 export function metalRelatedLinks(metal: string, currency: string): RelatedLink[] {
+  if (metal === "XPT" || metal === "XPD") return newMetalRelatedLinks(metal, currency)
   const self = `${METAL_SLUG[metal]}-vs-${currency.toLowerCase()}`
   const other = metal === "XAU" ? "XAG" : "XAU"
   const out: RelatedLink[] = []
@@ -41,6 +42,20 @@ export function metalRelatedLinks(metal: string, currency: string): RelatedLink[
   out.push(link(`${METAL_SLUG[other]}-vs-${currency.toLowerCase()}`, `${METAL_NAME[other]} price in ${NAME[currency]} (${currency})`))
   out.push(link("gold-vs-silver", "Gold/silver ratio: how many ounces of silver one ounce of gold buys"))
   return [...out.filter((l) => allowed(l.href.slice(1, -1), self)), METHOD_LINK]
+}
+
+// Platinum/palladium page (Phase 10): the same metal in its other currencies,
+// the other of the two in this currency, gold in this currency, the method
+// page. Gold and silver pages are left as they were (no links to these).
+function newMetalRelatedLinks(metal: "XPT" | "XPD", currency: string): RelatedLink[] {
+  const other = metal === "XPT" ? "XPD" : "XPT"
+  const out: RelatedLink[] = []
+  for (const c of METAL_PAGE_CURRENCIES[metal].filter((c) => c !== currency)) {
+    out.push(link(`${METAL_SLUG[metal]}-vs-${c.toLowerCase()}`, `${METAL_NAME[metal]} price in ${NAME[c]} (${c})`))
+  }
+  out.push(link(`${METAL_SLUG[other]}-vs-${currency.toLowerCase()}`, `${METAL_NAME[other]} price in ${NAME[currency]} (${currency})`))
+  out.push(link(`gold-vs-${currency.toLowerCase()}`, `Gold price in ${NAME[currency]} (${currency})`))
+  return [...out, METHOD_LINK]
 }
 
 export function ratioRelatedLinks(): RelatedLink[] {
