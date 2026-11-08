@@ -44,7 +44,7 @@ export function DataFreshness({ conv, onRefresh, refreshing = false }: DataFresh
             onClick={onRefresh}
             disabled={refreshing}
             aria-label="Check for updated rates now"
-            className="inline-flex items-center gap-1 text-[#6366f1] hover:underline disabled:opacity-60 disabled:no-underline"
+            className="inline-flex items-center gap-1 min-h-[44px] min-w-[44px] text-[#6366f1] hover:underline disabled:opacity-60 disabled:no-underline"
           >
             <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
             Refresh

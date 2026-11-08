@@ -186,7 +186,7 @@ export function CurrencyConverter({
         <button
           type="button"
           onClick={handleSwap}
-          className="swap-btn self-center sm:mt-6 p-2.5 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20 hover:bg-[#6366f1]/20 hover:border-[#6366f1]/40 text-[#6366f1]"
+          className="swap-btn self-center sm:mt-6 inline-flex items-center justify-center min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20 hover:bg-[#6366f1]/20 hover:border-[#6366f1]/40 text-[#6366f1]"
           title="Swap"
           aria-label="Swap currencies"
         >
@@ -236,7 +236,7 @@ export function CurrencyConverter({
           )}
         </div>
 
-        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus-within:border-[#6366f1]/50 transition-colors min-w-0">
+        <div className="flex items-center gap-2 px-4 py-1 rounded-xl bg-white/5 border border-white/10 focus-within:border-[#6366f1]/50 transition-colors min-w-0">
           <span className="text-slate-400 font-mono text-sm flex-shrink-0">
             {baseIsMetal ? <MetalIcon code={base} className="w-4 h-4" /> : showFlags ? baseCurrency?.flag : null}
           </span>
@@ -251,7 +251,7 @@ export function CurrencyConverter({
             onChange={(e) => setAmount(e.target.value)}
             aria-invalid={amountError !== null}
             aria-describedby={amountError !== null ? amountErrorId : undefined}
-            className="flex-1 min-w-0 bg-transparent text-white font-mono text-lg focus:outline-none"
+            className="flex-1 min-w-0 min-h-[44px] bg-transparent text-white font-mono text-lg focus:outline-none"
             placeholder="1"
           />
           <span className="text-slate-500 font-mono text-sm flex-shrink-0">

@@ -64,3 +64,11 @@ test("old pair layout: codes and names stay, no code added next to a name", () =
   assert.doesNotMatch(src, /\{base\} \{baseInfo\.country\}/) // the country name stands alone
   assert.match(src, /\{ label: "Base", value: base \}/)
 })
+
+test("shared converter (home, old pair layout): swap, amount field and Refresh are at least 44px", () => {
+  const conv = fs.readFileSync(path.join(SRC, "components", "CurrencyConverter.tsx"), "utf8")
+  assert.match(conv, /className="swap-btn [^"]*min-w-\[44px\] min-h-\[44px\]/)
+  assert.match(conv, /className="flex-1 min-w-0 min-h-\[44px\] bg-transparent/)
+  const fresh = fs.readFileSync(path.join(SRC, "components", "DataFreshness.tsx"), "utf8")
+  assert.match(fresh, /onClick=\{onRefresh\}[\s\S]{0,250}min-h-\[44px\] min-w-\[44px\]/)
+})
