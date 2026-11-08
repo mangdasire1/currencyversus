@@ -19,7 +19,7 @@ import type { ExchangeRate, TimePeriod } from "@/lib/types"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { isMetal, OZ_TO_GRAM } from "@/lib/metals"
 import type { MetalCode } from "@/lib/metals"
-import { METAL_SIGNIFICANT } from "@/lib/metal-units"
+import { formatCardUsd } from "@/lib/metal-cards"
 
 const POPULAR_PAIRS = [
   { base: "USD", target: "EUR" },
@@ -58,26 +58,11 @@ const METAL_CARDS: { code: MetalCode; name: string; href: string; more: string }
   { code: "XPD", name: "Palladium", href: "/palladium-vs-usd", more: "See palladium prices →" },
 ]
 
-// Decimals for a USD price: never more significant digits than the provider
-// gives (METAL_SIGNIFICANT), at most cents. Gold/silver keep two decimals;
-// platinum and palladium, quoted in whole dollars, show none per ounce.
-function usdDecimals(value: number, code: MetalCode): number {
-  const intDigits = Math.floor(Math.log10(Math.abs(value))) + 1
-  return Math.min(2, Math.max(0, (METAL_SIGNIFICANT[code] ?? 5) - intDigits))
-}
-
 // Quick Stats value for a rate cell. Never shows a rate computed for another pair.
 function statValue(conv: ConversionResult, base: string, target: string, which: "rate" | "inverse"): string {
   if (conv.base !== base || conv.quote !== target || conv.status === "loading") return "…"
   if (conv.rate === null) return "Unavailable"
   return which === "rate" ? conv.rateLabel : conv.inverseRateLabel
-}
-
-function fmt(value: number, decimals: number): string {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value)
 }
 
 export function HomeClient({
@@ -249,12 +234,12 @@ export function HomeClient({
                       <div className="flex flex-col gap-1">
                         <div className="flex items-baseline gap-2">
                           <span className="text-2xl font-bold font-mono text-white">
-                            {usd !== null ? `$${fmt(usd, usdDecimals(usd, code))}` : "—"}
+                            {usd !== null ? formatCardUsd(usd) : "—"}
                           </span>
                           <span className="text-xs text-slate-500 font-mono">/ oz</span>
                         </div>
                         <div className="text-sm font-mono text-slate-400">
-                          {gram !== null ? `$${fmt(gram, usdDecimals(gram, code))} / g` : ""}
+                          {gram !== null ? `${formatCardUsd(gram)} / g` : ""}
                         </div>
                       </div>
                       <div className="text-[10px] text-[#6366f1] font-mono uppercase tracking-wider group-hover:underline">
