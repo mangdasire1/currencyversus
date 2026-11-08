@@ -20,6 +20,9 @@ export interface MetalInfo {
   description: string // "" = not written yet: the page leaves the section out
   factors: string[]
   funFact: string // "" = none
+  // Where the price shown differs from what a member of the public can trade
+  // at (shown next to the converter). Platinum and palladium only.
+  retailNote?: string
   localContext: Record<string, string> // currencies without a specific context are left out
   claims?: SourcedClaim[] // figures/rankings, only with source + period + review
 }
@@ -121,9 +124,58 @@ export const METAL_INFO: Record<MetalCode, MetalInfo> = {
     },
   },
 
-  // Platinum and palladium (Phase 10): text is added in a separate step.
-  XPT: { code: "XPT", name: "Platinum", symbol: "Pt", icon: "", description: "", factors: [], funFact: "", localContext: {} },
-  XPD: { code: "XPD", name: "Palladium", symbol: "Pd", icon: "", description: "", factors: [], funFact: "", localContext: {} },
+  // Phase 10. Written by mechanism (why the price moves), not by figures or
+  // rankings; no comparison with gold is asserted.
+  XPT: {
+    code: "XPT",
+    name: "Platinum",
+    symbol: "Pt",
+    icon: "",
+    description:
+      "Platinum is a dense, corrosion-resistant precious metal. A large part of its demand comes from industry, notably from the catalytic converters that clean vehicle exhaust, so its price responds to car production and emission rules as well as to investment demand. It is also used in jewellery and in catalysts for the chemical and refining industries. Rarity alone does not set its price: when demand from carmakers weakens, the price can fall even though the metal remains scarce.",
+    factors: [
+      "Car production — catalytic converters, especially for diesel engines, use platinum, so vehicle output feeds directly into demand",
+      "Emission rules — tighter exhaust limits raise the amount of metal needed in each catalytic converter",
+      "Battery electric vehicles — they have no exhaust and no catalytic converter, so a shift towards them reduces demand from carmakers over time",
+      "Industrial catalysts — chemical production and petroleum refining use platinum, linking demand to industrial activity",
+      "Jewellery demand — platinum is used for rings and other jewellery",
+      "Mine supply — production comes from a small number of countries, so disruptions at major producers can move the price",
+      "US Dollar strength — platinum is priced in US dollars, like gold and silver",
+    ],
+    funFact:
+      "Platinum does not tarnish in air, which is one reason it is used for jewellery, laboratory equipment and electrical contacts that must stay clean.",
+    retailNote:
+      "Platinum jewellery and bullion are sold to the public, but a dealer's buying and selling prices can be far apart. The figure on this page is the theoretical value of pure metal at the spot price, not a price you can expect to be offered.",
+    localContext: {
+      USD:
+        "Platinum is quoted internationally in US dollars per troy ounce, so the USD price is the reference from which platinum prices in other currencies are derived.",
+    },
+  },
+  XPD: {
+    code: "XPD",
+    name: "Palladium",
+    symbol: "Pd",
+    icon: "",
+    description:
+      "Palladium belongs to the same group of metals as platinum. A large part of its demand comes from the catalytic converters of petrol engines, so its price is closely tied to how many petrol cars are built and to emission rules. Mined supply comes from a small number of countries and is often a by-product of nickel and platinum mining, so it responds slowly to the palladium price itself, and events affecting a single producing country can move the price sharply.",
+    factors: [
+      "Petrol car production — catalytic converters for petrol engines use palladium, so vehicle output drives a large part of demand",
+      "Emission rules — tighter exhaust limits raise the amount of metal needed in each catalytic converter",
+      "Battery electric vehicles — they have no exhaust and no catalytic converter, so a shift towards them reduces demand over time",
+      "Substitution — carmakers can switch some catalysts between palladium and platinum when the price gap between the two metals changes",
+      "By-product supply — much palladium is mined alongside nickel and platinum, so output depends on those mines, not only on the palladium price",
+      "Concentrated supply — sanctions, strikes or power cuts in one producing country can affect a large share of mined supply",
+      "US Dollar strength — palladium is priced in US dollars",
+    ],
+    funFact:
+      "Palladium can absorb large amounts of hydrogen into its metal structure, a property used to purify hydrogen.",
+    retailNote:
+      "Gold and silver are bought and sold every day by jewellers and bullion dealers. Palladium is rarely traded that way, so the figure on this page is the theoretical value of pure metal at the spot price, and in practice you cannot expect to buy or sell palladium at it.",
+    localContext: {
+      USD:
+        "Palladium is quoted internationally in US dollars per troy ounce, so the USD price is the reference from which palladium prices in other currencies are derived.",
+    },
+  },
 }
 
 export const GOLD_SILVER_RATIO_INFO = {

@@ -148,6 +148,7 @@ function editorialFields(): Array<{ where: string; text: string }> {
     out.push({ where: `METAL_INFO.${code}.description`, text: m.description })
     m.factors.forEach((f, i) => out.push({ where: `METAL_INFO.${code}.factors[${i}]`, text: f }))
     out.push({ where: `METAL_INFO.${code}.funFact`, text: m.funFact })
+    if (m.retailNote) out.push({ where: `METAL_INFO.${code}.retailNote`, text: m.retailNote })
     for (const [cur, t] of Object.entries(m.localContext)) {
       out.push({ where: `METAL_INFO.${code}.localContext.${cur}`, text: t })
     }

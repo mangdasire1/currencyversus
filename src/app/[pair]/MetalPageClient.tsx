@@ -164,6 +164,8 @@ export function MetalPageClient({
               significant={resultSignificant}
               status={perOz.status === "loading" ? "Loading price…" : ozPriceTarget === null ? "Price unavailable right now." : null}
             />
+            {/* Where the spot value differs from a price the public can trade at */}
+            {info.retailNote && <p className="text-sm text-slate-400 leading-relaxed">{info.retailNote}</p>}
 
             {/* Quick Stats */}
             <div className="glass-card p-6 flex flex-col gap-4">

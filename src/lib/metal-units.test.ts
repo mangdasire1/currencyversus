@@ -116,3 +116,15 @@ test("platinum and palladium: same troy-ounce arithmetic, whole-dollar precision
   assert.equal(formatSignificant(valueOfWeight(1, "kg", 1544), 4), "49,641") // integer digits are never dropped (Phase 8 rule)
   assert.equal(formatSignificant(valueOfWeight(1, "g", 1044), 4), "33.57")
 })
+
+test("platinum and palladium pages: the retail note is shown next to the converter", async () => {
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const { fileURLToPath } = await import("node:url")
+  const { METAL_INFO } = await import("./metal-info.ts")
+  const src = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app", "[pair]", "MetalPageClient.tsx"), "utf8")
+  assert.match(src, /\{info\.retailNote && <p/)
+  for (const code of ["XPT", "XPD"] as const) assert.ok(METAL_INFO[code].retailNote && METAL_INFO[code].description, code)
+  assert.match(METAL_INFO.XPD.retailNote!, /cannot expect to buy or sell palladium/)
+  assert.equal(METAL_INFO.XAU.retailNote, undefined) // gold and silver pages unchanged
+})
