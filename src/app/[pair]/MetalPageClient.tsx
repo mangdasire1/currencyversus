@@ -95,7 +95,7 @@ export function MetalPageClient({
       <div className="plain-page relative z-10 min-h-screen flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <Link href="/" className="flex items-center gap-2 min-h-[44px] hover:opacity-80 transition-opacity">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#6366f1]/20 border border-[#6366f1]/30">
               <TrendingUp className="w-4 h-4 text-[#6366f1]" />
             </div>
@@ -105,7 +105,7 @@ export function MetalPageClient({
           </Link>
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors font-mono"
+            className="flex items-center gap-1.5 min-h-[44px] text-xs text-slate-400 hover:text-white transition-colors font-mono"
           >
             <ArrowLeft className="w-3 h-3" />
             All currencies

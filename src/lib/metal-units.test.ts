@@ -138,3 +138,16 @@ test("metal converter: the selected unit uses the darker fill (white text meets 
   assert.doesNotMatch(src, /PV\.accentFill/) // #6366F1 behind white text is 4.47:1
   assert.match(src, /color: checked \? "#FFFFFF"/)
 })
+
+test("metal page headers (not shared with the pair layouts): logo and All currencies links are 44px tall", async () => {
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const { fileURLToPath } = await import("node:url")
+  const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app", "[pair]")
+  for (const f of ["MetalPageClient.tsx", "MetalRatioPageClient.tsx"]) {
+    const header = fs.readFileSync(path.join(dir, f), "utf8").match(/<header[\s\S]*?<\/header>/)![0]
+    const links = header.match(/<Link\b[\s\S]*?>/g) ?? []
+    assert.equal(links.length, 2, f)
+    for (const l of links) assert.match(l, /min-h-\[44px\]/, `${f}: ${l}`)
+  }
+})
