@@ -101,9 +101,9 @@ export function MetalUnitConverter({ metalName, quote, pricePerTroyOunce, signif
                   className="relative flex items-center justify-center min-h-[44px] px-2 rounded-lg text-sm cursor-pointer text-center focus-within:outline focus-within:outline-2 focus-within:outline-offset-2"
                   style={{
                     ...MONO,
-                    background: checked ? PV.accentFill : PV.raised,
+                    background: checked ? PV.selectedFill : PV.raised, // white on #4F46E5 passes AA; on #6366F1 it is 4.47:1
                     color: checked ? "#FFFFFF" : PV.dim,
-                    border: `1px solid ${checked ? PV.accentFill : PV.border}`,
+                    border: `1px solid ${checked ? PV.selectedFill : PV.border}`,
                     outlineColor: PV.accentText,
                   }}
                 >

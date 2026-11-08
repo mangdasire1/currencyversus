@@ -128,3 +128,13 @@ test("platinum and palladium pages: the retail note is shown next to the convert
   assert.match(METAL_INFO.XPD.retailNote!, /cannot expect to buy or sell palladium/)
   assert.equal(METAL_INFO.XAU.retailNote, undefined) // gold and silver pages unchanged
 })
+
+test("metal converter: the selected unit uses the darker fill (white text meets WCAG AA)", async () => {
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const { fileURLToPath } = await import("node:url")
+  const src = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "components", "MetalUnitConverter.tsx"), "utf8")
+  assert.match(src, /background: checked \? PV\.selectedFill : PV\.raised/)
+  assert.doesNotMatch(src, /PV\.accentFill/) // #6366F1 behind white text is 4.47:1
+  assert.match(src, /color: checked \? "#FFFFFF"/)
+})
