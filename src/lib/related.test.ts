@@ -55,3 +55,17 @@ test("cohort pages get no related links and keep their footer", () => {
   assert.match(src, /isReversePair\(pairSlug\(base, target\)\) && <RelatedLinks/)
   assert.match(src, /cohort pages: footer unchanged/)
 })
+
+test("platinum and palladium pages are linked from the gold and silver pages in the same currency", () => {
+  const all = pages()
+  for (const metal of ["XPT", "XPD"]) {
+    for (const c of METAL_PAGE_CURRENCIES[metal]) {
+      const target = `/${METAL_SLUGS[metal]}-vs-${c.toLowerCase()}/`
+      const from = all.filter((p) => p.links.some((l) => l.href === target)).map((p) => p.page)
+      assert.ok(from.includes(`gold-vs-${c.toLowerCase()}`) && from.includes(`silver-vs-${c.toLowerCase()}`), `${target} from ${from.join(", ")}`)
+      assert.ok(from.length >= 6, `${target}: ${from.length} linking pages`)
+    }
+  }
+  // gold/silver in a currency without platinum/palladium pages: no link to them
+  assert.ok(!metalRelatedLinks("XAU", "JPY").some((l) => /platinum|palladium/.test(l.href)))
+})

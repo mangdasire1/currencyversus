@@ -30,7 +30,8 @@ function link(slug: string, text: string): RelatedLink {
 }
 
 // Metal page (gold-vs-try): the same metal in other currencies, the other
-// metal in this currency, the gold/silver ratio, the method page.
+// metal in this currency, platinum and palladium in this currency where they
+// have a page (USD, EUR, TRY, GBP), the gold/silver ratio, the method page.
 export function metalRelatedLinks(metal: string, currency: string): RelatedLink[] {
   if (metal === "XPT" || metal === "XPD") return newMetalRelatedLinks(metal, currency)
   const self = `${METAL_SLUG[metal]}-vs-${currency.toLowerCase()}`
@@ -40,6 +41,11 @@ export function metalRelatedLinks(metal: string, currency: string): RelatedLink[
     out.push(link(`${METAL_SLUG[metal]}-vs-${c.toLowerCase()}`, `${METAL_NAME[metal]} price in ${NAME[c]} (${c})`))
   }
   out.push(link(`${METAL_SLUG[other]}-vs-${currency.toLowerCase()}`, `${METAL_NAME[other]} price in ${NAME[currency]} (${currency})`))
+  for (const m of ["XPT", "XPD"]) {
+    if (METAL_PAGE_CURRENCIES[m].includes(currency)) {
+      out.push(link(`${METAL_SLUG[m]}-vs-${currency.toLowerCase()}`, `${METAL_NAME[m]} price in ${NAME[currency]} (${currency})`))
+    }
+  }
   out.push(link("gold-vs-silver", "Gold/silver ratio: how many ounces of silver one ounce of gold buys"))
   return [...out.filter((l) => allowed(l.href.slice(1, -1), self)), METHOD_LINK]
 }
