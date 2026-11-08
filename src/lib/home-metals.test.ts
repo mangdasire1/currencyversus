@@ -81,3 +81,18 @@ test("home header: real links to the pairs and metals sections and the method pa
   // code (not comments) never claims all data comes from the ECB
   assert.doesNotMatch(header.replace(/\/\/.*$/gm, ""), /Powered by ECB/)
 })
+
+test("home copy names all four metals (no gold-and-silver-only wording on the home page or its meta description)", async () => {
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const { fileURLToPath } = await import("node:url")
+  const app = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app")
+  const home = fs.readFileSync(path.join(app, "HomeClient.tsx"), "utf8").replace(/\/\/.*$/gm, "")
+  const layoutDescription = fs.readFileSync(path.join(app, "layout.tsx"), "utf8").match(/^  description:\s*"([^"]+)"/m)![1]
+  for (const [where, text] of [["HomeClient.tsx", home], ["layout.tsx description", layoutDescription]] as const) {
+    assert.doesNotMatch(text, /gold and silver prices|\(Gold, Silver\)/i, where)
+  }
+  assert.equal((home.match(/[Gg]old, silver, platinum and palladium prices/g) ?? []).length, 3)
+  assert.match(home, /precious metals \(Gold, Silver, Platinum, Palladium\)/)
+  assert.match(layoutDescription, /plus gold, silver, platinum and palladium prices\./)
+})

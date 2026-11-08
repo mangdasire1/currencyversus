@@ -63,7 +63,7 @@ const dmSans = localFont({
 export const metadata: Metadata = {
   title: "CurrencyVersus — Compare World Currencies",
   description:
-    "Compare 15 major world currencies including USD, EUR, GBP, TRY, and more using the latest published European Central Bank reference rates, updated each business day, plus gold and silver prices. Historical trends span up to 10 years.",
+    "Compare 15 major world currencies including USD, EUR, GBP, TRY, and more using the latest published European Central Bank reference rates, updated each business day, plus gold, silver, platinum and palladium prices. Historical trends span up to 10 years.",
   keywords:
     "currency converter, exchange rate, forex, USD, EUR, TRY, currency comparison",
   alternates: {

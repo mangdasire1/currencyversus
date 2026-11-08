@@ -134,7 +134,7 @@ export function HomeClient({
                     <span className="text-[#6366f1]">Comparison</span>
                   </h1>
                   <p className="mt-2 text-slate-400 text-sm">
-                    Latest ECB reference rates for 15 major currencies, updated each business day · Gold and silver prices from a separate source that updates more often than the daily ECB rate
+                    Latest ECB reference rates for 15 major currencies, updated each business day · Gold, silver, platinum and palladium prices from a separate source that updates more often than the daily ECB rate
                   </p>
                 </div>
                 <CurrencyConverter
@@ -302,10 +302,10 @@ export function HomeClient({
                 </h2>
                 <div className="flex flex-col gap-3 text-sm text-slate-300 leading-relaxed font-body">
                   <p>
-                    CurrencyVersus is a free tool for comparing exchange rates between 15 major world currencies — including USD, EUR, GBP, JPY, TRY, CNY, INR, and more — plus gold and silver prices.
+                    CurrencyVersus is a free tool for comparing exchange rates between 15 major world currencies — including USD, EUR, GBP, JPY, TRY, CNY, INR, and more — plus gold, silver, platinum and palladium prices.
                   </p>
                   <p>
-                    Currency rates are the European Central Bank{"'"}s daily reference rates: published once per business day (around 16:00 CET) and unchanged over weekends and holidays. Gold and silver prices come from a separate source (gold-api.com) that updates more often than the daily ECB rate; metal markets are closed at weekends, so prices then stay unchanged. Each result shows its own data time — for metals, the update time reported by the provider. Historical data spans 7 time periods — from 1 month to 10 years — so you can spot long-term trends at a glance.
+                    Currency rates are the European Central Bank{"'"}s daily reference rates: published once per business day (around 16:00 CET) and unchanged over weekends and holidays. Gold, silver, platinum and palladium prices come from a separate source (gold-api.com) that updates more often than the daily ECB rate; metal markets are closed at weekends, so prices then stay unchanged. Each result shows its own data time — for metals, the update time reported by the provider. Historical data spans 7 time periods — from 1 month to 10 years — so you can spot long-term trends at a glance.
                   </p>
                   <p>
                     Whether you{"'"}re a traveler planning a trip, an investor monitoring forex and precious metals markets, or a student learning about global economics, CurrencyVersus makes it easy to understand financial trends without any sign-up or fees.
@@ -323,7 +323,7 @@ export function HomeClient({
                     {
                       step: "01",
                       title: "Select two currencies",
-                      desc: "Choose any two of 15 major world currencies or precious metals (Gold, Silver) to compare — from US Dollar to Turkish Lira and beyond.",
+                      desc: "Choose any two of 15 major world currencies or precious metals (Gold, Silver, Platinum, Palladium) to compare — from US Dollar to Turkish Lira and beyond.",
                     },
                     {
                       step: "02",
