@@ -5,12 +5,16 @@ import Link from "next/link"
 import { Header } from "@/components/Header"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HistoricalTable } from "@/components/HistoricalTable"
+import { PairChart } from "@/components/pilot/PairChart"
+import { usePairChart } from "@/hooks/usePairChart"
+import { DEFAULT_CHART_BOX } from "@/lib/chart"
+import { DEFAULT_CHART_PERIOD } from "@/lib/history"
 import { MetalIcon } from "@/components/MetalIcon"
 import { MethodFooterLink } from "@/components/RelatedLinks"
 import { useConversion } from "@/hooks/useConversion"
 import { useMetalRate } from "@/hooks/useMetalRate"
 import type { ConversionResult } from "@/lib/conversion"
-import type { PeriodHistory } from "@/lib/history"
+import type { ChartPeriod, PeriodHistory } from "@/lib/history"
 import type { ExchangeRate, TimePeriod } from "@/lib/types"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { isMetal, OZ_TO_GRAM } from "@/lib/metals"
@@ -43,6 +47,7 @@ interface HomeClientProps {
   initialRate: number | null
   initialDate: string | null
   initialHistory: PeriodHistory<TimePeriod>[] | null
+  initialChart: ChartPeriod[] | null
 }
 
 // Precious Metals cards. Each links to the metal's USD page.
@@ -85,6 +90,7 @@ export function HomeClient({
   initialRate,
   initialDate,
   initialHistory,
+  initialChart,
 }: HomeClientProps) {
   const [base, setBase] = useState(defaultBase)
   const [target, setTarget] = useState(defaultTarget)
@@ -98,6 +104,11 @@ export function HomeClient({
   const isDefaultPair = base === defaultBase && target === defaultTarget
   // Quick Stats quotes metals per gram so the unit is always explicit.
   const conv = useConversion(base, target, { metalUnit: "g", initialFx })
+  // The pair pages' chart (Phase 7), for the selected pair. The default pair's
+  // periods are embedded, so its default period is in the server HTML.
+  const fxPair = base !== target && !isMetal(base) && !isMetal(target)
+  const chart = usePairChart(base, target, isDefaultPair ? initialChart : null)
+  const [chartPeriod, setChartPeriod] = useState(DEFAULT_CHART_PERIOD)
 
   // Metal prices for Precious Metals section (refreshed client-side, seeded with build-time values)
   const { price: goldUsd } = useMetalRate("XAU", initialGoldUsd)
@@ -136,6 +147,9 @@ export function HomeClient({
                 />
               </div>
 
+              {/* Right column: Quick Stats, then the chart. On narrow screens it
+                  follows the converter and its result — the answer comes first. */}
+              <div className="flex flex-col gap-6 min-w-0">
               <div className="glass-card p-6 flex flex-col gap-4">
                 <h2 className="text-base font-semibold text-slate-300 font-heading">
                   Quick Stats
@@ -165,6 +179,29 @@ export function HomeClient({
                     {conv.missing.includes("metal") ? "Metal price" : "Exchange rate"} unavailable right now — no rate is shown rather than a wrong one.
                   </p>
                 )}
+              </div>
+
+              {/* Chart — currency pairs only, like the historical table */}
+              {fxPair && (
+                <div className="glass-card p-6">
+                  {chart.periods ? (
+                    <PairChart base={base} target={target} periods={chart.periods} selected={chartPeriod} onSelect={setChartPeriod} />
+                  ) : (
+                    // Same plot height while this pair's series loads (no jump when it arrives)
+                    <section aria-labelledby="chart-heading" className="flex flex-col gap-4">
+                      <h2 id="chart-heading" className="text-lg font-semibold text-white font-heading">
+                        {base} to {target} over time
+                      </h2>
+                      <div
+                        className={`rounded-2xl flex items-center justify-center text-sm font-mono ${chart.error ? "text-amber-400" : "text-slate-500 animate-pulse"}`}
+                        style={{ height: DEFAULT_CHART_BOX.height + 100, background: "rgba(255,255,255,0.03)" }}
+                      >
+                        {chart.error ? "Chart unavailable right now" : "Loading chart…"}
+                      </div>
+                    </section>
+                  )}
+                </div>
+              )}
               </div>
             </section>
 

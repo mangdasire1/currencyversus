@@ -4,7 +4,7 @@
 // "Then" business day, and the note on observation frequency.
 // Works for both the standard layout and the Phase 7 pilot layout.
 // Phase 9: the home page too — its default pair (USD/EUR) is embedded at build
-// time; it must also show the current rate before JavaScript runs.
+// time; it must also show the current rate and the chart before JavaScript runs.
 //
 //   node scripts/verify-history.mjs [sampleSize]      (after `next build`)
 
@@ -55,7 +55,22 @@ const home = check(".")
 const homeHtml = text(fs.readFileSync(path.join(outDir, "index.html"), "utf8"))
 const homeRate = homeHtml.match(/1 USD = (\d[\d,]*\.\d+) EUR/)?.[1]
 if (!homeRate) home.problems.push('no "1 USD = … EUR" rate')
-console.log(`verify-history: home page (USD/EUR) ${home.problems.length ? "FAIL " + home.problems.join("; ") : `rate 1 USD = ${homeRate} EUR, 7/7 rows OK`} — ${home.summary[0] ?? ""} … ${home.summary[6] ?? ""}`)
+// The chart's default period: an SVG line with real numbers in its label, one
+// vertex per observation the sentence names, and a [dataMin, dataMax] Y axis —
+// the line touches the top and the bottom of the plot (padTop 12, height 240).
+const rawHome = fs.readFileSync(path.join(outDir, "index.html"), "utf8")
+const svg = rawHome.match(/<svg role="img" aria-label="([^"]*)"[\s\S]*?<\/svg>/)
+const ys = svg ? [...(svg[0].match(/<path d="([^"]+)"/)?.[1] ?? "").matchAll(/[ML][\d.]+,([\d.]+)/g)].map((m) => Number(m[1])) : []
+const observations = Number(homeHtml.match(/The line uses (\d+) \w+ observations/)?.[1] ?? NaN)
+let chartNote = "no chart"
+if (!svg) home.problems.push("no chart SVG")
+else {
+  if (!/\d\.\d/.test(svg[1])) home.problems.push(`chart aria-label without numbers: "${svg[1]}"`)
+  if (ys.length !== observations) home.problems.push(`chart: ${ys.length} vertices, sentence says ${observations} observations`)
+  if (Math.min(...ys) !== 12 || Math.max(...ys) !== 228) home.problems.push(`chart Y extent ${Math.min(...ys)}–${Math.max(...ys)}, expected 12–228 (dataMin/dataMax)`)
+  chartNote = `chart ${ys.length} points, y ${Math.min(...ys)}–${Math.max(...ys)}`
+}
+console.log(`verify-history: home page (USD/EUR) ${home.problems.length ? "FAIL " + home.problems.join("; ") : `rate 1 USD = ${homeRate} EUR, 7/7 rows OK, ${chartNote}`} — ${home.summary[0] ?? ""} … ${home.summary[6] ?? ""}`)
 if (home.problems.length) process.exitCode = 1
 
 // Deterministic "random" sample (seeded by page count) so reruns are comparable.

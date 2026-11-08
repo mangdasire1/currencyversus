@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { fetchTimeSeries } from "@/lib/api"
 import { cacheGet, cacheSet, cacheGetStale, FRESH_TTL } from "@/lib/cache"
 import { isCachedHistory } from "@/lib/cache-schemas"
 import type { CachedHistoryRow } from "@/lib/cache-schemas"
@@ -9,7 +8,7 @@ import { subtractMonths, toISODate } from "@/lib/utils"
 import { TIME_PERIODS } from "@/lib/currencies"
 import { loadPeriodHistory } from "@/lib/history"
 import type { PeriodHistory } from "@/lib/history"
-import { sharedRequest } from "@/lib/inflight"
+import { fetchPairSeries } from "@/lib/pair-series"
 import type { HistoricalComparison, TimePeriod } from "@/lib/types"
 
 interface UseHistoricalRatesResult {
@@ -100,17 +99,8 @@ export function useHistoricalRates(
     const controller = new AbortController()
 
     // One time-series request covers all periods; identical concurrent
-    // requests (e.g. two components on the same pair) share one fetch.
-    const fetchSeries = (start: string, end: string, signal?: AbortSignal) =>
-      sharedRequest(
-        `series_${base}_${target}_${start}_${end}`,
-        async (s) => {
-          const ts = await fetchTimeSeries(start, end, base, [target], s)
-          if (ts.base !== base) throw new Error("time series does not match the requested pair")
-          return Object.entries(ts.rates).map(([date, rates]) => ({ date, rate: rates[target] }))
-        },
-        signal
-      )
+    // requests (e.g. the home page's chart on the same pair) share one fetch.
+    const fetchSeries = (start: string, end: string, signal?: AbortSignal) => fetchPairSeries(base, target, start, end, signal)
 
     loadPeriodHistory(today, TIME_PERIODS, fetchSeries, controller.signal)
       .then((rows) => {

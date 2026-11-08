@@ -1,4 +1,4 @@
-import { getBuildTimeMetalPrice, getInitialRateData, getBuildTimeHistory } from "@/lib/build-data"
+import { getBuildTimeMetalPrice, getInitialRateData, getBuildTimeHistory, getBuildTimeChart } from "@/lib/build-data"
 import { HomeClient } from "./HomeClient"
 
 // The default pair the home page opens with. Its rate and history are fetched
@@ -8,13 +8,14 @@ const DEFAULT_BASE = "USD"
 const DEFAULT_TARGET = "EUR"
 
 export default async function Page() {
-  const [goldData, silverData, platinumData, palladiumData, rateData, history] = await Promise.all([
+  const [goldData, silverData, platinumData, palladiumData, rateData, history, chart] = await Promise.all([
     getBuildTimeMetalPrice("XAU"),
     getBuildTimeMetalPrice("XAG"),
     getBuildTimeMetalPrice("XPT"),
     getBuildTimeMetalPrice("XPD"),
     getInitialRateData(DEFAULT_BASE, DEFAULT_TARGET),
     getBuildTimeHistory(DEFAULT_BASE, DEFAULT_TARGET),
+    getBuildTimeChart(DEFAULT_BASE, DEFAULT_TARGET),
   ])
   if (rateData === null) console.warn(`[home] No build-time rate for ${DEFAULT_BASE}/${DEFAULT_TARGET} — rendering without initial data`)
 
@@ -29,6 +30,7 @@ export default async function Page() {
       initialRate={rateData?.rate ?? null}
       initialDate={rateData?.date ?? null}
       initialHistory={history}
+      initialChart={chart}
     />
   )
 }

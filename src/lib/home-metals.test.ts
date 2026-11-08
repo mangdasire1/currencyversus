@@ -41,3 +41,24 @@ test("home page: the default pair's rate and history are build-time data seeding
   const hist = fs.readFileSync(path.join(app, "..", "hooks", "useHistoricalRates.ts"), "utf8")
   assert.match(hist, /useState<HistoryState \| null>\(\s*initialRows && initialRows\.length > 0 \? \{ pairKey, rows: initialRows, error: null \} : null/)
 })
+
+test("home chart: reuses the pair pages' PairChart (no copy), seeded from build-time periods, only for currency pairs", async () => {
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const { fileURLToPath } = await import("node:url")
+  const src = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
+  const home = fs.readFileSync(path.join(src, "app", "HomeClient.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(src, "app", "page.tsx"), "utf8")
+  assert.match(home, /import \{ PairChart \} from "@\/components\/pilot\/PairChart"/)
+  assert.doesNotMatch(home, /<svg|chartGeometry|<path/) // drawn by PairChart only
+  assert.match(page, /getBuildTimeChart\(DEFAULT_BASE, DEFAULT_TARGET\)/)
+  assert.match(home, /usePairChart\(base, target, isDefaultPair \? initialChart : null\)/)
+  assert.match(home, /const fxPair = base !== target && !isMetal\(base\) && !isMetal\(target\)/)
+  const hook = fs.readFileSync(path.join(src, "hooks", "usePairChart.ts"), "utf8")
+  assert.match(hook, /useState<ChartState \| null>\(\s*initialPeriods && initialPeriods\.length > 0 \? \{ pairKey, periods: initialPeriods, error: null \} : null/)
+  assert.match(hook, /deriveChartPeriods\(series, today\)/) // the build-time derivation, not a second one
+  // table and chart share one series request per pair
+  const hist = fs.readFileSync(path.join(src, "hooks", "useHistoricalRates.ts"), "utf8")
+  assert.match(hist, /fetchPairSeries\(base, target, start, end, signal\)/)
+  assert.match(hook, /fetchPairSeries\(base, target, start, end, controller\.signal\)/)
+})
