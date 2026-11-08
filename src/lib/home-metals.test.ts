@@ -20,3 +20,24 @@ test("home: four metal cards, each linking to a generated page; gold and silver 
   const page = fs.readFileSync(path.join(SRC, "app", "page.tsx"), "utf8")
   for (const code of ["XAU", "XAG", "XPT", "XPD"]) assert.match(page, new RegExp(`getBuildTimeMetalPrice\\("${code}"\\)`)) // prices in the server HTML
 })
+
+test("home page: the default pair's rate and history are build-time data seeding the hooks' state", async () => {
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const { fileURLToPath } = await import("node:url")
+  const app = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app")
+  const page = fs.readFileSync(path.join(app, "page.tsx"), "utf8")
+  const home = fs.readFileSync(path.join(app, "HomeClient.tsx"), "utf8")
+  assert.match(page, /getInitialRateData\(DEFAULT_BASE, DEFAULT_TARGET\)/)
+  assert.match(page, /getBuildTimeHistory\(DEFAULT_BASE, DEFAULT_TARGET\)/)
+  // the seed reaches every surface that shows the default pair
+  assert.match(home, /useConversion\(base, target, \{ metalUnit: "g", initialFx \}\)/)
+  assert.match(home, /<CurrencyConverter[\s\S]*?initialFx=\{initialFx\}[\s\S]*?\/>/)
+  assert.match(home, /<HistoricalTable [^>]*initialRows=\{isDefaultPair \? initialHistory : null\}/)
+  // Phase 7 trap: never filled from an effect
+  assert.doesNotMatch(home, /useEffect/)
+  const hook = fs.readFileSync(path.join(app, "..", "hooks", "useExchangeRate.ts"), "utf8")
+  assert.match(hook, /useState<ExchangeRate \| null>\(initialData \?\? null\)/)
+  const hist = fs.readFileSync(path.join(app, "..", "hooks", "useHistoricalRates.ts"), "utf8")
+  assert.match(hist, /useState<HistoryState \| null>\(\s*initialRows && initialRows\.length > 0 \? \{ pairKey, rows: initialRows, error: null \} : null/)
+})

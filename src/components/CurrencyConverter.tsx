@@ -12,6 +12,7 @@ import { METAL_INFO } from "@/lib/metal-info"
 import { isMetal } from "@/lib/metals"
 import type { MetalCode } from "@/lib/metals"
 import type { MetalUnit } from "@/lib/conversion"
+import type { ExchangeRate } from "@/lib/types"
 import { formatMetalAmount, formatMoney } from "@/lib/format"
 import { parseAmount, amountErrorMessage } from "@/lib/amount"
 
@@ -26,6 +27,7 @@ interface CurrencyConverterProps {
   initialOzPriceTargetUsd?: number | null
   initialMetalPriceTime?: string | null // provider time of the seeded metal price
   showFlags?: boolean // flag emoji next to codes (see CurrencySelect)
+  initialFx?: ExchangeRate | null // build-time rate (home page's default pair); seeds the first view
 }
 
 export function CurrencyConverter({
@@ -39,6 +41,7 @@ export function CurrencyConverter({
   initialOzPriceTargetUsd,
   initialMetalPriceTime,
   showFlags = true,
+  initialFx,
 }: CurrencyConverterProps) {
   const [amount, setAmount] = useState("1")
   const [metalUnit, setMetalUnit] = useState<MetalUnit>("g")
@@ -68,7 +71,7 @@ export function CurrencyConverter({
     initialMetalTime[target as MetalCode] = initialMetalPriceTime ?? null
   }
 
-  const conv = useConversion(base, target, { amount: numericAmount, metalUnit, initialMetalUsd, initialMetalTime })
+  const conv = useConversion(base, target, { amount: numericAmount, metalUnit, initialMetalUsd, initialMetalTime, initialFx })
 
   // Convenience
   const baseCurrency = CURRENCY_MAP[base]

@@ -10,6 +10,8 @@ import { MethodFooterLink } from "@/components/RelatedLinks"
 import { useConversion } from "@/hooks/useConversion"
 import { useMetalRate } from "@/hooks/useMetalRate"
 import type { ConversionResult } from "@/lib/conversion"
+import type { PeriodHistory } from "@/lib/history"
+import type { ExchangeRate, TimePeriod } from "@/lib/types"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { isMetal, OZ_TO_GRAM } from "@/lib/metals"
 import type { MetalCode } from "@/lib/metals"
@@ -35,6 +37,12 @@ interface HomeClientProps {
   initialSilverUsd: number | null
   initialPlatinumUsd: number | null
   initialPalladiumUsd: number | null
+  // Build-time data for the default pair (page.tsx), embedded in the HTML
+  defaultBase: string
+  defaultTarget: string
+  initialRate: number | null
+  initialDate: string | null
+  initialHistory: PeriodHistory<TimePeriod>[] | null
 }
 
 // Precious Metals cards. Each links to the metal's USD page.
@@ -67,11 +75,29 @@ function fmt(value: number, decimals: number): string {
   }).format(value)
 }
 
-export function HomeClient({ initialGoldUsd, initialSilverUsd, initialPlatinumUsd, initialPalladiumUsd }: HomeClientProps) {
-  const [base, setBase] = useState("USD")
-  const [target, setTarget] = useState("EUR")
+export function HomeClient({
+  initialGoldUsd,
+  initialSilverUsd,
+  initialPlatinumUsd,
+  initialPalladiumUsd,
+  defaultBase,
+  defaultTarget,
+  initialRate,
+  initialDate,
+  initialHistory,
+}: HomeClientProps) {
+  const [base, setBase] = useState(defaultBase)
+  const [target, setTarget] = useState(defaultTarget)
+  // The embedded rate seeds the hooks' state (useState, not an effect), so the
+  // server HTML and the first paint show it; the client then refreshes it.
+  // It only ever applies to the default pair — the hooks check pair identity.
+  const initialFx: ExchangeRate | null =
+    initialRate !== null && initialDate !== null
+      ? { base: defaultBase, date: initialDate, rates: { [defaultTarget]: initialRate } }
+      : null
+  const isDefaultPair = base === defaultBase && target === defaultTarget
   // Quick Stats quotes metals per gram so the unit is always explicit.
-  const conv = useConversion(base, target, { metalUnit: "g" })
+  const conv = useConversion(base, target, { metalUnit: "g", initialFx })
 
   // Metal prices for Precious Metals section (refreshed client-side, seeded with build-time values)
   const { price: goldUsd } = useMetalRate("XAU", initialGoldUsd)
@@ -106,6 +132,7 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd, initialPlatinumUs
                   onTargetChange={setTarget}
                   includeMetals={true}
                   showFlags={false}
+                  initialFx={initialFx}
                 />
               </div>
 
@@ -144,7 +171,7 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd, initialPlatinumUs
             {/* Historical table — hidden when a metal is selected */}
             {!isMetal(base) && !isMetal(target) && (
               <div className="animate-fade-in-up" style={{ animationDelay: "100ms" }}>
-                <HistoricalTable base={base} target={target} current={conv} />
+                <HistoricalTable base={base} target={target} current={conv} initialRows={isDefaultPair ? initialHistory : null} />
               </div>
             )}
 

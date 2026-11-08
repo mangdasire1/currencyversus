@@ -3,6 +3,8 @@
 // For each page: 7 period rows, each with its label and numeric values, the
 // "Then" business day, and the note on observation frequency.
 // Works for both the standard layout and the Phase 7 pilot layout.
+// Phase 9: the home page too — its default pair (USD/EUR) is embedded at build
+// time; it must also show the current rate before JavaScript runs.
 //
 //   node scripts/verify-history.mjs [sampleSize]      (after `next build`)
 
@@ -10,7 +12,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "out")
+const outDir = process.argv[3] ?? path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "out")
 const PERIODS = ["1 Month", "3 Months", "6 Months", "1 Year", "3 Years", "5 Years", "10 Years"]
 const FIAT = /^[a-z]{3}-vs-[a-z]{3}$/
 const sampleSize = Number(process.argv[2] ?? 10)
@@ -47,6 +49,14 @@ function check(dir) {
 const pages = fs.readdirSync(outDir).filter((d) => FIAT.test(d) && fs.existsSync(path.join(outDir, d, "index.html"))).sort()
 const results = pages.map(check)
 const failed = results.filter((r) => r.problems.length > 0)
+
+// Home page: the same 7 rows, plus the default pair's current rate.
+const home = check(".")
+const homeHtml = text(fs.readFileSync(path.join(outDir, "index.html"), "utf8"))
+const homeRate = homeHtml.match(/1 USD = (\d[\d,]*\.\d+) EUR/)?.[1]
+if (!homeRate) home.problems.push('no "1 USD = … EUR" rate')
+console.log(`verify-history: home page (USD/EUR) ${home.problems.length ? "FAIL " + home.problems.join("; ") : `rate 1 USD = ${homeRate} EUR, 7/7 rows OK`} — ${home.summary[0] ?? ""} … ${home.summary[6] ?? ""}`)
+if (home.problems.length) process.exitCode = 1
 
 // Deterministic "random" sample (seeded by page count) so reruns are comparable.
 let seed = pages.length
