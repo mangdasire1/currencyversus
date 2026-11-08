@@ -12,6 +12,8 @@ import { useMetalRate } from "@/hooks/useMetalRate"
 import type { ConversionResult } from "@/lib/conversion"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { isMetal, OZ_TO_GRAM } from "@/lib/metals"
+import type { MetalCode } from "@/lib/metals"
+import { METAL_SIGNIFICANT } from "@/lib/metal-units"
 
 const POPULAR_PAIRS = [
   { base: "USD", target: "EUR" },
@@ -31,6 +33,24 @@ const POPULAR_PAIRS = [
 interface HomeClientProps {
   initialGoldUsd: number | null
   initialSilverUsd: number | null
+  initialPlatinumUsd: number | null
+  initialPalladiumUsd: number | null
+}
+
+// Precious Metals cards. Each links to the metal's USD page.
+const METAL_CARDS: { code: MetalCode; name: string; href: string; more: string }[] = [
+  { code: "XAU", name: "Gold", href: "/gold-vs-usd", more: "See all gold prices →" },
+  { code: "XAG", name: "Silver", href: "/silver-vs-usd", more: "See all silver prices →" },
+  { code: "XPT", name: "Platinum", href: "/platinum-vs-usd", more: "See platinum prices →" },
+  { code: "XPD", name: "Palladium", href: "/palladium-vs-usd", more: "See palladium prices →" },
+]
+
+// Decimals for a USD price: never more significant digits than the provider
+// gives (METAL_SIGNIFICANT), at most cents. Gold/silver keep two decimals;
+// platinum and palladium, quoted in whole dollars, show none per ounce.
+function usdDecimals(value: number, code: MetalCode): number {
+  const intDigits = Math.floor(Math.log10(Math.abs(value))) + 1
+  return Math.min(2, Math.max(0, (METAL_SIGNIFICANT[code] ?? 5) - intDigits))
 }
 
 // Quick Stats value for a rate cell. Never shows a rate computed for another pair.
@@ -47,7 +67,7 @@ function fmt(value: number, decimals: number): string {
   }).format(value)
 }
 
-export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps) {
+export function HomeClient({ initialGoldUsd, initialSilverUsd, initialPlatinumUsd, initialPalladiumUsd }: HomeClientProps) {
   const [base, setBase] = useState("USD")
   const [target, setTarget] = useState("EUR")
   // Quick Stats quotes metals per gram so the unit is always explicit.
@@ -56,9 +76,9 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
   // Metal prices for Precious Metals section (refreshed client-side, seeded with build-time values)
   const { price: goldUsd } = useMetalRate("XAU", initialGoldUsd)
   const { price: silverUsd } = useMetalRate("XAG", initialSilverUsd)
-
-  const goldGram = goldUsd !== null ? goldUsd / OZ_TO_GRAM : null
-  const silverGram = silverUsd !== null ? silverUsd / OZ_TO_GRAM : null
+  const { price: platinumUsd } = useMetalRate("XPT", initialPlatinumUsd)
+  const { price: palladiumUsd } = useMetalRate("XPD", initialPalladiumUsd)
+  const metalUsd: Record<MetalCode, number | null> = { XAU: goldUsd, XAG: silverUsd, XPT: platinumUsd, XPD: palladiumUsd }
 
   return (
     <>
@@ -134,69 +154,43 @@ export function HomeClient({ initialGoldUsd, initialSilverUsd }: HomeClientProps
                 Precious Metals
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Gold card */}
-                <Link
-                  href="/gold-vs-usd"
-                  className="glass-card p-5 flex flex-col gap-3 hover:border-[#6366f1]/40 hover:scale-[1.01] transition-all group cursor-pointer"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MetalIcon code="XAU" className="w-6 h-6" />
-                      <span className="text-base font-bold text-white font-heading group-hover:text-[#6366f1] transition-colors">
-                        Gold (XAU)
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-slate-600 uppercase tracking-wider">
-                      USD · troy oz
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold font-mono text-white">
-                        {goldUsd !== null ? `$${fmt(goldUsd, 2)}` : "—"}
-                      </span>
-                      <span className="text-xs text-slate-500 font-mono">/ oz</span>
-                    </div>
-                    <div className="text-sm font-mono text-slate-400">
-                      {goldGram !== null ? `$${fmt(goldGram, 2)} / g` : ""}
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-[#6366f1] font-mono uppercase tracking-wider group-hover:underline">
-                    See all gold prices →
-                  </div>
-                </Link>
-
-                {/* Silver card */}
-                <Link
-                  href="/silver-vs-usd"
-                  className="glass-card p-5 flex flex-col gap-3 hover:border-[#6366f1]/40 hover:scale-[1.01] transition-all group cursor-pointer"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MetalIcon code="XAG" className="w-6 h-6" />
-                      <span className="text-base font-bold text-white font-heading group-hover:text-[#6366f1] transition-colors">
-                        Silver (XAG)
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-slate-600 uppercase tracking-wider">
-                      USD · troy oz
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold font-mono text-white">
-                        {silverUsd !== null ? `$${fmt(silverUsd, 2)}` : "—"}
-                      </span>
-                      <span className="text-xs text-slate-500 font-mono">/ oz</span>
-                    </div>
-                    <div className="text-sm font-mono text-slate-400">
-                      {silverGram !== null ? `$${fmt(silverGram, 2)} / g` : ""}
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-[#6366f1] font-mono uppercase tracking-wider group-hover:underline">
-                    See all silver prices →
-                  </div>
-                </Link>
+                {METAL_CARDS.map(({ code, name, href, more }) => {
+                  const usd = metalUsd[code]
+                  const gram = usd !== null ? usd / OZ_TO_GRAM : null
+                  return (
+                    <Link
+                      key={code}
+                      href={href}
+                      className="glass-card p-5 flex flex-col gap-3 hover:border-[#6366f1]/40 hover:scale-[1.01] transition-all group cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MetalIcon code={code} className="w-6 h-6" />
+                          <span className="text-base font-bold text-white font-heading group-hover:text-[#6366f1] transition-colors">
+                            {`${name} (${code})`}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-600 uppercase tracking-wider">
+                          USD · troy oz
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold font-mono text-white">
+                            {usd !== null ? `$${fmt(usd, usdDecimals(usd, code))}` : "—"}
+                          </span>
+                          <span className="text-xs text-slate-500 font-mono">/ oz</span>
+                        </div>
+                        <div className="text-sm font-mono text-slate-400">
+                          {gram !== null ? `$${fmt(gram, usdDecimals(gram, code))} / g` : ""}
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-[#6366f1] font-mono uppercase tracking-wider group-hover:underline">
+                        {more}
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             </section>
 

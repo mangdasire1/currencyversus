@@ -15,7 +15,7 @@ const ISSUES_URL = "https://github.com/mangdasire1/currencyversus/issues"
 export const metadata: Metadata = {
   title: "Method — Where the Rates and Prices Come From | CurrencyVersus",
   description:
-    "How CurrencyVersus sources and calculates exchange rates (ECB reference rates, cross rates), gold and silver prices (spot, troy ounce), historical data, and how to report an error.",
+    "How CurrencyVersus sources and calculates exchange rates (ECB reference rates, cross rates), gold, silver, platinum and palladium prices (spot, troy ounce), historical data, and how to report an error.",
   alternates: { canonical: "https://currencyversus.com/method/" },
 }
 
@@ -86,11 +86,16 @@ export default function MethodPage() {
           </p>
         </Section>
 
-        <Section id="metals" title="Gold and silver">
+        <Section id="metals" title="Gold, silver, platinum and palladium">
           <p>
-            Gold and silver prices are spot prices from gold-api.com, in US dollars per troy ounce. The provider uses the
-            codes XAU and XAG, which ISO 4217 defines as one troy ounce of the metal. Each page shows the provider&apos;s
-            own update time; it may be when the provider last checked the price rather than the last trade.
+            Precious metal prices are spot prices from gold-api.com, in US dollars per troy ounce. The provider uses the
+            codes XAU (gold), XAG (silver), XPT (platinum) and XPD (palladium), which ISO 4217 defines as one troy ounce
+            of the metal. Each page shows the provider&apos;s own update time; it may be when the provider last checked
+            the price rather than the last trade.
+          </p>
+          <p>
+            Gold and silver have a page for each of the site&apos;s currencies; platinum and palladium have pages in US
+            dollars, euros, Turkish lira and British pounds.
           </p>
           <p>
             In other currencies the US dollar price is multiplied by the ECB reference rate from US dollars to that
@@ -109,7 +114,14 @@ export default function MethodPage() {
             they apply, and jewellery is often an alloy rather than pure metal. The site does not calculate values by
             purity (karat).
           </p>
-          <p>The site has no historical metal prices; metal pages show the current price only.</p>
+          <p>
+            For platinum, jewellery and bullion are sold to the public, but a dealer&apos;s buying and selling prices can
+            be far apart. Palladium is rarely bought and sold by jewellers or bullion dealers, so for palladium the
+            figure is a theoretical value only: in practice you cannot expect to buy or sell it at that price.
+          </p>
+          <p>
+            The site has no historical metal prices for any of the four metals; metal pages show the current price only.
+          </p>
         </Section>
 
         <Section id="history" title="Historical data">
