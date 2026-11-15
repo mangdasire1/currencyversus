@@ -13,7 +13,6 @@ import { MetalIcon } from "@/components/MetalIcon"
 import { MethodFooterLink } from "@/components/RelatedLinks"
 import { useConversion } from "@/hooks/useConversion"
 import { useMetalRate } from "@/hooks/useMetalRate"
-import type { ConversionResult } from "@/lib/conversion"
 import type { ChartPeriod, PeriodHistory } from "@/lib/history"
 import type { ExchangeRate, TimePeriod } from "@/lib/types"
 import { CURRENCY_MAP } from "@/lib/currencies"
@@ -58,13 +57,6 @@ const METAL_CARDS: { code: MetalCode; name: string; href: string; more: string }
   { code: "XPD", name: "Palladium", href: "/palladium-vs-usd", more: "See palladium prices →" },
 ]
 
-// Quick Stats value for a rate cell. Never shows a rate computed for another pair.
-function statValue(conv: ConversionResult, base: string, target: string, which: "rate" | "inverse"): string {
-  if (conv.base !== base || conv.quote !== target || conv.status === "loading") return "…"
-  if (conv.rate === null) return "Unavailable"
-  return which === "rate" ? conv.rateLabel : conv.inverseRateLabel
-}
-
 export function HomeClient({
   initialGoldUsd,
   initialSilverUsd,
@@ -87,7 +79,7 @@ export function HomeClient({
       ? { base: defaultBase, date: initialDate, rates: { [defaultTarget]: initialRate } }
       : null
   const isDefaultPair = base === defaultBase && target === defaultTarget
-  // Quick Stats quotes metals per gram so the unit is always explicit.
+  // The table's "Now" line; metals are quoted per gram so the unit is explicit.
   const conv = useConversion(base, target, { metalUnit: "g", initialFx })
   const forPair = conv.base === base && conv.quote === target // never show another pair's rate
   // The pair pages' chart (Phase 7), for the selected pair. The default pair's
@@ -130,43 +122,15 @@ export function HomeClient({
                   includeMetals={true}
                   showFlags={false}
                   initialFx={initialFx}
+                  showInverse
                 />
               </div>
 
-              {/* Right column: Quick Stats, then the chart. On narrow screens it
-                  follows the converter and its result — the answer comes first. */}
+              {/* Right column: the chart only. Base, target and the current rate are
+                  already in the converter card; the inverse rate is on its result
+                  line (showInverse). On narrow screens the chart follows the
+                  converter and its result — the answer comes first. */}
               <div className="flex flex-col gap-6 min-w-0">
-              <div className="glass-card p-6 flex flex-col gap-4">
-                <h2 className="text-base font-semibold text-slate-300 font-heading">
-                  Quick Stats
-                </h2>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: "Base", value: base },
-                    { label: "Target", value: target },
-                    { label: "Current Rate", value: statValue(conv, base, target, "rate") },
-                    { label: "Inverse Rate", value: statValue(conv, base, target, "inverse") },
-                  ].map(({ label, value }) => (
-                    <div
-                      key={label}
-                      className="flex flex-col gap-1 p-3 rounded-xl bg-white/5 border border-white/5 min-w-0"
-                    >
-                      <span className="text-xs text-slate-500 font-mono uppercase tracking-wider">
-                        {label}
-                      </span>
-                      <span className="text-sm font-bold text-white font-mono break-words">
-                        {value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                {conv.base === base && conv.quote === target && (conv.status === "partial" || conv.status === "error") && (
-                  <p className="text-xs text-amber-400 font-mono">
-                    {conv.missing.includes("metal") ? "Metal price" : "Exchange rate"} unavailable right now — no rate is shown rather than a wrong one.
-                  </p>
-                )}
-              </div>
-
               {/* Chart — currency pairs only, like the historical table */}
               {fxPair && (
                 <div className="glass-card p-6">

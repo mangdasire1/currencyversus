@@ -28,6 +28,7 @@ interface CurrencyConverterProps {
   initialMetalPriceTime?: string | null // provider time of the seeded metal price
   showFlags?: boolean // flag emoji next to codes (see CurrencySelect)
   initialFx?: ExchangeRate | null // build-time rate (home page's default pair); seeds the first view
+  showInverse?: boolean // add the inverse rate to the rate line (home page; off on the old pair layout)
 }
 
 export function CurrencyConverter({
@@ -42,6 +43,7 @@ export function CurrencyConverter({
   initialMetalPriceTime,
   showFlags = true,
   initialFx,
+  showInverse = false,
 }: CurrencyConverterProps) {
   const [amount, setAmount] = useState("1")
   const [metalUnit, setMetalUnit] = useState<MetalUnit>("g")
@@ -85,6 +87,10 @@ export function CurrencyConverter({
     if (targetIsMetal) return formatMetalAmount(value, metalUnit)
     return formatMoney(value, targetCurrency?.decimals ?? 2)
   }
+
+  // "1 USD = 0.90481 EUR · 1 EUR = 1.1052 USD", as on the new pair layout.
+  // Same currency on both sides: the inverse would repeat the line.
+  const rateLine = showInverse && base !== target && conv.rate !== null ? `${conv.rateLabel} · ${conv.inverseRateLabel}` : conv.rateLabel
 
   function missingMessage(): string {
     const metalMissing = conv.missing.includes("metal")
@@ -130,7 +136,7 @@ export function CurrencyConverter({
       return (
         <div className="flex flex-col gap-1">
           <div className="rate-value text-4xl font-bold text-slate-500 font-mono tracking-tight">—</div>
-          <div className="text-sm text-slate-400 font-mono">{conv.rateLabel}</div>
+          <div className="text-sm text-slate-400 font-mono">{rateLine}</div>
         </div>
       )
     }
@@ -152,7 +158,7 @@ export function CurrencyConverter({
         <div className="rate-value text-4xl font-bold text-white font-mono tracking-tight">
           {resultLine}
         </div>
-        <div className="text-sm text-slate-400 font-mono">{conv.rateLabel}</div>
+        <div className="text-sm text-slate-400 font-mono">{rateLine}</div>
         <DataFreshness conv={conv} onRefresh={base !== target ? conv.refresh : undefined} refreshing={conv.refreshing} />
         {base !== target && (
           <p className="text-[11px] text-slate-600 font-body mt-1">

@@ -96,3 +96,19 @@ test("home copy names all four metals (no gold-and-silver-only wording on the ho
   assert.match(home, /precious metals \(Gold, Silver, Platinum, Palladium\)/)
   assert.match(layoutDescription, /plus gold, silver, platinum and palladium prices\./)
 })
+
+test("home: no Quick Stats card; the inverse rate is on the converter's rate line, only where asked for", async () => {
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const { fileURLToPath } = await import("node:url")
+  const src = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
+  const home = fs.readFileSync(path.join(src, "app", "HomeClient.tsx"), "utf8").replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\/.*$/gm, "")
+  assert.doesNotMatch(home, /Quick Stats|Inverse Rate|Current Rate/)
+  assert.match(home, /<CurrencyConverter[\s\S]*?showInverse[\s\S]*?\/>/)
+  const conv = fs.readFileSync(path.join(src, "components", "CurrencyConverter.tsx"), "utf8")
+  assert.match(conv, /showInverse = false,/) // off unless a page asks: the old pair layout is unchanged
+  assert.match(conv, /showInverse && base !== target && conv\.rate !== null \? `\$\{conv\.rateLabel\} · \$\{conv\.inverseRateLabel\}` : conv\.rateLabel/)
+  assert.equal((conv.match(/\{rateLine\}/g) ?? []).length, 2)
+  const oldLayout = fs.readFileSync(path.join(src, "app", "[pair]", "PairPageClient.tsx"), "utf8")
+  assert.doesNotMatch(oldLayout, /showInverse/)
+})
