@@ -24,9 +24,16 @@ export interface ManifestEntry {
 export type Manifest = Record<string, ManifestEntry>
 
 // Visible text of a page, without the parts that change on every build or
-// poll while the content does not: scripts/styles/markup, and the metal
-// provider's "last update" time (gold-api moves it on each poll even when
-// the price is unchanged, e.g. at weekends).
+// poll while the content does not: scripts/styles/markup, and three time
+// stamps that are not data:
+//   - the metal provider's "last update" time (gold-api moves it on each poll
+//     even when the price is unchanged, e.g. at weekends) — in the price line
+//     and in the "Provider update" card of the metal pages;
+//   - the build time the new pair layout shows as "Last checked: … (when this
+//     page was built)".
+// Measured 2026-11-08: with only these left in, two builds of the same data
+// marked 16 new-layout pages changed, and a weekend rebuild 38 metal pages.
+// A changed price, rate or ECB date is still caught: those stay in the text.
 export function visibleContent(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/g, " ")
@@ -38,6 +45,8 @@ export function visibleContent(html: string): string {
     .replace(/&amp;/g, "&")
     .replace(/Provider's last update[^·]*?\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC/g, "Provider's last update")
     .replace(/silver: \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC/g, "silver:")
+    .replace(/Provider update\s*\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC/g, "Provider update")
+    .replace(/Last checked: \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC \(when this page was built\)/g, "Last checked (when this page was built)")
     .replace(/\s+/g, " ")
     .trim()
 }

@@ -57,3 +57,26 @@ test("manifest validator rejects malformed input", () => {
   assert.equal(isManifest([]), false)
   assert.equal(isManifest("<html>404</html>"), false)
 })
+
+// Markup as the pages render it (React comment nodes between text parts).
+const pilotPage = (rate: string, rateDate: string, builtAt: string) =>
+  `<body><h1>US dollar to Turkish lira</h1><p>1 USD = ${rate} TRY</p>
+   <p>Rate date: <!-- -->${rateDate}<!-- --> · Last checked: <!-- -->${builtAt} (when this page was built)</p></body>`
+const metalPage = (price: string, providerTime: string) =>
+  `<body><h1>Gold price in USD</h1><div><span>Price in USD</span><span>${price} USD</span></div>
+   <div><span>Provider update</span><span>${providerTime}</span></div></body>`
+
+test("fingerprint ignores the build time on new-layout pages, not the rate or its date", () => {
+  const base = fingerprint(pilotPage("42.2710", "2026-11-13", "2026-11-15 18:40 UTC"))
+  assert.equal(fingerprint(pilotPage("42.2710", "2026-11-13", "2026-11-16 03:10 UTC")), base) // rebuilt, same data
+  assert.notEqual(fingerprint(pilotPage("42.2711", "2026-11-13", "2026-11-15 18:40 UTC")), base) // rate moved
+  assert.notEqual(fingerprint(pilotPage("42.2710", "2026-11-16", "2026-11-15 18:40 UTC")), base) // new ECB day
+})
+
+test("fingerprint ignores the provider's update time on metal pages, not the price", () => {
+  const base = fingerprint(metalPage("3,887.6", "2026-11-15 18:29 UTC"))
+  assert.equal(fingerprint(metalPage("3,887.6", "2026-11-16 18:29 UTC")), base) // weekend poll, same price
+  assert.notEqual(fingerprint(metalPage("3,887.7", "2026-11-15 18:29 UTC")), base) // price moved
+  // only these two stamps are dropped: any other time in the text still counts
+  assert.match(visibleContent(`<p>Data time 2026-11-15 18:29 UTC</p>`), /18:29 UTC/)
+})
