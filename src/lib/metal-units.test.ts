@@ -75,10 +75,10 @@ test("rounding by significant digits: 1 kg gold and 1 gram silver", () => {
     `1 kg silver  = ${valueOfWeight(1, "kg", silver)} → "${formatSignificant(valueOfWeight(1, "kg", silver), silverSig)} USD"`,
   ]
   for (const l of lines) console.log(`    ${l}`)
-  assert.equal(goldSig, 5) // 4 integer digits + the 1 decimal gold is published with
+  assert.equal(goldSig, 6) // 4 integer digits + the 2 decimals gold is published with
   assert.equal(silverSig, 5) // 2 + 3
   assert.equal(formatSignificant(kgGold, goldSig), "130,011") // no cents at that size, thousands separator
-  assert.equal(formatSignificant(gold, goldSig), "4,043.8") // not "4,043.80": the source has no cent digit
+  assert.equal(formatSignificant(gold, goldSig), "4,043.80") // a reading ending in zero keeps the published cent digit
   assert.equal(formatSignificant(gSilver, silverSig), "1.7300") // more than two decimals
   assert.equal(formatSignificant(30 / 31.1034768, 5), "0.96452")
   assert.equal(formatSignificant(1234567.89, 5), "1,234,568") // integer digits are never dropped
@@ -105,8 +105,8 @@ test("metal pages: one weight converter, default rendered from props (no effect)
 })
 
 test("platinum and palladium: same troy-ounce arithmetic, each at its published precision", () => {
-  assert.equal(METAL_PRICE_DECIMALS.XPT, 1) // 1492.2 seen on 2026-11-15
-  assert.equal(METAL_PRICE_DECIMALS.XPD, 1) // 983.5 seen on 2026-11-16
+  assert.equal(METAL_PRICE_DECIMALS.XPT, 2) // 1475.75 seen on 2026-11-16, market open
+  assert.equal(METAL_PRICE_DECIMALS.XPD, 2) // 982.25 seen on 2026-11-16, market open
   const rows: string[] = []
   for (const [code, price] of [["XPT", 1492.2], ["XPD", 1044]] as const) {
     const sig = metalPriceSignificant(code, price)
@@ -115,12 +115,12 @@ test("platinum and palladium: same troy-ounce arithmetic, each at its published 
   }
   for (const r of rows) console.log(`    ${r}`)
   const pt = metalPriceSignificant("XPT", 1492.2), pd = metalPriceSignificant("XPD", 1044)
-  assert.equal(formatSignificant(valueOfWeight(1, "ozt", 1492.2), pt), "1,492.2")
-  assert.equal(formatSignificant(valueOfWeight(1, "g", 1492.2), pt), "47.975")
-  assert.equal(formatSignificant(valueOfWeight(1, "ozt", 1044), pd), "1,044.0")
-  assert.equal(formatSignificant(valueOfWeight(1, "g", 1044), pd), "33.565")
-  assert.equal(formatSignificant(valueOfWeight(1, "kg", 1044), pd), "33,565")
-  assert.equal(formatSignificant(valueOfWeight(1, "kg", 1492.2), pt), "47,975")
+  assert.equal(formatSignificant(valueOfWeight(1, "ozt", 1492.2), pt), "1,492.20")
+  assert.equal(formatSignificant(valueOfWeight(1, "g", 1492.2), pt), "47.9753")
+  assert.equal(formatSignificant(valueOfWeight(1, "ozt", 1044), pd), "1,044.00")
+  assert.equal(formatSignificant(valueOfWeight(1, "g", 1044), pd), "33.5654")
+  assert.equal(formatSignificant(valueOfWeight(1, "kg", 1044), pd), "33,565.4")
+  assert.equal(formatSignificant(valueOfWeight(1, "kg", 1492.2), pt), "47,975.3")
   assert.equal(formatSignificant(1234567.89, pt), "1,234,568") // integer digits are never dropped (Phase 8 rule)
 })
 

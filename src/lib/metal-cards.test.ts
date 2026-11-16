@@ -10,25 +10,28 @@ import { METAL_PRICE_DECIMALS, metalPriceSignificant, formatSignificant, valueOf
 import { computeConversion } from "./conversion.ts"
 
 const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
-// gold-api responses of 2026-11-16 (float32 renderings of 3875.3, 47.465, 1477.4, 983.5)
-const PRICES = { XAU: 3875.300049, XAG: 47.465, XPT: 1477.400024, XPD: 983.5 } as const
+// gold-api responses of 2026-11-16 06:11 UTC, market open (float32 renderings
+// of 3854.45, 47.453, 1475.75, 982.25)
+const PRICES = { XAU: 3854.449951, XAG: 47.452999, XPT: 1475.75, XPD: 982.25 } as const
 const CODES = ["XAU", "XAG", "XPT", "XPD"] as const
 
-test("per-symbol decimals: gold 1, silver 3, platinum 1, palladium 1", () => {
-  assert.deepEqual(METAL_PRICE_DECIMALS, { XAU: 1, XAG: 3, XPT: 1, XPD: 1 })
-  assert.deepEqual(CODES.map((c) => metalPriceSignificant(c, PRICES[c])), [5, 5, 5, 4])
-  assert.equal(formatSignificant(1000, metalPriceSignificant("XPD", 1000)), "1,000.0") // a whole-number day keeps the published decimal
-  // the significant digits follow the price's size: gold above 10,000 keeps its one decimal
-  assert.equal(formatSignificant(10250.4, metalPriceSignificant("XAU", 10250.4)), "10,250.4")
-  assert.equal(formatSignificant(99.5, metalPriceSignificant("XPT", 99.5)), "99.5")
+test("per-symbol decimals: gold 2, silver 3, platinum 2, palladium 2", () => {
+  assert.deepEqual(METAL_PRICE_DECIMALS, { XAU: 2, XAG: 3, XPT: 2, XPD: 2 })
+  assert.deepEqual(CODES.map((c) => metalPriceSignificant(c, PRICES[c])), [6, 5, 6, 5])
+  // readings that end in zeros keep the published decimals (3887.6, 1492.2, 983.5 were such readings)
+  assert.equal(formatSignificant(3887.600098, metalPriceSignificant("XAU", 3887.600098)), "3,887.60")
+  assert.equal(formatSignificant(1000, metalPriceSignificant("XPD", 1000)), "1,000.00")
+  // the significant digits follow the price's size: gold above 10,000 keeps its two decimals
+  assert.equal(formatSignificant(10250.45, metalPriceSignificant("XAU", 10250.45)), "10,250.45")
+  assert.equal(formatSignificant(99.55, metalPriceSignificant("XPT", 99.55)), "99.55")
 })
 
 test("price per troy ounce: exactly the published decimals — no padded digit, none dropped", () => {
   const oz = CODES.map((c) => formatCardUsd(PRICES[c], c, PRICES[c]))
   console.log(`    per oz: ${oz.join("  ")}`)
-  assert.deepEqual(oz, ["$3,875.3", "$47.465", "$1,477.4", "$983.5"])
-  // the 2026-11-08 gold price: neither "4,072.10" (old metal pages) nor "4,072" (old card)
-  assert.equal(formatCardUsd(4072.100098, "XAU", 4072.100098), "$4,072.1")
+  assert.deepEqual(oz, ["$3,854.45", "$47.453", "$1,475.75", "$982.25"])
+  // rounded to the published digit, never further: 3854.449951 is 3854.45, not 3854.4
+  assert.equal(formatCardUsd(3842.25, "XAU", 3842.25), "$3,842.25")
 })
 
 test("derived values never carry more significant digits than the source price", () => {
@@ -44,23 +47,23 @@ test("derived values never carry more significant digits than the source price",
   }
   const g = CODES.map((c) => formatCardUsd(PRICES[c] / 31.1034768, c, PRICES[c]))
   console.log(`    per g:  ${g.join("  ")}`)
-  assert.deepEqual(g, ["$124.59", "$1.5260", "$47.500", "$31.62"])
-  assert.equal(formatSignificant(valueOfWeight(1, "kg", PRICES.XAU), 5), "124,594") // no cents at that size
+  assert.deepEqual(g, ["$123.923", "$1.5256", "$47.4465", "$31.580"])
+  assert.equal(formatSignificant(valueOfWeight(1, "kg", PRICES.XAU), 6), "123,923") // no cents at that size
 })
 
 test("conversion labels: the metal price in the headline uses the same rule, in USD and through an FX leg", () => {
   const metal = (code: string) => ({ [code]: { metal: code, usdPerOz: PRICES[code as keyof typeof PRICES], priceTime: null, fetchedAt: null, stale: false, staleAgeMs: null } })
   const usd = (code: string, unit: "oz" | "g") => computeConversion({ base: code, quote: "USD", amount: 1, metalUnit: unit, fx: null, metals: metal(code), fxLoading: false, metalLoading: false })
-  assert.equal(usd("XAU", "oz").rateLabel, "1 oz Gold = 3,875.3 USD")
-  assert.equal(usd("XAG", "oz").rateLabel, "1 oz Silver = 47.465 USD")
-  assert.equal(usd("XPT", "oz").rateLabel, "1 oz Platinum = 1,477.4 USD")
-  assert.equal(usd("XPD", "oz").rateLabel, "1 oz Palladium = 983.5 USD")
-  assert.equal(usd("XAU", "g").rateLabel, "1 g Gold = 124.59 USD")
-  assert.equal(usd("XAU", "oz").significant, 5)
+  assert.equal(usd("XAU", "oz").rateLabel, "1 oz Gold = 3,854.45 USD")
+  assert.equal(usd("XAG", "oz").rateLabel, "1 oz Silver = 47.453 USD")
+  assert.equal(usd("XPT", "oz").rateLabel, "1 oz Platinum = 1,475.75 USD")
+  assert.equal(usd("XPD", "oz").rateLabel, "1 oz Palladium = 982.25 USD")
+  assert.equal(usd("XAU", "g").rateLabel, "1 g Gold = 123.923 USD")
+  assert.equal(usd("XAU", "oz").significant, 6)
   // another currency: also limited by the ECB leg, cents dropped at this size
   const tryFx = { base: "USD", quote: "TRY", rate: 42.271, date: "2026-11-13", fetchedAt: null, stale: false, staleAgeMs: null }
   const inTry = computeConversion({ base: "XAU", quote: "TRY", amount: 1, metalUnit: "oz", fx: tryFx, metals: metal("XAU"), fxLoading: false, metalLoading: false })
-  assert.equal(inTry.rateLabel, "1 oz Gold = 163,813 TRY")
+  assert.equal(inTry.rateLabel, "1 oz Gold = 162,931 TRY")
   // currency pairs are untouched: no metal precision involved
   const fx = computeConversion({ base: "USD", quote: "TRY", amount: 1, metalUnit: "g", fx: tryFx, metals: {}, fxLoading: false, metalLoading: false })
   assert.equal(fx.significant, null)

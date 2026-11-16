@@ -71,31 +71,31 @@ export function weightForValue(value: number, unit: WeightUnit, pricePerTroyOunc
 
 // Precision of the provider's prices, per symbol: decimals of the USD price
 // of one troy ounce. The JSON values are float32 renderings of the published
-// price (3887.600098 = 3887.6, 48.650002 = 48.650, 1492.199951 = 1492.2).
+// price (3854.449951 = 3854.45, 47.452999 = 47.453).
 //
-// Measured on the live API:
-//   2026-11-10 (trading day): gold moved in steps of 0.1, silver in steps of
-//     0.001, platinum and palladium showed whole numbers.
-//   2026-11-15: platinum 1492.2 — it does publish a decimal; palladium 1000.0.
-//     Gold 3887.6 and silver 48.650 agree with 2026-11-10.
-//   2026-11-16: palladium 983.5 — it publishes a decimal too (gold 3875.3,
-//     silver 47.465, platinum 1477.4).
-// Platinum and palladium are therefore 1, not 0 (site owner's decisions,
-// 2026-11-15 and 2026-11-16): the whole numbers seen on 2026-11-10 were
-// prices that happened to end in .0.
+// Measured on the live API with the market open, 2026-11-16 06:11–06:16 UTC,
+// 12 samples 25 s apart:
+//   gold      3854.45  3851.92  3842.25  3853.05  3853.47  → 2 decimals
+//   silver    47.453   47.418   47.443   47.163   47.355   → 3 decimals
+//   platinum  1475.75  1474.95  1475.15  1475.45           → 2 decimals
+//   palladium 982.75   982.25   981.25                     → 2 decimals
+// Single readings can end in zeros and look coarser: 3887.6 and 1492.2
+// (2026-11-15), 983.5 (2026-11-16 05:47), whole-number platinum and
+// palladium on 2026-11-10. An earlier version of this table (gold 1,
+// platinum 1, palladium 1) was built on such readings and hid a published
+// digit; the site owner chose the values below on 2026-11-16.
 //
 // The price per troy ounce in USD is shown with exactly these decimals:
-//   3,875.3 · 47.465 · 1,477.4 · 983.5
-// Before this, gold showed "4,072.10" (a digit the source does not publish)
-// on the metal pages and "$4,072" (one digit short) on the home page card.
-export const METAL_PRICE_DECIMALS: Record<string, number> = { XAU: 1, XAG: 3, XPT: 1, XPD: 1 }
+//   3,854.45 · 47.453 · 1,475.75 · 982.25
+// A reading that ends in zero keeps it (3,853.80): the digit is published.
+export const METAL_PRICE_DECIMALS: Record<string, number> = { XAU: 2, XAG: 3, XPT: 2, XPD: 2 }
 
 // Significant digits of a published price: its integer digits plus the
-// symbol's decimals (3887.6 → 5, 48.650 → 5, 1492.2 → 5, 983.5 → 4). Derived
-// values — per gram, per kilogram, in another currency — are rounded to this
-// many significant digits (and to the FX leg's, if lower), so they never
-// claim more precision than the source: 1 g of gold at 3887.6 is 124.99 USD,
-// not 124.9892.
+// symbol's decimals (3854.45 → 6, 47.453 → 5, 1475.75 → 6, 982.25 → 5).
+// Derived values — per gram, per kilogram, in another currency — are rounded
+// to this many significant digits (and to the FX leg's, if lower), so they
+// never claim more precision than the source: 1 g of gold at 3854.45 is
+// 123.923 USD, not 123.92344.
 export function metalPriceSignificant(code: string, usdPerTroyOunce: number): number {
   const decimals = METAL_PRICE_DECIMALS[code] ?? 0
   if (!Number.isFinite(usdPerTroyOunce) || usdPerTroyOunce <= 0) return 1 + decimals
