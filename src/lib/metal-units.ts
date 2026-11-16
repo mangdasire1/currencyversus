@@ -69,18 +69,45 @@ export function weightForValue(value: number, unit: WeightUnit, pricePerTroyOunc
   return convertWeight(value / pricePerTroyOunce, "ozt", unit)
 }
 
-// Significant digits the provider's prices carry. The JSON values are
-// float32 renderings of 2-decimal gold (4043.800049 = 4043.80) and 3-decimal
-// silver (53.855999 = 53.856) prices: ~6 and ~5 significant digits.
-// Platinum and palladium come in whole dollars (1544.0, 1044.0): 4.
-export const METAL_SIGNIFICANT: Record<string, number> = { XAU: 6, XAG: 5, XPT: 4, XPD: 4 }
+// Precision of the provider's prices, per symbol: decimals of the USD price
+// of one troy ounce. The JSON values are float32 renderings of the published
+// price (3887.600098 = 3887.6, 48.650002 = 48.650, 1492.199951 = 1492.2).
+//
+// Measured on the live API:
+//   2026-11-10 (trading day): gold moved in steps of 0.1, silver in steps of
+//     0.001, platinum and palladium showed whole numbers.
+//   2026-11-15: platinum 1492.2 — it does publish a decimal; palladium 1000.0.
+//     Gold 3887.6 and silver 48.650 agree with 2026-11-10.
+//   2026-11-16: palladium 983.5 — it publishes a decimal too (gold 3875.3,
+//     silver 47.465, platinum 1477.4).
+// Platinum and palladium are therefore 1, not 0 (site owner's decisions,
+// 2026-11-15 and 2026-11-16): the whole numbers seen on 2026-11-10 were
+// prices that happened to end in .0.
+//
+// The price per troy ounce in USD is shown with exactly these decimals:
+//   3,875.3 · 47.465 · 1,477.4 · 983.5
+// Before this, gold showed "4,072.10" (a digit the source does not publish)
+// on the metal pages and "$4,072" (one digit short) on the home page card.
+export const METAL_PRICE_DECIMALS: Record<string, number> = { XAU: 1, XAG: 3, XPT: 1, XPD: 1 }
+
+// Significant digits of a published price: its integer digits plus the
+// symbol's decimals (3887.6 → 5, 48.650 → 5, 1492.2 → 5, 983.5 → 4). Derived
+// values — per gram, per kilogram, in another currency — are rounded to this
+// many significant digits (and to the FX leg's, if lower), so they never
+// claim more precision than the source: 1 g of gold at 3887.6 is 124.99 USD,
+// not 124.9892.
+export function metalPriceSignificant(code: string, usdPerTroyOunce: number): number {
+  const decimals = METAL_PRICE_DECIMALS[code] ?? 0
+  if (!Number.isFinite(usdPerTroyOunce) || usdPerTroyOunce <= 0) return 1 + decimals
+  return Math.max(1, Math.floor(Math.log10(usdPerTroyOunce)) + 1) + decimals
+}
 
 // Rounding for converter results (money and weights alike): by significant
 // digits, not fixed decimals. A result never shows more significant digits
 // than its least precise input (metal price; FX leg — see ecb.ts), but all
 // integer digits are always kept and grouped with a thousands separator:
-//   1 kg gold   ≈ 130,000 USD → "130,010"  (cents are noise at that size)
-//   1 g silver  ≈ 1.73 USD    → "1.7300"   (two decimals would hide digits)
+//   1 kg gold   ≈ 125,000 USD → "124,989"  (cents are noise at that size)
+//   1 g silver  ≈ 1.56 USD    → "1.5641"   (two decimals would hide digits)
 //   0.96 USD                  → "0.96123"
 // Decimals are capped at 8; a non-zero value below that shows as "<0.00000001".
 export function formatSignificant(n: number, sig: number): string {

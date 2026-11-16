@@ -13,7 +13,7 @@ import { isMetal } from "@/lib/metals"
 import type { MetalCode } from "@/lib/metals"
 import type { MetalUnit } from "@/lib/conversion"
 import type { ExchangeRate } from "@/lib/types"
-import { formatMetalAmount, formatMoney } from "@/lib/format"
+import { formatMetalAmount, formatMoney, metalDecimals, significantDecimals } from "@/lib/format"
 import { parseAmount, amountErrorMessage } from "@/lib/amount"
 
 interface CurrencyConverterProps {
@@ -84,8 +84,16 @@ export function CurrencyConverter({
   const forThisPair = conv.base === base && conv.quote === target
 
   function formatResult(value: number): string {
-    if (targetIsMetal) return formatMetalAmount(value, metalUnit)
-    return formatMoney(value, targetCurrency?.decimals ?? 2)
+    // With a metal on either side the result is derived from the provider's
+    // metal price: the usual decimals, capped at the source's significant
+    // digits (conv.significant — see METAL_PRICE_DECIMALS in metal-units.ts).
+    // 1 oz gold = "3,887.6 USD", not "3,887.60". Currency pairs: unchanged.
+    const cap = conv.significant !== null && value !== 0 && Number.isFinite(value) ? significantDecimals(value, conv.significant) : Infinity
+    if (targetIsMetal) {
+      const d = metalDecimals(value, metalUnit)
+      return cap < d ? formatMoney(value, cap) : formatMetalAmount(value, metalUnit)
+    }
+    return formatMoney(value, Math.min(targetCurrency?.decimals ?? 2, cap))
   }
 
   // "1 USD = 0.90481 EUR · 1 EUR = 1.1052 USD", as on the new pair layout.

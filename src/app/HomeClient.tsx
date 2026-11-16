@@ -198,12 +198,12 @@ export function HomeClient({
                       <div className="flex flex-col gap-1">
                         <div className="flex items-baseline gap-2">
                           <span className="text-2xl font-bold font-mono text-white">
-                            {usd !== null ? formatCardUsd(usd) : "—"}
+                            {usd !== null ? formatCardUsd(usd, code, usd) : "—"}
                           </span>
                           <span className="text-xs text-slate-500 font-mono">/ oz</span>
                         </div>
                         <div className="text-sm font-mono text-slate-400">
-                          {gram !== null ? `${formatCardUsd(gram)} / g` : ""}
+                          {gram !== null && usd !== null ? `${formatCardUsd(gram, code, usd)} / g` : ""}
                         </div>
                       </div>
                       <div className="text-[10px] text-[#6366f1] font-mono uppercase tracking-wider group-hover:underline">

@@ -3,7 +3,7 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
   GRAMS_PER_TROY_OUNCE, GRAMS_PER_AVOIRDUPOIS_OUNCE, WEIGHT_UNITS, DEFAULT_WEIGHT_UNIT,
-  convertWeight, valueOfWeight, weightForValue, formatSignificant, solveConverter, METAL_SIGNIFICANT,
+  convertWeight, valueOfWeight, weightForValue, formatSignificant, solveConverter, METAL_PRICE_DECIMALS, metalPriceSignificant,
 } from "./metal-units.ts"
 import type { WeightUnit } from "./metal-units.ts"
 import { OZ_TO_GRAM } from "./metals.ts"
@@ -64,19 +64,22 @@ test("zero, negative, empty and non-numeric input do not crash", () => {
 
 test("rounding by significant digits: 1 kg gold and 1 gram silver", () => {
   const gold = 4043.8, silver = 53.808
+  const goldSig = metalPriceSignificant("XAU", gold), silverSig = metalPriceSignificant("XAG", silver)
   const kgGold = valueOfWeight(1, "kg", gold)
   const gSilver = valueOfWeight(1, "g", silver)
   const lines = [
-    `1 kg gold    = ${kgGold} → "${formatSignificant(kgGold, METAL_SIGNIFICANT.XAU)} USD"`,
-    `1 ozt gold   = ${gold} → "${formatSignificant(gold, METAL_SIGNIFICANT.XAU)} USD"`,
-    `1 g silver   = ${gSilver} → "${formatSignificant(gSilver, METAL_SIGNIFICANT.XAG)} USD"`,
-    `1 g silver at 30 USD/ozt = ${30 / 31.1034768} → "${formatSignificant(30 / 31.1034768, METAL_SIGNIFICANT.XAG)} USD"`,
-    `1 kg silver  = ${valueOfWeight(1, "kg", silver)} → "${formatSignificant(valueOfWeight(1, "kg", silver), METAL_SIGNIFICANT.XAG)} USD"`,
+    `1 kg gold    = ${kgGold} → "${formatSignificant(kgGold, goldSig)} USD"`,
+    `1 ozt gold   = ${gold} → "${formatSignificant(gold, goldSig)} USD"`,
+    `1 g silver   = ${gSilver} → "${formatSignificant(gSilver, silverSig)} USD"`,
+    `1 g silver at 30 USD/ozt = ${30 / 31.1034768} → "${formatSignificant(30 / 31.1034768, metalPriceSignificant("XAG", 30))} USD"`,
+    `1 kg silver  = ${valueOfWeight(1, "kg", silver)} → "${formatSignificant(valueOfWeight(1, "kg", silver), silverSig)} USD"`,
   ]
   for (const l of lines) console.log(`    ${l}`)
-  assert.equal(formatSignificant(kgGold, 6), "130,011") // no cents at that size, thousands separator
-  assert.equal(formatSignificant(gold, 6), "4,043.80")
-  assert.equal(formatSignificant(gSilver, 5), "1.7300") // more than two decimals
+  assert.equal(goldSig, 5) // 4 integer digits + the 1 decimal gold is published with
+  assert.equal(silverSig, 5) // 2 + 3
+  assert.equal(formatSignificant(kgGold, goldSig), "130,011") // no cents at that size, thousands separator
+  assert.equal(formatSignificant(gold, goldSig), "4,043.8") // not "4,043.80": the source has no cent digit
+  assert.equal(formatSignificant(gSilver, silverSig), "1.7300") // more than two decimals
   assert.equal(formatSignificant(30 / 31.1034768, 5), "0.96452")
   assert.equal(formatSignificant(1234567.89, 5), "1,234,568") // integer digits are never dropped
   assert.equal(formatSignificant(1e-12, 5), "<0.00000001")
@@ -101,20 +104,24 @@ test("metal pages: one weight converter, default rendered from props (no effect)
   assert.equal((c.match(/min-h-\[44px\]/g) ?? []).length, 2) // unit options and both inputs
 })
 
-test("platinum and palladium: same troy-ounce arithmetic, whole-dollar precision (4 significant digits)", () => {
-  assert.equal(METAL_SIGNIFICANT.XPT, 4)
-  assert.equal(METAL_SIGNIFICANT.XPD, 4)
+test("platinum and palladium: same troy-ounce arithmetic, each at its published precision", () => {
+  assert.equal(METAL_PRICE_DECIMALS.XPT, 1) // 1492.2 seen on 2026-11-15
+  assert.equal(METAL_PRICE_DECIMALS.XPD, 1) // 983.5 seen on 2026-11-16
   const rows: string[] = []
-  for (const [code, price] of [["XPT", 1544], ["XPD", 1044]] as const) {
-    const sig = METAL_SIGNIFICANT[code]
+  for (const [code, price] of [["XPT", 1492.2], ["XPD", 1044]] as const) {
+    const sig = metalPriceSignificant(code, price)
     const out = (["ozt", "g", "kg"] as const).map((u) => `1 ${u} = ${formatSignificant(valueOfWeight(1, u, price), sig)} USD`)
     rows.push(`${code} @ ${price}/ozt: ${out.join(" | ")}`)
   }
   for (const r of rows) console.log(`    ${r}`)
-  assert.equal(formatSignificant(valueOfWeight(1, "ozt", 1544), 4), "1,544")
-  assert.equal(formatSignificant(valueOfWeight(1, "g", 1544), 4), "49.64")
-  assert.equal(formatSignificant(valueOfWeight(1, "kg", 1544), 4), "49,641") // integer digits are never dropped (Phase 8 rule)
-  assert.equal(formatSignificant(valueOfWeight(1, "g", 1044), 4), "33.57")
+  const pt = metalPriceSignificant("XPT", 1492.2), pd = metalPriceSignificant("XPD", 1044)
+  assert.equal(formatSignificant(valueOfWeight(1, "ozt", 1492.2), pt), "1,492.2")
+  assert.equal(formatSignificant(valueOfWeight(1, "g", 1492.2), pt), "47.975")
+  assert.equal(formatSignificant(valueOfWeight(1, "ozt", 1044), pd), "1,044.0")
+  assert.equal(formatSignificant(valueOfWeight(1, "g", 1044), pd), "33.565")
+  assert.equal(formatSignificant(valueOfWeight(1, "kg", 1044), pd), "33,565")
+  assert.equal(formatSignificant(valueOfWeight(1, "kg", 1492.2), pt), "47,975")
+  assert.equal(formatSignificant(1234567.89, pt), "1,234,568") // integer digits are never dropped (Phase 8 rule)
 })
 
 test("platinum and palladium pages: the retail note is shown next to the converter", async () => {

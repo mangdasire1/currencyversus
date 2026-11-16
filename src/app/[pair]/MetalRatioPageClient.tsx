@@ -5,7 +5,7 @@ import { MetalIcon } from "@/components/MetalIcon"
 import { MetalUnitConverter } from "@/components/MetalUnitConverter"
 import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
 import { ratioRelatedLinks } from "@/lib/related"
-import { METAL_SIGNIFICANT } from "@/lib/metal-units"
+import { formatSignificant, metalPriceSignificant } from "@/lib/metal-units"
 import { TrendingUp, ArrowLeft, RefreshCw } from "lucide-react"
 import { useMetalRate } from "@/hooks/useMetalRate"
 import { GOLD_SILVER_RATIO_INFO } from "@/lib/metal-info"
@@ -118,7 +118,7 @@ export function MetalRatioPageClient({
               metalName="Gold"
               quote={{ kind: "weight", code: "XAG", name: "Silver" }}
               pricePerTroyOunce={ratio}
-              significant={Math.min(METAL_SIGNIFICANT.XAU, METAL_SIGNIFICANT.XAG)}
+              significant={Math.min(metalPriceSignificant("XAU", goldUsd ?? 0), metalPriceSignificant("XAG", silverUsd ?? 0))}
               status={ratio === null ? "Loading prices…" : null}
             />
 
@@ -132,8 +132,8 @@ export function MetalRatioPageClient({
               </p>
               <div className="w-full mt-2 grid grid-cols-3 gap-3 text-center">
                 {[
-                  { label: "Gold (USD/oz)", value: goldUsd !== null ? `$${goldUsd.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—" },
-                  { label: "Silver (USD/oz)", value: silverUsd !== null ? `$${silverUsd.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—" },
+                  { label: "Gold (USD/oz)", value: goldUsd !== null ? `$${formatSignificant(goldUsd, metalPriceSignificant("XAU", goldUsd))}` : "—" },
+                  { label: "Silver (USD/oz)", value: silverUsd !== null ? `$${formatSignificant(silverUsd, metalPriceSignificant("XAG", silverUsd))}` : "—" },
                   { label: "Ratio", value: ratio !== null ? `${ratio.toFixed(2)} : 1` : "—" },
                 ].map(({ label, value }) => (
                   <div

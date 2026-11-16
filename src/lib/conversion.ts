@@ -9,6 +9,7 @@
 import { METALS, OZ_TO_GRAM } from "./metals.ts"
 import { formatRateValue, formatFxRate } from "./format.ts"
 import { pairSignificantDigits } from "./ecb.ts"
+import { metalPriceSignificant, formatSignificant } from "./metal-units.ts"
 
 export type MetalUnit = "oz" | "g"
 export type Unit = "currency" | MetalUnit
@@ -59,6 +60,10 @@ export interface ConversionResult {
   rate: number | null // 1 baseUnit = rate quoteUnit
   inverseRate: number | null
   amount: number | null // converted amount
+  // Significant digits a metal conversion may show: the metal price's own
+  // (metal-units.ts metalPriceSignificant) and, with a non-USD currency, the
+  // ECB leg's. null for currency pairs and the identity (see ecb.ts for those).
+  significant: number | null
   rateLabel: string // "1 EUR = 0.0003 oz Gold" — the only place this string is built
   inverseRateLabel: string
   sourceDate: string | null // data's own date (FX date or metal price time)
@@ -105,9 +110,11 @@ export function formatLabelNumber(n: number, sig?: number): string {
   return sig !== undefined ? formatFxRate(n, sig) : formatRateValue(n)
 }
 
-function buildLabel(base: string, baseUnit: Unit, quote: string, quoteUnit: Unit, rate: number | null): string {
+function buildLabel(base: string, baseUnit: Unit, quote: string, quoteUnit: Unit, rate: number | null, metalSignificant: number | null = null): string {
   const left = `1 ${unitLabel(base, baseUnit)}`
   const right = unitLabel(quote, quoteUnit)
+  // A metal price or anything derived from it: the source's significant digits.
+  if (metalSignificant !== null && base !== quote) return `${left} = ${rate !== null ? formatSignificant(rate, metalSignificant) : "—"} ${right}`
   const sig = baseUnit === "currency" && quoteUnit === "currency" && base !== quote ? pairSignificantDigits(base, quote) : undefined
   return `${left} = ${rate !== null ? formatLabelNumber(rate, sig) : "—"} ${right}`
 }
@@ -142,6 +149,7 @@ export function computeConversion(input: ConversionInput): ConversionResult {
   const amountIn = input.amount ?? null
 
   let rate: number | null = null
+  let significant: number | null = null
   let fxDate: string | null = null
   let metalPriceTime: string | null = null
   const fetched: (string | null | undefined)[] = []
@@ -193,6 +201,7 @@ export function computeConversion(input: ConversionInput): ConversionResult {
     const b = needMetal(quote)
     if (a && b) {
       rate = pricePerUnit(a.usdPerOz, baseUnit as MetalUnit) / pricePerUnit(b.usdPerOz, quoteUnit as MetalUnit)
+      significant = Math.min(metalPriceSignificant(base, a.usdPerOz), metalPriceSignificant(quote, b.usdPerOz))
     }
   } else {
     const metalCode = baseIsMetal ? base : quote
@@ -209,6 +218,7 @@ export function computeConversion(input: ConversionInput): ConversionResult {
     if (m && usdToCurrency !== null) {
       const currencyPerMetalUnit = pricePerUnit(m.usdPerOz, metalUnitSide) * usdToCurrency
       rate = baseIsMetal ? currencyPerMetalUnit : 1 / currencyPerMetalUnit
+      significant = Math.min(metalPriceSignificant(metalCode, m.usdPerOz), currency === "USD" ? Infinity : pairSignificantDigits("USD", currency))
     }
   }
 
@@ -233,8 +243,9 @@ export function computeConversion(input: ConversionInput): ConversionResult {
     rate,
     inverseRate,
     amount,
-    rateLabel: buildLabel(base, baseUnit, quote, quoteUnit, rate),
-    inverseRateLabel: buildLabel(quote, quoteUnit, base, baseUnit, inverseRate),
+    significant,
+    rateLabel: buildLabel(base, baseUnit, quote, quoteUnit, rate, significant),
+    inverseRateLabel: buildLabel(quote, quoteUnit, base, baseUnit, inverseRate, significant),
     sourceDate: metalPriceTime ?? fxDate,
     fetchedAt: earliest(...fetched),
     fxDate,

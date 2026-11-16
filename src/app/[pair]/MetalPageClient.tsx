@@ -11,14 +11,12 @@ import { MetalIcon } from "@/components/MetalIcon"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import { METAL_INFO } from "@/lib/metal-info"
 import { computeConversion } from "@/lib/conversion"
-import { formatMoney } from "@/lib/format"
 import type { MetalCode } from "@/lib/metals"
 import type { ExchangeRate } from "@/lib/types"
 import { formatUtcTime } from "@/lib/utils"
 import { editorialReviewLabel } from "@/lib/editorial"
 import { localContextText } from "@/lib/editorial-sections"
-import { METAL_SIGNIFICANT } from "@/lib/metal-units"
-import { pairSignificantDigits } from "@/lib/ecb"
+import { formatSignificant, metalPriceSignificant } from "@/lib/metal-units"
 
 interface MetalPageClientProps {
   metal: MetalCode
@@ -27,16 +25,6 @@ interface MetalPageClientProps {
   initialPriceTime: string | null
   initialUsdToTargetRate: number | null
   initialFxDate: string | null
-}
-
-// Prices here are money amounts in the target currency → currency decimals.
-const formatMetal = formatMoney
-
-function getDecimals(target: string): number {
-  const c = CURRENCY_MAP[target]
-  if (!c) return 2
-  // For very large rates (JPY, KRW), use 0 decimals for oz and 2 for grams
-  return c.decimals
 }
 
 export function MetalPageClient({
@@ -64,12 +52,14 @@ export function MetalPageClient({
 
   const info = METAL_INFO[metal]
   const targetCurrency = CURRENCY_MAP[target]
-  const ozDecimals = getDecimals(target)
-  const gramDecimals = ozDecimals === 0 ? 0 : 2
 
   const ozPriceTarget = perOz.rate
-  // Least precise input: the metal price, and the ECB USD→target leg if any
-  const resultSignificant = Math.min(METAL_SIGNIFICANT[metal] ?? 5, target === "USD" ? Infinity : pairSignificantDigits("USD", target))
+  // Every price on this page — headline, converter, Quick Stats, table — is
+  // rounded to the same significant digits: those of the least precise input
+  // (the provider's metal price; the ECB USD→target leg if any). See
+  // METAL_PRICE_DECIMALS in metal-units.ts.
+  const resultSignificant = perOz.significant ?? metalPriceSignificant(metal, initialOzPriceUsd ?? 0)
+  const formatMetal = (value: number) => formatSignificant(value, resultSignificant)
   const gramPriceTarget = perGram.rate
   const livePriceUsd = inputs.metals?.[metal]?.usdPerOz ?? null
   const priceTimeLabel = formatUtcTime(perOz.metalPriceTime)
@@ -175,19 +165,19 @@ export function MetalPageClient({
                   {
                     label: "Price per oz",
                     value: ozPriceTarget !== null
-                      ? `${formatMetal(ozPriceTarget, ozDecimals)} ${target}`
+                      ? `${formatMetal(ozPriceTarget)} ${target}`
                       : "—",
                   },
                   {
                     label: "Price per gram",
                     value: gramPriceTarget !== null
-                      ? `${formatMetal(gramPriceTarget, gramDecimals)} ${target}`
+                      ? `${formatMetal(gramPriceTarget)} ${target}`
                       : "—",
                   },
                   {
                     label: "Price in USD",
                     value: livePriceUsd !== null
-                      ? `${formatMetal(livePriceUsd, 2)} USD`
+                      ? `${formatSignificant(livePriceUsd, metalPriceSignificant(metal, livePriceUsd))} USD`
                       : "—",
                   },
                   {
@@ -247,7 +237,7 @@ export function MetalPageClient({
                             <td className="py-2.5 font-mono text-slate-300">{label} {info.name}</td>
                             <td className="py-2.5 font-mono text-white text-right font-semibold">
                               {value !== null
-                                ? `${formatMetal(value, isOz ? ozDecimals : gramDecimals)} ${target}`
+                                ? `${formatMetal(value)} ${target}`
                                 : "—"}
                             </td>
                           </tr>
