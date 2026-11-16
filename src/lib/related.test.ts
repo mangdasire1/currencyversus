@@ -4,7 +4,7 @@ import assert from "node:assert/strict"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { metalRelatedLinks, ratioRelatedLinks, pairRelatedLinks, METHOD_LINK } from "./related.ts"
+import { metalRelatedLinks, ratioRelatedLinks, pairRelatedLinks, METHOD_LINK, METALS_LINK } from "./related.ts"
 import type { RelatedLink } from "./related.ts"
 import { MEASUREMENT_COHORT, CONTROL_PAGES, REVERSE_PAIRS, isReversePair } from "./pilot.ts"
 import { routeCatalog, parsePairSlug, METAL_PAGE_CURRENCIES, METAL_SLUGS } from "./routes.ts"
@@ -36,11 +36,16 @@ test("related links: real pages, descriptive text, the method page, never a meas
       n++
       assert.match(l.href, /^\/[a-z-]+\/$/, l.href)
       const slug = l.href.slice(1, -1)
-      assert.ok(slug === "method" || CATALOG.has(slug), `${page} → ${l.href} is not a generated page`)
+      assert.ok(slug === "method" || slug === "metals" || CATALOG.has(slug), `${page} → ${l.href} is not a generated page`)
       assert.notEqual(slug, page, `${page} links to itself`)
       assert.ok(!MEASURED.has(slug), `${page} → ${l.href} is a measured page`)
       assert.ok(l.text.length >= 15 && !/click here|read more/i.test(l.text), `${page}: "${l.text}"`)
     }
+  }
+  // every metal page and the ratio page link back to the metals index; reverse pairs do not
+  for (const { page, links } of all) {
+    const isMetalPage = /^(gold|silver|platinum|palladium)-vs-/.test(page)
+    assert.equal(links.some((l) => l.href === METALS_LINK.href), isMetalPage, `${page}: metals index link`)
   }
   const sample = (p: string) => all.find((x) => x.page === p)!.links.map((l) => `${l.href} "${l.text}"`).join("\n      ")
   console.log(`    ${all.length} pages, ${n} links, 0 to measured pages (${[...MEASURED].join(", ")})`)

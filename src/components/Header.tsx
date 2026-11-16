@@ -11,7 +11,7 @@ import { TrendingUp } from "lucide-react"
 // prices (gold-api.com); the footer names both sources.
 const NAV = [
   { href: "#currencies", label: "Currencies" },
-  { href: "#metals", label: "Metals" },
+  { href: "/metals/", label: "Metals" },
   { href: "/method/", label: "Method" },
 ]
 

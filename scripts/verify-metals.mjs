@@ -12,7 +12,8 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { routeCatalog, parsePairSlug } from "../src/lib/routes.ts"
 import { METALS } from "../src/lib/metals.ts"
-import { checkMetalPageHtml } from "../src/lib/metal-page-check.ts"
+import { checkMetalPageHtml, checkMetalsIndexHtml } from "../src/lib/metal-page-check.ts"
+import { metalsIndexTargets } from "../src/lib/metals-index.ts"
 
 const outDir = process.argv[2] ?? path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "out")
 const NAME = Object.fromEntries(METALS.map((m) => [m.code, m.name]))
@@ -33,7 +34,18 @@ for (const slug of pages) {
   else if (samples.length < 6 || /^(platinum|palladium)-vs-usd$/.test(slug)) samples.push(`${slug} ${price}`)
 }
 
-console.log(`verify-metals: ${pages.length} metal pages, ${pages.length - failures.length} with the build-time price in static HTML, ${failures.length} failing`)
+// The /metals/ index: four prices and a link to every metal page.
+const indexFile = path.join(outDir, "metals", "index.html")
+const targets = metalsIndexTargets()
+if (!fs.existsSync(indexFile)) {
+  failures.push(`metals: index page missing from ${outDir}`)
+} else {
+  const index = checkMetalsIndexHtml(fs.readFileSync(indexFile, "utf8"), METALS.map((m) => ({ name: m.name, code: m.code })), targets)
+  if (index.problems.length) failures.push(`metals (index): ${index.problems.join("; ")}`)
+  console.log(`verify-metals: /metals/ index — ${index.prices.length}/${METALS.length} prices (${index.prices.join(" · ")}), ${targets.length} metal pages to link, ${index.problems.length} problem(s)`)
+}
+
+console.log(`verify-metals: ${pages.length} metal pages, ${pages.length - failures.filter((f) => !f.startsWith("metals")).length} with the build-time price in static HTML, ${failures.length} failing`)
 console.log(`  e.g. ${samples.join(" · ")}`)
 if (failures.length) {
   console.log("  pages without a price:\n    " + failures.join("\n    "))

@@ -169,11 +169,16 @@ export function HomeClient({
               </div>
             )}
 
-            {/* Precious Metals — target of the header's "Metals" link */}
+            {/* Precious Metals — four cards; the full list is the /metals/ index */}
             <section id="metals" className="flex flex-col gap-4 scroll-mt-4 animate-fade-in-up" style={{ animationDelay: "150ms" }}>
-              <h2 className="text-lg font-semibold text-slate-300 font-heading">
-                Precious Metals
-              </h2>
+              <div className="flex flex-wrap items-center justify-between gap-x-4">
+                <h2 className="text-lg font-semibold text-slate-300 font-heading">
+                  Precious Metals
+                </h2>
+                <Link href="/metals/" className="inline-flex items-center min-h-[44px] text-sm text-slate-300 underline underline-offset-4 hover:text-white">
+                  All metal prices by currency
+                </Link>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {METAL_CARDS.map(({ code, name, href, more }) => {
                   const usd = metalUsd[code]

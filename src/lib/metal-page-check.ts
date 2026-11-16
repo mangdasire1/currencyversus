@@ -52,3 +52,24 @@ export function checkMetalPageHtml(html: string, { metalName, quote }: MetalPage
 
   return { problems, price: sentence ?? null }
 }
+
+// The /metals/ index (Phase A6): each metal's current price per troy ounce
+// in the static HTML, and a link to every metal page the build generates.
+export function checkMetalsIndexHtml(
+  html: string,
+  metals: Array<{ name: string; code: string }>,
+  targets: string[] // "/gold-vs-usd/", …
+): { problems: string[]; prices: string[] } {
+  const text = visibleText(html)
+  const problems: string[] = []
+  const prices: string[] = []
+  for (const m of metals) {
+    const price = text.match(new RegExp(`${m.name} \\(${m.code}\\) ${NUMBER} USD per troy ounce`))?.[1]
+    if (!positive(price)) problems.push(`no ${m.name} price ("${m.name} (${m.code}) … USD per troy ounce")`)
+    else prices.push(`${m.name} ${price}`)
+  }
+  const hrefs = new Set([...html.replace(/<script\b[\s\S]*?<\/script>/g, "").matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)].map((x) => x[1]))
+  const missing = targets.filter((t) => !hrefs.has(t))
+  if (missing.length) problems.push(`${missing.length} metal page(s) not linked: ${missing.slice(0, 5).join(", ")}`)
+  return { problems, prices }
+}

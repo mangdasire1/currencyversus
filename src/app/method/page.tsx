@@ -95,7 +95,11 @@ export default function MethodPage() {
           </p>
           <p>
             Gold and silver have a page for each of the site&apos;s currencies; platinum and palladium have pages in US
-            dollars, euros, Turkish lira and British pounds.
+            dollars, euros, Turkish lira and British pounds.{" "}
+            <Link href="/metals/" className="underline underline-offset-4" style={{ color: PV.accentText }}>
+              All metal pages are listed on the metals page
+            </Link>
+            .
           </p>
           <p>
             In other currencies the US dollar price is multiplied by the ECB reference rate from US dollars to that

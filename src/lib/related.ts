@@ -15,6 +15,9 @@ export interface RelatedLink {
 }
 
 export const METHOD_LINK: RelatedLink = { href: "/method/", text: "How the rates and prices are sourced and calculated" }
+// The metals index (Phase A6): linked from every metal page, so the hub and
+// its pages point at each other.
+export const METALS_LINK: RelatedLink = { href: "/metals/", text: "All metal prices: gold, silver, platinum and palladium by currency" }
 
 const NAME: Record<string, string> = Object.fromEntries(CURRENCIES.map((c) => [c.code, c.name]))
 const METAL_SLUG: Record<string, string> = { XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium" }
@@ -47,7 +50,7 @@ export function metalRelatedLinks(metal: string, currency: string): RelatedLink[
     }
   }
   out.push(link("gold-vs-silver", "Gold/silver ratio: how many ounces of silver one ounce of gold buys"))
-  return [...out.filter((l) => allowed(l.href.slice(1, -1), self)), METHOD_LINK]
+  return [...out.filter((l) => allowed(l.href.slice(1, -1), self)), METALS_LINK, METHOD_LINK]
 }
 
 // Platinum/palladium page (Phase 10): the same metal in its other currencies,
@@ -61,12 +64,12 @@ function newMetalRelatedLinks(metal: "XPT" | "XPD", currency: string): RelatedLi
   }
   out.push(link(`${METAL_SLUG[other]}-vs-${currency.toLowerCase()}`, `${METAL_NAME[other]} price in ${NAME[currency]} (${currency})`))
   out.push(link(`gold-vs-${currency.toLowerCase()}`, `Gold price in ${NAME[currency]} (${currency})`))
-  return [...out, METHOD_LINK]
+  return [...out, METALS_LINK, METHOD_LINK]
 }
 
 export function ratioRelatedLinks(): RelatedLink[] {
   // Gold in four currencies is already linked on that page ("Explore Metal Prices")
-  return [link("silver-vs-usd", "Silver price in US Dollar (USD)"), link("silver-vs-eur", "Silver price in Euro (EUR)"), METHOD_LINK]
+  return [link("silver-vs-usd", "Silver price in US Dollar (USD)"), link("silver-vs-eur", "Silver price in Euro (EUR)"), METALS_LINK, METHOD_LINK]
 }
 
 // Reverse pair (try-vs-usd): the base against other major currencies, gold in
