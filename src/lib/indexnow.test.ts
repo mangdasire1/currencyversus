@@ -116,7 +116,7 @@ function buildInfo(commit: string) {
     commit,
     branch: "main",
     fx: { pair: "USD/EUR", date: "2026-10-23" },
-    metals: { XAU: { priceTime: "2026-10-23T16:39:00.000Z" }, XAG: { priceTime: "2026-10-23T16:39:00.000Z" } },
+    metals: Object.fromEntries(["XAU", "XAG", "XPT", "XPD"].map((m) => [m, { priceTime: "2026-10-23T16:39:00.000Z" }])),
   }
 }
 

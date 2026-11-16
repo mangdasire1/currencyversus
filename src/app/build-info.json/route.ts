@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process"
 import { getInitialRateData, getBuildTimeMetalPrice } from "@/lib/build-data"
 import type { BuildInfo } from "@/lib/freshness"
+import { METALS } from "@/lib/metals"
 
 // Rendered once at `next build` into out/build-info.json (static export
 // Route Handler, GET only). It uses the same build-time fetchers — and so the
@@ -28,10 +29,11 @@ function buildCommit(): string | null {
 }
 
 export async function GET() {
-  const [fx, gold, silver] = await Promise.all([
+  // Every metal the site shows (METALS), so the production monitor watches
+  // all of them — platinum and palladium were missing here until Phase A4.
+  const [fx, ...metalPrices] = await Promise.all([
     getInitialRateData("USD", "EUR"),
-    getBuildTimeMetalPrice("XAU"),
-    getBuildTimeMetalPrice("XAG"),
+    ...METALS.map((m) => getBuildTimeMetalPrice(m.code)),
   ])
 
   const info: BuildInfo = {
@@ -39,10 +41,7 @@ export async function GET() {
     commit: buildCommit(),
     branch: process.env.CF_PAGES_BRANCH || null,
     fx: { pair: "USD/EUR", date: fx?.date ?? null },
-    metals: {
-      XAU: gold ? { priceTime: gold.priceTime } : null,
-      XAG: silver ? { priceTime: silver.priceTime } : null,
-    },
+    metals: Object.fromEntries(METALS.map((m, i) => [m.code, metalPrices[i] ? { priceTime: metalPrices[i]!.priceTime } : null])),
   }
   return Response.json(info)
 }

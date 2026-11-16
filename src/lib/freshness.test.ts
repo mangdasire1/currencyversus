@@ -34,6 +34,8 @@ const info = (over: Partial<BuildInfo> = {}): BuildInfo => ({
   metals: {
     XAU: { priceTime: "2026-10-19T16:34:00.000Z" },
     XAG: { priceTime: "2026-10-19T16:34:00.000Z" },
+    XPT: { priceTime: "2026-10-19T16:34:00.000Z" },
+    XPD: { priceTime: "2026-10-19T16:34:00.000Z" },
   },
   ...over,
 })
@@ -64,5 +66,27 @@ test("missing embedded data fails", () => {
   const r = checkBuildInfo(info({ fx: { pair: "USD/EUR", date: null }, metals: { XAU: null } }), {
     now: at("2026-10-19T18:00:00Z"), expectedCommit: null, expectedCommitTime: null,
   })
-  assert.equal(r.failures.length, 2)
+  assert.ok(r.failures.includes("no embedded FX date (build-time FX fetch failed)"))
+  assert.ok(r.failures.includes("no embedded XAU price time"))
+})
+
+test("all four metals are monitored: one missing from build-info, or stale, fails", async () => {
+  const opts = { now: at("2026-10-19T18:00:00Z"), expectedCommit: null, expectedCommitTime: null }
+  const t = "2026-10-19T16:34:00.000Z"
+  // the file as it was before Phase A4: gold and silver only
+  const old = checkBuildInfo(info({ metals: { XAU: { priceTime: t }, XAG: { priceTime: t } } }), opts)
+  console.log("    failures:", old.failures)
+  assert.deepEqual(old.failures, ["XPT is not in build-info.json (not monitored)", "XPD is not in build-info.json (not monitored)"])
+  // palladium fetch failed at build time
+  assert.deepEqual(checkBuildInfo(info({ metals: { XAU: { priceTime: t }, XAG: { priceTime: t }, XPT: { priceTime: t }, XPD: null } }), opts).failures, ["no embedded XPD price time"])
+  // platinum price time far behind the build
+  const stale = checkBuildInfo(info({ metals: { XAU: { priceTime: t }, XAG: { priceTime: t }, XPT: { priceTime: "2026-10-14T16:34:00.000Z" }, XPD: { priceTime: t } } }), opts)
+  assert.match(stale.failures.join(), /XPT price time .* older than the build/)
+  // the build writes every metal in METALS
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const { fileURLToPath } = await import("node:url")
+  const route = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app", "build-info.json", "route.ts"), "utf8")
+  assert.match(route, /METALS\.map\(\(m\) => getBuildTimeMetalPrice\(m\.code\)\)/)
+  assert.doesNotMatch(route, /getBuildTimeMetalPrice\("X/)
 })

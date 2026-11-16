@@ -8,6 +8,8 @@
 //     does not change until the next successful build + deploy, so this is
 //     what can silently grow and what this monitor watches.
 
+import { METALS } from "./metals.ts"
+
 export interface BuildInfo {
   buildTime: string // ISO — when the build ran
   commit: string | null // commit the build was made from
@@ -80,6 +82,7 @@ export interface CheckOptions {
   deployGraceMs?: number // time allowed for a new commit to go live (default 3 h)
   maxBuildAgeMs?: number // published HTML age limit (default 4 days)
   maxMetalLagMs?: number // metal price time vs build time (default 3 days)
+  expectedMetals?: string[] // metals that must be in build-info (default: every metal the site shows)
 }
 
 export interface CheckResult {
@@ -125,8 +128,14 @@ export function checkBuildInfo(info: BuildInfo, o: CheckOptions): CheckResult {
     else notes.push(msg)
   }
 
-  // 4. Embedded metal prices: provider time close to the build time.
-  for (const [metal, m] of Object.entries(info.metals)) {
+  // 4. Embedded metal prices: provider time close to the build time. Every
+  // metal the site shows must be listed — a metal missing from the file would
+  // otherwise go unwatched (as platinum and palladium did before Phase A4).
+  const expectedMetals = o.expectedMetals ?? METALS.map((m) => m.code)
+  for (const metal of expectedMetals) {
+    if (!(metal in (info.metals ?? {}))) failures.push(`${metal} is not in build-info.json (not monitored)`)
+  }
+  for (const [metal, m] of Object.entries(info.metals ?? {})) {
     if (!m || !m.priceTime) {
       failures.push(`no embedded ${metal} price time`)
       continue
