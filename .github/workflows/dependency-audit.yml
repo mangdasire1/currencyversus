@@ -1,0 +1,33 @@
+name: Dependency audit
+# Weekly `npm audit` against the lockfile. A run fails — and GitHub sends its
+# failure notification — when a dependency has a known vulnerability rated
+# high or critical. The full list is in the run's log.
+#
+# What a finding means here: the site is a static export, so the packages run
+# at build time, not on a server answering visitors. A finding still needs a
+# decision (usually `npm audit fix` in a normal, reviewed change), because
+# the build itself runs this code.
+#
+# Scheduled workflows stop after 60 days without repository activity;
+# keepalive.yml prevents that for this workflow too.
+on:
+  schedule:
+    - cron: "0 7 * * 1" # weekly, Monday 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version # same pinned runtime as the Cloudflare build
+
+      # Reads package-lock.json only: nothing is installed and no package script runs.
+      - name: npm audit (fails on high or critical)
+        run: npm audit --audit-level=high

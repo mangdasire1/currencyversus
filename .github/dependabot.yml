@@ -1,0 +1,32 @@
+# Dependency update checks (Phase A5).
+#
+# Dependabot opens pull requests; nothing is merged automatically. A pull
+# request changes package-lock.json, which changes the built JavaScript of
+# every page — review and merge them like any other change.
+#
+# - npm: one grouped pull request a week for minor and patch updates. Major
+#   versions are not proposed: Next.js majors need a migration (see AGENTS.md).
+# - GitHub Actions: monthly.
+#
+# Security alerts and security-fix pull requests are a repository setting
+# (Settings → Code security → Dependabot), not part of this file.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2
