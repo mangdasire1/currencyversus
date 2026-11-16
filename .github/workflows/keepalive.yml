@@ -15,7 +15,7 @@ jobs:
   keepalive:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Commit if the repository has been quiet for 45 days
         run: |
