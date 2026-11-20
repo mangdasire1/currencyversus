@@ -3,10 +3,10 @@
 //
 //   MEASUREMENT_COHORT  the 8 pages the 2026-11-20 Search Console read-out is
 //                       computed over (layout shipped 2026-10-22). Fixed.
-//   NEW_LAYOUT_PAIRS    every page that renders the new layout. The cohort
-//                       plus the reverse direction of each cohort pair (Phase
-//                       8), so a swap does not drop the user into the old
-//                       layout. May grow.
+//   NEW_LAYOUT_PAIRS    every page that renders the new layout. Since
+//                       2026-11-20 (package B1) all 210 currency pairs; it
+//                       grew from the cohort (2026-10-22), the reverse
+//                       directions (Phase 8) and B1_SLICE_1.
 //
 // The layout check uses NEW_LAYOUT_PAIRS only; nothing in the UI branches
 // on MEASUREMENT_COHORT directly (it feeds MEASURED_PAGES, which only keeps
@@ -15,9 +15,11 @@
 // in the three months before, too few to compare against. The control pages
 // are eur-vs-try and sek-vs-inr (owner's decision, 2026-10-23).
 //
+// MEASUREMENT_COHORT, REVERSE_PAIRS and B1_SLICE_1 stay as the record of how
+// the layout was rolled out; the layout check no longer depends on them.
 // Roll back the new layout for all pages: make NEW_LAYOUT_PAIRS an empty array.
 
-import { isValidPairRoute, parsePairSlug } from "./routes.ts"
+import { isValidPairRoute, parsePairSlug, routeCatalog } from "./routes.ts"
 import { isMetalCode } from "./conversion.ts"
 
 // 20 November measurement cohort. DO NOT CHANGE.
@@ -52,8 +54,10 @@ export const B1_SLICE_1: readonly string[] = [
   "sek-vs-inr", "inr-vs-sek",
 ]
 
-// Pages that render the new layout. Additions are allowed.
-export const NEW_LAYOUT_PAIRS: readonly string[] = [...MEASUREMENT_COHORT, ...REVERSE_PAIRS, ...B1_SLICE_1]
+// Pages that render the new layout: every currency pair the build generates
+// (package B1, 2026-11-20 — the remaining 174 pages after B1_SLICE_1).
+// Metal pages are not pairs of currencies and keep their own layout.
+export const NEW_LAYOUT_PAIRS: readonly string[] = routeCatalog().filter((slug) => isValidPilotSlug(slug))
 
 // Control pages of the 20 November comparison (owner's decision 2026-10-23).
 export const CONTROL_PAGES: readonly string[] = ["eur-vs-try", "sek-vs-inr"]

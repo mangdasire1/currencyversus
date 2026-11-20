@@ -15,9 +15,10 @@ test("measurement cohort: exactly the 8 slugs of the 20 November read-out", () =
   console.log(`    MEASUREMENT_COHORT (${MEASUREMENT_COHORT.length}): ${MEASUREMENT_COHORT.join(", ")}`)
 })
 
-test("new layout: 36 unique existing fiat pages — the cohort, each reverse direction, the B1 first slice", () => {
-  assert.equal(NEW_LAYOUT_PAIRS.length, 36)
-  assert.equal(new Set(NEW_LAYOUT_PAIRS).size, 36)
+test("new layout: all 210 currency pairs — including the cohort, the reverse directions and the B1 first slice", () => {
+  assert.equal(NEW_LAYOUT_PAIRS.length, 210)
+  assert.equal(new Set(NEW_LAYOUT_PAIRS).size, 210)
+  for (const slug of B1_SLICE_1) assert.ok(NEW_LAYOUT_PAIRS.includes(slug), `slice page ${slug} missing`)
   for (const slug of MEASUREMENT_COHORT) assert.ok(NEW_LAYOUT_PAIRS.includes(slug), `cohort page ${slug} missing`)
   const catalog = new Set(routeCatalog())
   for (const slug of NEW_LAYOUT_PAIRS) {
@@ -25,16 +26,16 @@ test("new layout: 36 unique existing fiat pages — the cohort, each reverse dir
     assert.ok(isValidPilotSlug(slug), `${slug} is not a fiat pair`)
     assert.ok(hasNewLayout(slug))
   }
-  const reverses = NEW_LAYOUT_PAIRS.filter((s) => !MEASUREMENT_COHORT.includes(s) && !B1_SLICE_1.includes(s))
-  for (const slug of MEASUREMENT_COHORT) {
+  for (const slug of NEW_LAYOUT_PAIRS) {
     const { base, target } = parsePairSlug(slug)!
-    assert.ok(reverses.includes(pairSlug(target, base)), `reverse of ${slug} missing`)
+    assert.ok(NEW_LAYOUT_PAIRS.includes(pairSlug(target, base)), `reverse of ${slug} missing`) // a swap never changes layout
   }
   assert.equal(isValidPilotSlug("gold-vs-usd"), false)
   assert.equal(isValidPilotSlug("gold-vs-silver"), false)
   const old = routeCatalog().filter((s) => !hasNewLayout(s))
-  assert.equal(old.length, 249 - 36) // 210 currency + 38 metal + gold-vs-silver, minus the new layout
-  console.log(`    NEW_LAYOUT_PAIRS (${NEW_LAYOUT_PAIRS.length}): cohort + ${reverses.join(", ")} + B1 slice 1 (${B1_SLICE_1.length}); old layout: ${old.length} pages`)
+  assert.equal(old.length, 249 - 210) // left on the old page types: 38 metal pages + gold-vs-silver
+  assert.ok(old.every((s) => !isValidPilotSlug(s)), "every currency pair is in the new layout")
+  console.log(`    NEW_LAYOUT_PAIRS (${NEW_LAYOUT_PAIRS.length}); not in it: ${old.length} metal pages`)
 })
 
 test("B1 first slice: the 20 pages the site owner chose, each with its reverse, none already in the new layout", () => {
@@ -48,7 +49,6 @@ test("B1 first slice: the 20 pages the site owner chose, each with its reverse, 
   for (const slug of B1_SLICE_1) {
     const { base, target } = parsePairSlug(slug)!
     assert.ok(B1_SLICE_1.includes(pairSlug(target, base)), `reverse of ${slug} missing from the slice`)
-    assert.equal(NEW_LAYOUT_PAIRS.filter((s) => s === slug).length, 1, `${slug} listed twice`)
   }
   // the old control pages move to the new layout in this slice; the cohort record is untouched
   for (const control of ["eur-vs-try", "sek-vs-inr"]) assert.ok(hasNewLayout(control))
