@@ -33,8 +33,27 @@ export const REVERSE_PAIRS: readonly string[] = [
   "try-vs-usd", "jpy-vs-usd", "usd-vs-gbp", "cad-vs-usd",
 ]
 
+// Package B1, first slice (2026-11-20, after the measurement window closed):
+// old-layout pages with impressions in the last 28 days, the pairs left in the
+// home page's Popular Pairs, and the reverse direction of each. Chosen by the
+// site owner. The other 174 old-layout pages follow after this slice is checked.
+export const B1_SLICE_1: readonly string[] = [
+  // impressions in the last 28 days, and their reverse direction
+  "sgd-vs-cad", "cad-vs-sgd",
+  "usd-vs-krw", "krw-vs-usd",
+  "eur-vs-try", "try-vs-eur",
+  "aud-vs-krw", "krw-vs-aud",
+  "usd-vs-inr", "inr-vs-usd",
+  "usd-vs-cny", "cny-vs-usd",
+  "sgd-vs-aud", "aud-vs-sgd",
+  // the rest of the home page's Popular Pairs, and their reverse direction
+  "usd-vs-brl", "brl-vs-usd",
+  "eur-vs-jpy", "jpy-vs-eur",
+  "sek-vs-inr", "inr-vs-sek",
+]
+
 // Pages that render the new layout. Additions are allowed.
-export const NEW_LAYOUT_PAIRS: readonly string[] = [...MEASUREMENT_COHORT, ...REVERSE_PAIRS]
+export const NEW_LAYOUT_PAIRS: readonly string[] = [...MEASUREMENT_COHORT, ...REVERSE_PAIRS, ...B1_SLICE_1]
 
 // Control pages of the 20 November comparison (owner's decision 2026-10-23).
 export const CONTROL_PAGES: readonly string[] = ["eur-vs-try", "sek-vs-inr"]
