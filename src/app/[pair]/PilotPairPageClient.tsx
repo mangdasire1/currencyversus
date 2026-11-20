@@ -11,8 +11,7 @@ import { getFAQItems } from "@/lib/structured-data"
 import { editorialReviewLabel } from "@/lib/editorial"
 import { funFactCards } from "@/lib/editorial-sections"
 import { pairTitle } from "@/lib/pilot-format"
-import { pairPath, pairSlug } from "@/lib/routes"
-import { isReversePair } from "@/lib/pilot"
+import { pairPath } from "@/lib/routes"
 import { pairRelatedLinks } from "@/lib/related"
 import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
 import { DEFAULT_CHART_PERIOD } from "@/lib/history"
@@ -180,9 +179,9 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
           </section>
         )}
 
-        {/* Related links: reverse pairs only — the 20 November cohort keeps its
-            content as measured (src/lib/pilot.ts) */}
-        {isReversePair(pairSlug(base, target)) && <RelatedLinks links={pairRelatedLinks(base, target)} />}
+        {/* Related links on every new-layout page (the reverse-pairs-only rule
+            ended with the 20 November measurement window) */}
+        <RelatedLinks links={pairRelatedLinks(base, target)} />
 
         {/* FAQ — same items as the FAQPage JSON-LD */}
         <section aria-labelledby="faq-heading" className="flex flex-col gap-4">
@@ -203,18 +202,11 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
         <p className="text-xs" style={{ color: PV.faint }}>{editorialReviewLabel([base, target])}</p>
       </main>
 
-      {/* 9. Footer */}
-      {isReversePair(pairSlug(base, target)) ? (
-        <footer className="text-center py-6 text-xs px-4 flex flex-col items-center" style={{ color: PV.faint }}>
-          <span>CurrencyVersus · Data from ECB via Frankfurter API · For information only, not financial advice</span>
-          <MethodFooterLink />
-        </footer>
-      ) : (
-        // cohort pages: footer unchanged until the 20 November read-out
-        <footer className="text-center py-6 text-xs px-4" style={{ color: PV.faint }}>
-          CurrencyVersus · Data from ECB via Frankfurter API · For information only, not financial advice
-        </footer>
-      )}
+      {/* 9. Footer, with the method page link */}
+      <footer className="text-center py-6 text-xs px-4 flex flex-col items-center" style={{ color: PV.faint }}>
+        <span>CurrencyVersus · Data from ECB via Frankfurter API · For information only, not financial advice</span>
+        <MethodFooterLink />
+      </footer>
     </div>
   )
 }

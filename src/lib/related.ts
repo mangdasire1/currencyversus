@@ -1,11 +1,9 @@
 // "Related comparisons" links (Phase 8). Pure — tested in related.test.ts.
 //
-// Shown on metal pages, the gold/silver page and the reverse pairs only —
-// not on the 20 November cohort. No link points at a measured page (cohort or
-// control, src/lib/pilot.ts MEASURED_PAGES) or at the page itself: a new
-// internal link to a measured page would change it during the measurement.
-
-import { MEASURED_PAGES } from "./pilot.ts"
+// Shown on metal pages, the gold/silver page and every new-layout pair page.
+// No link points at the page itself. (Until the 20 November 2026 read-out the
+// pair links appeared on the reverse pairs only and never pointed at a
+// measured page; both rules ended with the measurement window.)
 import { pairSlug, isValidPairRoute, METAL_PAGE_CURRENCIES } from "./routes.ts"
 import { CURRENCIES } from "./currencies.ts"
 
@@ -25,7 +23,7 @@ const METAL_NAME: Record<string, string> = { XAU: "Gold", XAG: "Silver", XPT: "P
 const MAJORS = ["USD", "EUR", "GBP", "JPY", "CHF"]
 
 function allowed(slug: string, self: string): boolean {
-  return slug !== self && !MEASURED_PAGES.has(slug)
+  return slug !== self
 }
 
 function link(slug: string, text: string): RelatedLink {
@@ -72,9 +70,8 @@ export function ratioRelatedLinks(): RelatedLink[] {
   return [link("silver-vs-usd", "Silver price in US Dollar (USD)"), link("silver-vs-eur", "Silver price in Euro (EUR)"), METALS_LINK, METHOD_LINK]
 }
 
-// Reverse pair (try-vs-usd): the base against other major currencies, gold in
-// the base currency, the method page. Measured pages are skipped, so the
-// cohort direction of this pair is never linked.
+// Pair page (try-vs-usd): the base against other major currencies, gold in
+// the base currency, the method page.
 export function pairRelatedLinks(base: string, target: string): RelatedLink[] {
   const self = pairSlug(base, target)
   const out: RelatedLink[] = []
