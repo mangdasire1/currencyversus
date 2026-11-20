@@ -36,7 +36,10 @@ export function PilotHistoryTable({ base, target, currentRate, currentLabel, cur
       <div className="relative overflow-x-auto rounded-xl" style={{ border: `1px solid ${PV.border}` }}>
         <table className="w-full min-w-[480px] text-sm" style={{ background: PV.surface }}>
           <thead>
-            <tr className="text-xs uppercase tracking-wider" style={{ color: PV.faint, borderBottom: `1px solid ${PV.border}` }}>
+            {/* Header text in `dim`, not `faint`: with border-collapse the row's 1px
+                line is drawn inside each <th> box. faint is 5.48:1 on the surface but
+                4.35:1 on that line; dim is 6.97:1 and 5.53:1 (pilot-ui.test.ts). */}
+            <tr className="text-xs uppercase tracking-wider" style={{ color: PV.dim, borderBottom: `1px solid ${PV.border}` }}>
               <th scope="col" className="text-left font-normal py-3 px-4">Period</th>
               <th scope="col" className="text-right font-normal py-3 px-4">Then</th>
               <th scope="col" className="text-right font-normal py-3 px-4">Used day</th>

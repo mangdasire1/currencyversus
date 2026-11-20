@@ -138,6 +138,18 @@ test("selected period tab: white on #4F46E5 meets WCAG AA (white on #6366F1 did 
 // Regional-indicator pairs (🇺🇸 …) — what a flag emoji is made of.
 const FLAG_EMOJI = /\p{Regional_Indicator}{2}/u
 
+test("history table header: ≥4.5:1 on the surface and on the row line drawn inside each header cell", async () => {
+  const { PV } = await import("../components/pilot/palette.ts")
+  const table = read("components/pilot/PilotHistoryTable.tsx")
+  const row = table.match(/<thead>\s*(?:\{\/\*[\s\S]*?\*\/\}\s*)?<tr\b[^>]*>/)![0]
+  const token = row.match(/color: PV\.(\w+)/)![1] as keyof typeof PV
+  const color = PV[token] as string
+  const onSurface = contrast(color, PV.surface), onLine = contrast(color, PV.border)
+  console.log(`    header colour PV.${token} ${color}: ${onSurface.toFixed(2)}:1 on surface, ${onLine.toFixed(2)}:1 on the row line`)
+  assert.ok(onSurface >= 4.5 && onLine >= 4.5, `PV.${token} on the header row`)
+  assert.match(row, /borderBottom: `1px solid \$\{PV\.border\}`/) // the line the header text sits next to
+})
+
 test("new layout: no flag emoji anywhere — title, From/To selectors, every component", () => {
   const page = read("app/[pair]/PilotPairPageClient.tsx")
   assert.match(page, /\{base\} \/ \{target\}/) // title: codes only
