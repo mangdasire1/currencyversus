@@ -71,7 +71,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "CurrencyVersus — Compare World Currencies",
-    description: "Daily ECB reference rates and gold/silver prices, with up to 10 years of history.",
+    description: "Daily ECB reference rates with up to 10 years of history, plus gold, silver, platinum and palladium prices.",
     url: "https://currencyversus.com",
     siteName: "CurrencyVersus",
     type: "website",
@@ -87,7 +87,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "CurrencyVersus — Compare World Currencies",
-    description: "Daily ECB reference rates and gold/silver prices, with up to 10 years of history.",
+    description: "Daily ECB reference rates with up to 10 years of history, plus gold, silver, platinum and palladium prices.",
     images: ["https://currencyversus.com/logo.png"],
   },
 };

@@ -111,3 +111,25 @@ test("home: no Quick Stats card; the inverse rate is on the converter's rate lin
   assert.match(conv, /showInverse && base !== target && conv\.rate !== null \? `\$\{conv\.rateLabel\} · \$\{conv\.inverseRateLabel\}` : conv\.rateLabel/)
   assert.equal((conv.match(/\{rateLine\}/g) ?? []).length, 2)
 })
+
+test("shared texts name all four metals: WebApplication JSON-LD, the pair pages' FAQ answer, OG/Twitter", async () => {
+  const { getWebApplicationSchema, getFAQItems } = await import("./structured-data.ts")
+  const fs = await import("node:fs")
+  const path = await import("node:path")
+  const { fileURLToPath } = await import("node:url")
+  const FOUR = /gold, silver, platinum and palladium prices/i
+  const app = getWebApplicationSchema() as { description: string }
+  assert.match(app.description, FOUR)
+  const faq = getFAQItems("USD", "TRY", 42.271, "2026-11-20")
+  const source = faq.find((f) => /get its USD\/TRY data/.test(f.question))!
+  assert.match(source.answer, /Gold, silver, platinum and palladium prices come separately from gold-api\.com/)
+  const layout = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app", "layout.tsx"), "utf8")
+  const social = [...layout.matchAll(/^    description: "([^"]+)",$/gm)].map((m) => m[1])
+  assert.equal(social.length, 2) // openGraph and twitter
+  for (const d of social) {
+    assert.match(d, FOUR)
+    assert.match(d, /reference rates with up to 10 years of history/) // the history is exchange rates only
+  }
+  // no text names only gold and silver ("Gold/silver ratio" is a different thing and stays)
+  for (const t of [app.description, source.answer, ...social]) assert.doesNotMatch(t, /gold and silver prices|gold\/silver prices/i)
+})
