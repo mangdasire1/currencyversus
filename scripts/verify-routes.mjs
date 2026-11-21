@@ -99,4 +99,34 @@ for (const page of crumbPages) {
 }
 console.log(`verify-routes: breadcrumbs — ${crumbPages.length} pages, ${crumbSteps} steps, ${crumbProblems.length} problem(s)`)
 if (crumbProblems.length) console.log("  " + crumbProblems.slice(0, 10).join("\n  "))
-if (missing.length || unlisted.length || indexProblems.length || crumbProblems.length) process.exit(1)
+// Share images (src/app/[pair]/share.png): every pair and metal page names
+// its own /<page>/share.png as og:image and twitter:image, with alt text, and
+// the file is in out/ as a 1200×630 PNG under the platforms' size limits
+// (Facebook 8 MB, X 5 MB) and Cloudflare Pages' 25 MiB per file.
+const shareProblems = []
+let shareBytes = 0
+let shareMax = 0
+for (const page of generated) {
+  const html = fs.readFileSync(path.join(outDir, page, "index.html"), "utf8")
+  const want = `${SITE}/${page}/share.png`
+  const og = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1]
+  const tw = html.match(/<meta name="twitter:image" content="([^"]+)"/)?.[1]
+  const alt = html.match(/<meta property="og:image:alt" content="([^"]+)"/)?.[1]
+  if (og !== want || tw !== want) shareProblems.push(`${page}: og:image ${og ?? "none"}, twitter:image ${tw ?? "none"}`)
+  if (!alt || alt === "CurrencyVersus") shareProblems.push(`${page}: no descriptive og:image:alt`)
+  const file = path.join(outDir, page, "share.png")
+  if (!fs.existsSync(file)) { shareProblems.push(`${page}: share.png missing from out/`); continue }
+  const buf = fs.readFileSync(file)
+  const isPng = buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+  const w = isPng ? buf.readUInt32BE(16) : 0, h = isPng ? buf.readUInt32BE(20) : 0
+  // complete file: a PNG ends with its IEND chunk (a cut-off file still has a valid header)
+  const complete = buf.length > 12 && buf.subarray(buf.length - 8, buf.length - 4).toString("latin1") === "IEND"
+  if (!isPng || w !== 1200 || h !== 630) shareProblems.push(`${page}: share.png is not a 1200x630 PNG (${w}x${h})`)
+  else if (!complete) shareProblems.push(`${page}: share.png is incomplete (no IEND chunk)`)
+  if (buf.length > 5 * 1024 * 1024) shareProblems.push(`${page}: share.png ${buf.length} bytes, over X's 5 MB`)
+  shareBytes += buf.length
+  shareMax = Math.max(shareMax, buf.length)
+}
+console.log(`verify-routes: share images — ${generated.size} pages, ${(shareBytes / 1048576).toFixed(1)} MB in all, largest ${(shareMax / 1024).toFixed(0)} KB, ${shareProblems.length} problem(s)`)
+if (shareProblems.length) console.log("  " + shareProblems.slice(0, 10).join("\n  "))
+if (missing.length || unlisted.length || indexProblems.length || crumbProblems.length || shareProblems.length) process.exit(1)

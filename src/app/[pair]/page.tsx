@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation"
+import { cardFor } from "@/lib/share-image"
+import { OG_SIZE } from "@/lib/og-card"
 import { CURRENCIES } from "@/lib/currencies"
 import { getInitialRateData, getBuildTimeMetalPrice, getBuildTimeHistory, getBuildTimeChart } from "@/lib/build-data"
 import { getFAQSchema } from "@/lib/structured-data"
@@ -59,6 +61,14 @@ export async function generateStaticParams() {
   return routeCatalog().map((pair) => ({ pair }))
 }
 
+// The page's own share image (src/app/[pair]/share.png/route.tsx) for
+// og:image and twitter:image, with alt text describing what it shows.
+async function shareImageMeta(slug: string) {
+  const card = await cardFor(slug)
+  const image = { url: `https://currencyversus.com/${slug}/share.png`, width: OG_SIZE.width, height: OG_SIZE.height, alt: card?.alt ?? "CurrencyVersus", type: "image/png" }
+  return { openGraph: { images: [image] }, twitter: { images: [image] } }
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -66,6 +76,7 @@ export async function generateMetadata({
 }) {
   const { pair } = await params
 
+  const share = await shareImageMeta(pair)
   const currencyParsed = parsePair(pair)
   if (currencyParsed) {
     const { base, target } = currencyParsed
@@ -79,13 +90,13 @@ export async function generateMetadata({
         title: `${base} vs ${target} — Exchange Rate Comparison`,
         description: `${base} to ${target} conversion with daily ECB reference rates and historical data.`,
         url: `https://currencyversus.com/${base.toLowerCase()}-vs-${target.toLowerCase()}`,
-        images: [{ url: "https://currencyversus.com/logo.png", width: 1200, height: 630, alt: `${base} vs ${target} Exchange Rate` }],
+        images: share.openGraph.images,
       },
       twitter: {
         card: "summary_large_image",
         title: `${base} vs ${target} — Exchange Rate Comparison`,
         description: `${base} to ${target} conversion with daily ECB reference rates and historical data.`,
-        images: ["https://currencyversus.com/logo.png"],
+        images: share.twitter.images,
       },
     }
   }
@@ -99,6 +110,8 @@ export async function generateMetadata({
       description:
         "Track the gold/silver ratio from current gold and silver prices. Learn what the ratio measures and how it behaves in different market conditions.",
       alternates: { canonical: "https://currencyversus.com/gold-vs-silver/" },
+      openGraph: { title: "Gold/Silver Ratio — CurrencyVersus", url: "https://currencyversus.com/gold-vs-silver/", images: share.openGraph.images },
+      twitter: { card: "summary_large_image", images: share.twitter.images },
     }
   }
 
@@ -115,8 +128,9 @@ export async function generateMetadata({
       title: `${name} Price in ${target} — CurrencyVersus`,
       description: `${name} price in ${target} per ounce and per gram.`,
       url: `https://currencyversus.com/${slug}`,
-      images: [{ url: "https://currencyversus.com/logo.png", width: 1200, height: 630, alt: `${name} Price in ${target}` }],
+      images: share.openGraph.images,
     },
+    twitter: { card: "summary_large_image", images: share.twitter.images },
   }
 }
 
