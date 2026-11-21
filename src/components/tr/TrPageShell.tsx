@@ -3,11 +3,12 @@ import { Header } from "@/components/Header"
 import type { HeaderWidth } from "@/components/Header"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PV, SANS } from "@/components/pilot/palette"
-import { trPage, trCrumbs, languageLinkFor } from "@/lib/tr-pages"
+import { trPage, trCrumbs, languageLinkFor, TR_PAGES } from "@/lib/tr-pages"
 
 // Frame of every Turkish pilot page: Turkish menu with the link to the
 // English version, Turkish breadcrumb trail (and its BreadcrumbList), the H1,
-// and a footer with the sources and the method page.
+// links to the other Turkish pages (Dolar/TL, Euro/TL, Gram altın, Ons altın,
+// Yöntem), and a footer with the sources and the method page.
 export function TrPageShell({
   path,
   title,
@@ -30,6 +31,25 @@ export function TrPageShell({
           <h1 className="text-[28px] sm:text-4xl font-bold leading-tight">{title}</h1>
         </div>
         {children}
+
+        <nav aria-labelledby="tr-pages-heading" className="flex flex-col gap-2">
+          <h2 id="tr-pages-heading" className="text-sm font-semibold" style={{ color: PV.text }}>
+            Türkçe sayfalar
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {TR_PAGES.filter((p) => p.tr !== path).map((p) => (
+              <li key={p.tr}>
+                <Link
+                  href={p.tr}
+                  className="inline-flex items-center min-h-[44px] px-3 rounded-lg text-sm underline-offset-4 hover:underline"
+                  style={{ color: PV.text, background: PV.surface, border: `1px solid ${PV.border}` }}
+                >
+                  {p.crumb}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </main>
 
       <footer className="text-center py-6 text-xs px-4 flex flex-col items-center" style={{ color: PV.faint }}>

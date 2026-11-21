@@ -28,7 +28,8 @@ export type Manifest = Record<string, ManifestEntry>
 // stamps that are not data:
 //   - the metal provider's "last update" time (gold-api moves it on each poll
 //     even when the price is unchanged, e.g. at weekends) — in the price line
-//     and in the "Provider update" card of the metal pages;
+//     and in the "Provider update" card of the metal pages; on the Turkish
+//     gold pages, "Fiyat zamanı (sağlayıcının bildirdiği): 21.11.2026 14:55 UTC";
 //   - the build time the new pair layout shows as "Last checked: … (when this
 //     page was built)".
 // Measured 2026-11-08: with only these left in, two builds of the same data
@@ -46,6 +47,7 @@ export function visibleContent(html: string): string {
     .replace(/Provider's last update[^·]*?\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC/g, "Provider's last update")
     .replace(/silver: \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC/g, "silver:")
     .replace(/Provider update\s*\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC/g, "Provider update")
+    .replace(/Fiyat zamanı \(sağlayıcının bildirdiği\):\s*\d{2}\.\d{2}\.\d{4} \d{2}:\d{2} UTC/g, "Fiyat zamanı (sağlayıcının bildirdiği):")
     .replace(/Last checked: \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC \(when this page was built\)/g, "Last checked (when this page was built)")
     .replace(/\s+/g, " ")
     .trim()

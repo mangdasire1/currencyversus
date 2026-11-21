@@ -85,3 +85,17 @@ test("wiring: lang=\"tr\" root layout; every Turkish page uses its own alternate
   assert.match(read("app", "(en)", "[pair]", "PilotPairPageClient.tsx"), /languageLink=\{languageLinkFor\(pairPath\(base, target\)\)\}/)
   assert.match(read("app", "(en)", "[pair]", "MetalPageClient.tsx"), /languageLink=\{languageLinkFor\(pairPath\(metal, target\)\)\}/)
 })
+
+test("discovery: the five pages in the sitemap, checked after every build, and linked to each other", () => {
+  const ROOT = path.join(SRC, "..")
+  const sitemap = fs.readFileSync(path.join(ROOT, "scripts", "sitemap-lastmod.mjs"), "utf8")
+  assert.match(sitemap, /import \{ TR_PAGES \} from "\.\.\/src\/lib\/tr-pages\.ts"/)
+  assert.match(sitemap, /const urls = \[[^\n]*\.\.\.TR_PAGES\.map\(\(p\) => p\.tr\)\]/)
+  assert.equal(1 + 3 + routeCatalog().length + TR_PAGES.length, 258) // home, 3 indexes, 249 pair/metal pages, 5 Turkish
+  const build = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")).scripts.build as string
+  assert.match(build, /npm run verify:tr &&/)
+  // every Turkish page links the other four (the shell renders the list)
+  const shell = read("components", "tr", "TrPageShell.tsx")
+  assert.match(shell, /\{TR_PAGES\.filter\(\(p\) => p\.tr !== path\)\.map\(\(p\) => \(/)
+  assert.match(shell, /<Link\s+href=\{p\.tr\}\s+className="inline-flex items-center min-h-\[44px\]/)
+})

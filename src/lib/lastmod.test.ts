@@ -80,3 +80,12 @@ test("fingerprint ignores the provider's update time on metal pages, not the pri
   // only these two stamps are dropped: any other time in the text still counts
   assert.match(visibleContent(`<p>Data time 2026-11-15 18:29 UTC</p>`), /18:29 UTC/)
 })
+
+// Turkish gold pages (task C3-5): the provider's time is masked the same way,
+// the price is not.
+test("fingerprint: Turkish provider time ignored, Turkish price change caught", () => {
+  const tr = (price: string, time: string) =>
+    `<html lang="tr"><body><p>1 gram altın = ${price} TL</p><p>Fiyat zamanı (sağlayıcının bildirdiği): <!-- -->${time}<!-- --> · Kaynak: gold-api.com</p></body></html>`
+  assert.equal(fingerprint(tr("5.754,2", "21.11.2026 14:55 UTC")), fingerprint(tr("5.754,2", "21.11.2026 15:10 UTC")))
+  assert.notEqual(fingerprint(tr("5.754,2", "21.11.2026 14:55 UTC")), fingerprint(tr("5.760,8", "21.11.2026 14:55 UTC")))
+})
