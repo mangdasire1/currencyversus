@@ -147,3 +147,12 @@ test("shared texts name all four metals: WebApplication JSON-LD, the pair pages'
   // no text names only gold and silver ("Gold/silver ratio" is a different thing and stays)
   for (const t of [app.description, source.answer, ...social]) assert.doesNotMatch(t, /gold and silver prices|gold\/silver prices/i)
 })
+
+test("home converter: the gram/ounce toggle buttons are 44px touch targets", () => {
+  const c = fs.readFileSync(path.join(SRC, "components", "CurrencyConverter.tsx"), "utf8")
+  const group = c.slice(c.indexOf('aria-label="Metal unit"'), c.indexOf("</div>", c.indexOf('aria-label="Metal unit"')))
+  const button = group.match(/<button\b[\s\S]*?(?=<span|<\/button>)/)?.[0] ?? "" // opening tag (its onClick holds a "=>")
+  assert.match(button, /aria-pressed=/)
+  assert.match(button, /className="[^"]*\bmin-w-\[44px\][^"]*"/, button)
+  assert.match(button, /className="[^"]*\bmin-h-\[44px\][^"]*"/, button)
+})

@@ -229,7 +229,9 @@ export function CurrencyConverter({
             Amount
           </label>
           {anyMetal && (
-            <div className="flex items-center gap-1 text-xs font-mono" role="group" aria-label="Metal unit">
+            <div className="flex items-center text-xs font-mono" role="group" aria-label="Metal unit">
+              {/* The button is the 44px touch target; the chip inside keeps the
+                  toggle's small look. */}
               {(["g", "oz"] as MetalUnit[]).map((u) => (
                 <button
                   key={u}
@@ -237,13 +239,17 @@ export function CurrencyConverter({
                   aria-pressed={metalUnit === u}
                   aria-label={u === "g" ? "grams" : "troy ounces"}
                   onClick={() => setMetalUnit(u)}
-                  className={`px-2 py-0.5 rounded-md transition-colors ${
-                    metalUnit === u
-                      ? "bg-[#6366f1]/30 text-[#6366f1] border border-[#6366f1]/40"
-                      : "text-slate-500 hover:text-slate-300"
-                  }`}
+                  className="group min-w-[44px] min-h-[44px] inline-flex items-center justify-center"
                 >
-                  {u}
+                  <span
+                    className={`px-2 py-0.5 rounded-md transition-colors ${
+                      metalUnit === u
+                        ? "bg-[#6366f1]/30 text-[#6366f1] border border-[#6366f1]/40"
+                        : "text-slate-500 group-hover:text-slate-300"
+                    }`}
+                  >
+                    {u}
+                  </span>
                 </button>
               ))}
               {(baseIsMetal || (!baseIsMetal && targetIsMetal)) && (
