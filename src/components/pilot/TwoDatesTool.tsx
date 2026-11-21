@@ -24,6 +24,11 @@ interface TwoDatesToolProps {
   // Second date; null = today (the current rate). Owned by the page.
   secondDate: string | null
   onSecondDateChange: (date: string | null) => void
+  // Amount, owned by the page so the share link can carry it
+  amount: string
+  onAmountChange: (amount: string) => void
+  sharePath: string // this view's address on the site ("/usd-vs-try/?amount=…")
+  sharedNote: string | null // set when the page was opened from a shared link
   currentRate: number | null
   currentDate: string | null // ECB date of the current rate
   builtAt: string // ISO; server and first client render use it as "today"
@@ -70,13 +75,17 @@ export function TwoDatesTool({
   onDateChange,
   secondDate,
   onSecondDateChange,
+  amount,
+  onAmountChange,
+  sharePath,
+  sharedNote,
   currentRate,
   currentDate,
   builtAt,
 }: TwoDatesToolProps) {
   const id = useId()
-  const [amount, setAmount] = useState("100")
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle")
+  const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle")
 
   // Same value on server and first client render (no hydration mismatch on
   // the inputs' max); the real date is set after mount.
@@ -111,6 +120,18 @@ export function TwoDatesTool({
 
   // A new result invalidates "Copied".
   useEffect(() => setCopyState("idle"), [sentence])
+  useEffect(() => setShareState("idle"), [sharePath])
+
+  // The link to this exact view. Copied, never sent anywhere.
+  async function share() {
+    const url = `${window.location.origin}${sharePath}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareState("copied")
+    } catch {
+      setShareState("failed") // the address bar already holds the same link
+    }
+  }
 
   async function copy() {
     if (!sentence) return
@@ -129,6 +150,11 @@ export function TwoDatesTool({
       <h2 id={`${id}-h`} className="text-lg font-semibold" style={{ ...SANS, color: PV.text }}>
         Same amount, two dates
       </h2>
+      {sharedNote && (
+        <p role="status" className="text-sm rounded-xl p-3" style={{ color: PV.text, background: PV.surface, border: `1px solid ${PV.border}` }}>
+          {sharedNote}
+        </p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${id}-amount`} className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
@@ -140,7 +166,7 @@ export function TwoDatesTool({
             inputMode="decimal"
             autoComplete="off"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => onAmountChange(e.target.value)}
             aria-invalid={amountError !== null}
             aria-describedby={amountError ? `${id}-amount-error` : undefined}
             className="w-full min-w-0 rounded-xl px-4 py-3 min-h-[44px] focus:outline-none"
@@ -243,6 +269,26 @@ export function TwoDatesTool({
           </span>
         </div>
       )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={share}
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-4 rounded-xl text-sm"
+          style={{ ...MONO, background: PV.raised, border: `1px solid ${PV.border}`, color: PV.text }}
+        >
+          Share this comparison
+        </button>
+        <span role="status" className="text-xs" style={{ color: PV.dim }}>
+          {shareState === "copied"
+            ? secondDate === null
+              ? "Link copied. It opens with today's rate for the second date."
+              : "Link copied. Both dates are fixed in it."
+            : shareState === "failed"
+              ? "Could not copy; the link is in the address bar."
+              : ""}
+        </span>
+      </div>
 
       <p className="text-sm" style={{ color: PV.dim }}>
         This compares exchange rates on two dates. It is not an investment return: it does not account for inflation,

@@ -13,6 +13,7 @@ import { editorialReviewLabel } from "@/lib/editorial"
 import { funFactCards } from "@/lib/editorial-sections"
 import { pairTitle } from "@/lib/pilot-format"
 import { pairPath } from "@/lib/routes"
+import { readShareState, shareQuery, sharedLinkNote, shareFieldCount, SHARE_DEFAULT_AMOUNT } from "@/lib/share-state"
 import { pairRelatedLinks } from "@/lib/related"
 import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
 import { DEFAULT_CHART_PERIOD } from "@/lib/history"
@@ -57,14 +58,40 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
   const [thenDate, setThenDate] = useState(defaultThenDate)
   // Second date of the two-dates tool; null = today (the current rate)
   const [secondDate, setSecondDate] = useState<string | null>(null)
+  const [twoDatesAmount, setTwoDatesAmount] = useState(SHARE_DEFAULT_AMOUNT)
   const carry = useCallback(() => ({ period, date: thenDate }), [period, thenDate])
   const { handleBaseChange, handleTargetChange, handleSwapNav, swapNotice } = usePairNavigation(base, target, carry)
+
+  // After mount, once: a shared link's address (src/lib/share-state.ts) wins
+  // over a view carried from the reverse pair. The server HTML always shows
+  // the defaults.
+  const shareDefaults = { period: DEFAULT_CHART_PERIOD, from: defaultThenDate, periods: (chart ?? []).map((p) => p.key) }
+  const [addressRead, setAddressRead] = useState(false)
+  const [sharedNote, setSharedNote] = useState<string | null>(null)
   useEffect(() => {
     const view = takeCarriedView(pairPath(base, target))
-    if (!view) return
-    if (chart?.some((p) => p.key === view.period)) setPeriod(view.period)
-    if (/^\d{4}-\d{2}-\d{2}$/.test(view.date)) setThenDate(view.date)
+    const shared = readShareState(window.location.search, { ...shareDefaults, today: new Date().toISOString().slice(0, 10) })
+    if (shared.found) {
+      setTwoDatesAmount(shared.state.amount)
+      setPeriod(shared.state.period)
+      setThenDate(shared.state.from)
+      setSecondDate(shared.state.to)
+      setSharedNote(sharedLinkNote(shared.state, shared.ignored, shareFieldCount(window.location.search)))
+    } else if (view) {
+      if (chart?.some((p) => p.key === view.period)) setPeriod(view.period)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(view.date)) setThenDate(view.date)
+    }
+    setAddressRead(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- read the address once per page
   }, [base, target, chart])
+
+  // The address follows the view (replaceState: no new history entries).
+  const query = shareQuery({ amount: twoDatesAmount, period, from: thenDate, to: secondDate }, shareDefaults)
+  useEffect(() => {
+    if (!addressRead) return
+    const next = pairPath(base, target) + query
+    if (window.location.pathname + window.location.search !== next) window.history.replaceState(window.history.state, "", next)
+  }, [addressRead, base, target, query])
 
   const baseInfo = CURRENCY_INFO[base]
   const targetInfo = CURRENCY_INFO[target]
@@ -127,6 +154,10 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
           onDateChange={setThenDate}
           secondDate={secondDate}
           onSecondDateChange={setSecondDate}
+          amount={twoDatesAmount}
+          onAmountChange={setTwoDatesAmount}
+          sharePath={pairPath(base, target) + query}
+          sharedNote={sharedNote}
           currentRate={currentRate ?? initialRate}
           currentDate={fxDate}
           builtAt={builtAt}
