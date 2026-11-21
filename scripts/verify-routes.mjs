@@ -99,7 +99,7 @@ for (const page of crumbPages) {
 }
 console.log(`verify-routes: breadcrumbs — ${crumbPages.length} pages, ${crumbSteps} steps, ${crumbProblems.length} problem(s)`)
 if (crumbProblems.length) console.log("  " + crumbProblems.slice(0, 10).join("\n  "))
-// Share images (src/app/[pair]/share.png): every pair and metal page names
+// Share images (src/app/(en)/[pair]/share.png): every pair and metal page names
 // its own /<page>/share.png as og:image and twitter:image, with alt text, and
 // the file is in out/ as a 1200×630 PNG under the platforms' size limits
 // (Facebook 8 MB, X 5 MB) and Cloudflare Pages' 25 MiB per file.

@@ -62,7 +62,7 @@ export async function generateStaticParams() {
   return routeCatalog().map((pair) => ({ pair }))
 }
 
-// The page's own share image (src/app/[pair]/share.png/route.tsx) for
+// The page's own share image (src/app/(en)/[pair]/share.png/route.tsx) for
 // og:image and twitter:image, with alt text describing what it shows.
 async function shareImageMeta(slug: string) {
   const card = await cardFor(slug)

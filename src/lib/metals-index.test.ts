@@ -60,7 +60,7 @@ test("metals index: in the sitemap, and its provider times do not count as a con
 })
 
 test("metals index page: server-rendered from build-time prices, linked from the home menu and from every metal page", () => {
-  const page = fs.readFileSync(path.join(SRC, "app", "metals", "page.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(SRC, "app", "(en)", "metals", "page.tsx"), "utf8")
   assert.doesNotMatch(page, /"use client"|useEffect|useState/) // nothing waits for JavaScript
   assert.match(page, /getBuildTimeMetalPrice\(/)
   assert.match(page, /canonical: "https:\/\/currencyversus\.com\/metals\/"/)

@@ -47,11 +47,11 @@ test("BreadcrumbList: positions from 1, absolute URLs, names as shown", () => {
 
 test("each page type renders the trail from the shared list (visible and structured data together)", () => {
   const uses: Array<[string, RegExp]> = [
-    ["app/[pair]/PilotPairPageClient.tsx", /<Breadcrumbs crumbs=\{pairCrumbs\(base, target\)\} \/>/],
-    ["app/[pair]/MetalPageClient.tsx", /<Breadcrumbs crumbs=\{metalCrumbs\(metal, target\)\} \/>/],
-    ["app/[pair]/MetalRatioPageClient.tsx", /<Breadcrumbs crumbs=\{ratioCrumbs\(\)\} \/>/],
-    ["app/metals/page.tsx", /<Breadcrumbs crumbs=\{indexCrumbs\("metals"\)\} \/>/],
-    ["app/currencies/page.tsx", /<Breadcrumbs crumbs=\{indexCrumbs\("currencies"\)\} \/>/],
+    ["app/(en)/[pair]/PilotPairPageClient.tsx", /<Breadcrumbs crumbs=\{pairCrumbs\(base, target\)\} \/>/],
+    ["app/(en)/[pair]/MetalPageClient.tsx", /<Breadcrumbs crumbs=\{metalCrumbs\(metal, target\)\} \/>/],
+    ["app/(en)/[pair]/MetalRatioPageClient.tsx", /<Breadcrumbs crumbs=\{ratioCrumbs\(\)\} \/>/],
+    ["app/(en)/metals/page.tsx", /<Breadcrumbs crumbs=\{indexCrumbs\("metals"\)\} \/>/],
+    ["app/(en)/currencies/page.tsx", /<Breadcrumbs crumbs=\{indexCrumbs\("currencies"\)\} \/>/],
   ]
   for (const [file, re] of uses) assert.match(fs.readFileSync(path.join(SRC, file), "utf8"), re, file)
   const comp = fs.readFileSync(path.join(SRC, "components", "Breadcrumbs.tsx"), "utf8")

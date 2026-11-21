@@ -1,6 +1,6 @@
 /* Non-latin subsets of the self-hosted fonts (see README.md in this folder).
    The latin file of each family is loaded and preloaded by next/font/local in
-   src/app/layout.tsx. These faces are not preloaded: the browser downloads one
+   src/app/site-fonts.ts. These faces are not preloaded: the browser downloads one
    only when a page uses a character in its unicode-range — the same files and
    ranges Google Fonts served through next/font/google before.
    Family names follow next/font/local, which names each family after its

@@ -18,7 +18,7 @@
 // MEASUREMENT_COHORT, REVERSE_PAIRS and B1_SLICE_1 stay as the record of how
 // the layout was rolled out; the layout check no longer depends on them.
 // The old pair layout was removed once all 210 pages used this one, so there
-// is no per-page switch any more: src/app/[pair]/page.tsx renders the new
+// is no per-page switch any more: src/app/(en)/[pair]/page.tsx renders the new
 // layout for every currency pair.
 
 import { isValidPairRoute, parsePairSlug, routeCatalog } from "./routes.ts"

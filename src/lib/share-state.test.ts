@@ -43,7 +43,7 @@ test("share link: the opened page says whether today's rate is recalculated or b
 })
 
 test("share link: read after mount from window.location (static HTML unchanged), written with replaceState, nothing sent", () => {
-  const page = fs.readFileSync(path.join(SRC, "app", "[pair]", "PilotPairPageClient.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", "PilotPairPageClient.tsx"), "utf8")
   assert.match(page, /readShareState\(window\.location\.search,/) // in an effect: server and first render use the defaults
   assert.doesNotMatch(page, /useSearchParams/) // would opt the page out of prerendering
   assert.match(page, /window\.history\.replaceState\(/)
@@ -54,7 +54,7 @@ test("share link: read after mount from window.location (static HTML unchanged),
   // the amount goes to the clipboard and the address bar only: no request carries it
   for (const f of [page, tool]) assert.doesNotMatch(f, /sendBeacon|fetch\([^)]*amount|gtag|plausible|zaraz/)
   // the canonical is the plain page address, the sitemap lists plain addresses
-  assert.match(fs.readFileSync(path.join(SRC, "app", "[pair]", "page.tsx"), "utf8"), /canonical: `https:\/\/currencyversus\.com\/\$\{base\.toLowerCase\(\)\}-vs-\$\{target\.toLowerCase\(\)\}\/`/)
+  assert.match(fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", "page.tsx"), "utf8"), /canonical: `https:\/\/currencyversus\.com\/\$\{base\.toLowerCase\(\)\}-vs-\$\{target\.toLowerCase\(\)\}\/`/)
   const urlList = fs.readFileSync(path.join(SRC, "..", "scripts", "sitemap-lastmod.mjs"), "utf8").match(/const urls = \[.*\]/)![0]
   assert.doesNotMatch(urlList, /\?/)
 })

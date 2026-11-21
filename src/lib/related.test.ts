@@ -52,7 +52,7 @@ test("related links: real pages, descriptive text, the method page, never the pa
 })
 
 test("every new-layout page renders the related links and the method link — no page-list condition", () => {
-  const src = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app", "[pair]", "PilotPairPageClient.tsx"), "utf8")
+  const src = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app", "(en)", "[pair]", "PilotPairPageClient.tsx"), "utf8")
   const code = src.replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\/.*$/gm, "")
   assert.match(code, /^\s*<RelatedLinks links=\{pairRelatedLinks\(base, target\)\} \/>$/m) // unconditional
   assert.equal((code.match(/<MethodFooterLink \/>/g) ?? []).length, 1)

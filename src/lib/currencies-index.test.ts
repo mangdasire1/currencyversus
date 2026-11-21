@@ -24,12 +24,12 @@ test("currencies index: links every currency pair page the build generates, and 
 })
 
 test("currencies index: server-rendered, in the sitemap, checked by the build, linked from the home and method pages", () => {
-  const page = fs.readFileSync(path.join(SRC, "app", "currencies", "page.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(SRC, "app", "(en)", "currencies", "page.tsx"), "utf8")
   assert.doesNotMatch(page, /"use client"|useEffect|useState/)
   assert.match(page, /canonical: "https:\/\/currencyversus\.com\/currencies\/"/)
   for (const m of page.matchAll(/<(Link|a)\b[\s\S]*?>/g)) assert.match(m[0], /min-h-\[44px\]/, m[0])
   assert.match(fs.readFileSync(path.join(SRC, "..", "scripts", "sitemap-lastmod.mjs"), "utf8"), /"\/currencies\/"/)
   assert.match(fs.readFileSync(path.join(SRC, "..", "scripts", "verify-routes.mjs"), "utf8"), /currenciesIndexTargets\(\)/)
-  assert.match(fs.readFileSync(path.join(SRC, "app", "HomeClient.tsx"), "utf8"), /<Link href="\/currencies\/"/)
-  assert.match(fs.readFileSync(path.join(SRC, "app", "method", "page.tsx"), "utf8"), /<Link href="\/currencies\/"/)
+  assert.match(fs.readFileSync(path.join(SRC, "app", "(en)", "HomeClient.tsx"), "utf8"), /<Link href="\/currencies\/"/)
+  assert.match(fs.readFileSync(path.join(SRC, "app", "(en)", "method", "page.tsx"), "utf8"), /<Link href="\/currencies\/"/)
 })

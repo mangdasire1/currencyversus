@@ -10,14 +10,14 @@ import { routeCatalog } from "./routes.ts"
 const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
 
 test("home: four metal cards, each linking to a generated page; gold and silver links unchanged", () => {
-  const home = fs.readFileSync(path.join(SRC, "app", "HomeClient.tsx"), "utf8")
+  const home = fs.readFileSync(path.join(SRC, "app", "(en)", "HomeClient.tsx"), "utf8")
   const cards = [...home.matchAll(/\{ code: "(X[A-Z]{2})", name: "([A-Za-z]+)", href: "\/([a-z-]+)"/g)].map((m) => ({ code: m[1], name: m[2], slug: m[3] }))
   console.log(`    cards: ${cards.map((c) => `${c.name} → /${c.slug}/`).join(", ")}`)
   assert.deepEqual(cards.map((c) => c.code), ["XAU", "XAG", "XPT", "XPD"])
   const catalog = new Set(routeCatalog())
   for (const c of cards) assert.ok(catalog.has(c.slug), `${c.slug} is not a generated page`)
   assert.deepEqual(cards.slice(0, 2).map((c) => c.slug), ["gold-vs-usd", "silver-vs-usd"])
-  const page = fs.readFileSync(path.join(SRC, "app", "page.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(SRC, "app", "(en)", "page.tsx"), "utf8")
   for (const code of ["XAU", "XAG", "XPT", "XPD"]) assert.match(page, new RegExp(`getBuildTimeMetalPrice\\("${code}"\\)`)) // prices in the server HTML
 })
 
@@ -26,8 +26,8 @@ test("home page: the default pair's rate and history are build-time data seeding
   const path = await import("node:path")
   const { fileURLToPath } = await import("node:url")
   const app = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app")
-  const page = fs.readFileSync(path.join(app, "page.tsx"), "utf8")
-  const home = fs.readFileSync(path.join(app, "HomeClient.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(app, "(en)", "page.tsx"), "utf8")
+  const home = fs.readFileSync(path.join(app, "(en)", "HomeClient.tsx"), "utf8")
   assert.match(page, /getInitialRateData\(DEFAULT_BASE, DEFAULT_TARGET\)/)
   assert.match(page, /getBuildTimeHistory\(DEFAULT_BASE, DEFAULT_TARGET\)/)
   // the seed reaches every surface that shows the default pair
@@ -47,8 +47,8 @@ test("home chart: reuses the pair pages' PairChart (no copy), seeded from build-
   const path = await import("node:path")
   const { fileURLToPath } = await import("node:url")
   const src = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
-  const home = fs.readFileSync(path.join(src, "app", "HomeClient.tsx"), "utf8")
-  const page = fs.readFileSync(path.join(src, "app", "page.tsx"), "utf8")
+  const home = fs.readFileSync(path.join(src, "app", "(en)", "HomeClient.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(src, "app", "(en)", "page.tsx"), "utf8")
   assert.match(home, /import \{ PairChart \} from "@\/components\/pilot\/PairChart"/)
   assert.doesNotMatch(home, /<svg|chartGeometry|<path/) // drawn by PairChart only
   assert.match(page, /getBuildTimeChart\(DEFAULT_BASE, DEFAULT_TARGET\)/)
@@ -71,20 +71,20 @@ test("site header on every page: one component, the menu to three real pages, al
   const header = fs.readFileSync(path.join(src, "components", "Header.tsx"), "utf8")
   const nav = [...header.matchAll(/\{ key: "(\w+)", href: "([^"]+)", label: "([^"]+)" \}/g)].map((m) => [m[2], m[3]])
   assert.deepEqual(nav, [["/currencies/", "Currencies"], ["/metals/", "Metals"], ["/method/", "Method"]])
-  for (const [href] of nav) assert.ok(fs.existsSync(path.join(src, "app", href.slice(1, -1), "page.tsx")), `${href} is a page`)
+  for (const [href] of nav) assert.ok(fs.existsSync(path.join(src, "app", "(en)", href.slice(1, -1), "page.tsx")), `${href} is a page`)
   for (const m of header.matchAll(/className=\{?[`"]([^`"]*inline-flex[^`"]*)[`"]/g)) assert.match(m[1], /min-h-\[44px\]/)
   assert.match(header, /aria-current=\{current === key \? "page" : undefined\}/)
   assert.doesNotMatch(header.replace(/\/\/.*$/gm, ""), /Powered by ECB/)
   // every page renders it, at its <main>'s width, and has no header of its own
   const pages: Array<[string, string, string | null]> = [
-    ["app/HomeClient.tsx", "max-w-6xl", null],
-    ["app/[pair]/PilotPairPageClient.tsx", "max-w-3xl", "currencies"],
-    ["app/[pair]/MetalPageClient.tsx", "max-w-6xl", "metals"],
-    ["app/[pair]/MetalRatioPageClient.tsx", "max-w-4xl", "metals"],
-    ["app/currencies/page.tsx", "max-w-3xl", "currencies"],
-    ["app/metals/page.tsx", "max-w-3xl", "metals"],
-    ["app/method/page.tsx", "max-w-3xl", "method"],
-    ["app/not-found.tsx", "max-w-3xl", null],
+    ["app/(en)/HomeClient.tsx", "max-w-6xl", null],
+    ["app/(en)/[pair]/PilotPairPageClient.tsx", "max-w-3xl", "currencies"],
+    ["app/(en)/[pair]/MetalPageClient.tsx", "max-w-6xl", "metals"],
+    ["app/(en)/[pair]/MetalRatioPageClient.tsx", "max-w-4xl", "metals"],
+    ["app/(en)/currencies/page.tsx", "max-w-3xl", "currencies"],
+    ["app/(en)/metals/page.tsx", "max-w-3xl", "metals"],
+    ["app/(en)/method/page.tsx", "max-w-3xl", "method"],
+    ["app/(en)/not-found.tsx", "max-w-3xl", null],
   ]
   for (const [file, width, current] of pages) {
     const code = fs.readFileSync(path.join(src, file), "utf8")
@@ -102,8 +102,8 @@ test("home copy names all four metals (no gold-and-silver-only wording on the ho
   const path = await import("node:path")
   const { fileURLToPath } = await import("node:url")
   const app = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app")
-  const home = fs.readFileSync(path.join(app, "HomeClient.tsx"), "utf8").replace(/\/\/.*$/gm, "")
-  const layoutDescription = fs.readFileSync(path.join(app, "layout.tsx"), "utf8").match(/^  description:\s*"([^"]+)"/m)![1]
+  const home = fs.readFileSync(path.join(app, "(en)", "HomeClient.tsx"), "utf8").replace(/\/\/.*$/gm, "")
+  const layoutDescription = fs.readFileSync(path.join(app, "site-metadata.ts"), "utf8").match(/^  description:\s*"([^"]+)"/m)![1]
   for (const [where, text] of [["HomeClient.tsx", home], ["layout.tsx description", layoutDescription]] as const) {
     assert.doesNotMatch(text, /gold and silver prices|\(Gold, Silver\)/i, where)
   }
@@ -117,7 +117,7 @@ test("home: no Quick Stats card; the inverse rate is on the converter's rate lin
   const path = await import("node:path")
   const { fileURLToPath } = await import("node:url")
   const src = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
-  const home = fs.readFileSync(path.join(src, "app", "HomeClient.tsx"), "utf8").replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\/.*$/gm, "")
+  const home = fs.readFileSync(path.join(src, "app", "(en)", "HomeClient.tsx"), "utf8").replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\/.*$/gm, "")
   assert.doesNotMatch(home, /Quick Stats|Inverse Rate|Current Rate/)
   assert.match(home, /<CurrencyConverter[\s\S]*?showInverse[\s\S]*?\/>/)
   const conv = fs.readFileSync(path.join(src, "components", "CurrencyConverter.tsx"), "utf8")
@@ -137,7 +137,7 @@ test("shared texts name all four metals: WebApplication JSON-LD, the pair pages'
   const faq = getFAQItems("USD", "TRY", 42.271, "2026-11-20")
   const source = faq.find((f) => /get its USD\/TRY data/.test(f.question))!
   assert.match(source.answer, /Gold, silver, platinum and palladium prices come separately from gold-api\.com/)
-  const layout = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app", "layout.tsx"), "utf8")
+  const layout = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app", "site-metadata.ts"), "utf8")
   const social = [...layout.matchAll(/^    description: "([^"]+)",$/gm)].map((m) => m[1])
   assert.equal(social.length, 2) // openGraph and twitter
   for (const d of social) {

@@ -12,7 +12,7 @@ const read = (rel: string) => fs.readFileSync(path.join(SRC, rel), "utf8")
 const PILOT_DIR = "components/pilot"
 const PILOT_FILES = [
   ...fs.readdirSync(path.join(SRC, PILOT_DIR)).map((f) => `${PILOT_DIR}/${f}`),
-  "app/[pair]/PilotPairPageClient.tsx",
+  "app/(en)/[pair]/PilotPairPageClient.tsx",
 ]
 
 // Green/red as direction colours pass a value judgement (a rising rate is good
@@ -59,7 +59,7 @@ function importGraph(entry: string): string[] {
 const ERROR_RED = new Set(["components/CurrencyConverter.tsx: <p className=\"text-red-400 text-sm\">{missingMessage()}</p>"])
 
 test("direction colours: no green/red in anything the home page renders (whole import graph)", () => {
-  const files = importGraph("app/HomeClient.tsx")
+  const files = importGraph("app/(en)/HomeClient.tsx")
   const hits: string[] = []
   for (const f of files) {
     read(f).split("\n").forEach((line, i) => {
@@ -69,7 +69,7 @@ test("direction colours: no green/red in anything the home page renders (whole i
   }
   console.log(`    home import graph: ${files.length} files; green/red direction hits: ${hits.length}`)
   assert.ok(files.includes("components/HomeHistoryTable.tsx") && files.includes("components/Sparkline.tsx"))
-  for (const gone of ["components/PercentChange.tsx", "components/HistoricalTable.tsx", "app/[pair]/PairPageClient.tsx"]) {
+  for (const gone of ["components/PercentChange.tsx", "components/HistoricalTable.tsx", "app/(en)/[pair]/PairPageClient.tsx"]) {
     assert.ok(!fs.existsSync(path.join(SRC, gone)), `${gone}: the old layout's green/red code is removed`)
   }
   assert.deepEqual(hits, [])
@@ -153,7 +153,7 @@ test("history table header: ≥4.5:1 on the surface and on the row line drawn in
 })
 
 test("new layout: no flag emoji anywhere — title, From/To selectors, every component", () => {
-  const page = read("app/[pair]/PilotPairPageClient.tsx")
+  const page = read("app/(en)/[pair]/PilotPairPageClient.tsx")
   assert.match(page, /\{base\} \/ \{target\}/) // title: codes only
   const hits: string[] = []
   for (const f of PILOT_FILES) {
@@ -188,7 +188,7 @@ test("swap carries period and date to the reverse pair, not the amount", () => {
   const nav = read("hooks/usePairNavigation.ts")
   assert.match(nav, /nav\.path === pairPath\(target, base\)/)
   assert.match(nav, /period: string\n\s+date: string\n\}/) // CarriedView has no amount
-  const page = read("app/[pair]/PilotPairPageClient.tsx")
+  const page = read("app/(en)/[pair]/PilotPairPageClient.tsx")
   assert.match(page, /usePairNavigation\(base, target, carry\)/)
   assert.match(page, /takeCarriedView\(pairPath\(base, target\)\)/)
   assert.match(page, /selected=\{period\} onSelect=\{setPeriod\}/)
@@ -196,7 +196,7 @@ test("swap carries period and date to the reverse pair, not the amount", () => {
 })
 
 test("layout contract: one converter, accessible swap, 44px targets, details in DOM, ad slot reserved", () => {
-  const page = read("app/[pair]/PilotPairPageClient.tsx")
+  const page = read("app/(en)/[pair]/PilotPairPageClient.tsx")
   assert.equal((page.match(/<PilotConverter\b/g) ?? []).length, 1, "exactly one control set")
   assert.doesNotMatch(page, /<CurrencyConverter\b/)
   const converter = read(`${PILOT_DIR}/PilotConverter.tsx`)
@@ -225,7 +225,7 @@ test("text helpers", () => {
 
 test("404 page: site palette, no gradient, every text colour ≥4.5:1 on its background, 44px links", async () => {
   const { PV } = await import("../components/pilot/palette.ts")
-  const page = read("app/not-found.tsx").replace(/^\s*\/\/.*$/gm, "") // code only, not the comment
+  const page = read("app/(en)/not-found.tsx").replace(/^\s*\/\/.*$/gm, "") // code only, not the comment
   assert.doesNotMatch(page, /gradient|text-slate-|#6366f1|#080810/i) // the old colours and the decorative background
   assert.match(page, /background: PV\.bg/)
   const pairs: Array<[string, string, string]> = [
@@ -259,7 +259,7 @@ test("two dates: sentence to copy uses the business days used and each currency'
 test("two dates: second date selectable (default today), a used-day note for each date, copy button, the warning stays", () => {
   const tool = read("components/pilot/TwoDatesTool.tsx")
   assert.match(tool, /secondDate: string \| null/)
-  assert.match(read("app/[pair]/PilotPairPageClient.tsx"), /useState<string \| null>\(null\)/) // default: today
+  assert.match(read("app/(en)/[pair]/PilotPairPageClient.tsx"), /useState<string \| null>\(null\)/) // default: today
   assert.match(tool, /value=\{secondDate \?\? today\}/)
   assert.match(tool, /usedDayNote\(date, first\.used\.date\)/)
   assert.match(tool, /usedDayNote\(secondDate, second\.used\.date\)/)

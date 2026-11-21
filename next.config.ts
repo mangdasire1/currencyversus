@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
+  // One 404 for the whole site now that the pages live in route groups, each
+  // group with its own root layout: src/app/global-not-found.tsx.
+  experimental: { globalNotFound: true },
 };
 
 export default function config(phase: string): NextConfig {

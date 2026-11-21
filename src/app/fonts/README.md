@@ -22,7 +22,7 @@ texts (from https://github.com/google/fonts, `ofl/<family>/OFL.txt`) are
 `OFL-spacegrotesk.txt`, `OFL-jetbrainsmono.txt` and `OFL-dmsans.txt`.
 The files are unmodified (renamed only).
 
-**How they are loaded:** `src/app/layout.tsx` loads and preloads the latin file
+**How they are loaded:** `src/app/site-fonts.ts` loads and preloads the latin file
 of each family with `next/font/local`; `fonts.css` declares the other subsets
 (not preloaded, downloaded only when a page uses their characters) and the
 metric-adjusted Arial fallbacks.

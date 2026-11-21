@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url"
 
 const APP = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "app")
 const FONTS = path.join(APP, "fonts")
-const layout = fs.readFileSync(path.join(APP, "layout.tsx"), "utf8")
+const layout = fs.readFileSync(path.join(APP, "site-fonts.ts"), "utf8")
 const css = fs.readFileSync(path.join(FONTS, "fonts.css"), "utf8")
 
 test("no Google Fonts: nothing in src imports next/font/google", () => {

@@ -67,10 +67,10 @@ test("no investment-result wording, and plain ASCII on the image (no glyph the i
 })
 
 test("share image wiring: a .png route prerendered for every page, named in og:image and twitter:image with its alt", () => {
-  const route = fs.readFileSync(path.join(SRC, "app", "[pair]", "share.png", "route.tsx"), "utf8")
+  const route = fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", "share.png", "route.tsx"), "utf8")
   assert.match(route, /export const dynamic = "force-static"/)
   assert.match(route, /routeCatalog\(\)\.map\(\(pair\) => \(\{ pair \}\)\)/)
-  const page = fs.readFileSync(path.join(SRC, "app", "[pair]", "page.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", "page.tsx"), "utf8")
   assert.match(page, /url: `https:\/\/currencyversus\.com\/\$\{slug\}\/share\.png`/)
   assert.equal((page.match(/images: share\.openGraph\.images/g) ?? []).length, 3) // currency, ratio, metal
   assert.equal((page.match(/images: share\.twitter\.images/g) ?? []).length, 3)
@@ -90,11 +90,11 @@ test("download name: the page and the image's own data date (ECB date; the metal
 })
 
 test("download link: every pair and metal page offers its own share.png (no new image), a plain <a download>, 44px", () => {
-  const page = fs.readFileSync(path.join(SRC, "app", "[pair]", "page.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", "page.tsx"), "utf8")
   assert.match(page, /href: `\/\$\{slug\}\/share\.png`, fileName: shareDownloadName\(slug, card\?\.date \?\? null\)/)
   assert.equal((page.match(/shareImage=\{shareImage\}/g) ?? []).length, 3) // currency, ratio and metal pages
   for (const [f, kind] of [["PilotPairPageClient.tsx", "chart"], ["MetalPageClient.tsx", "price"], ["MetalRatioPageClient.tsx", "price"]]) {
-    const c = fs.readFileSync(path.join(SRC, "app", "[pair]", f), "utf8")
+    const c = fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", f), "utf8")
     assert.match(c, new RegExp(`<ShareImageLink image=\{shareImage\} kind="${kind}" />`), f)
   }
   const link = fs.readFileSync(path.join(SRC, "components", "ShareImageLink.tsx"), "utf8")

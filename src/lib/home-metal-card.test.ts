@@ -30,7 +30,7 @@ test("link: the metal's page in the other currency when it exists, else in US do
 })
 
 test("home: the column is never empty — chart for a currency pair, the metal card when a metal is selected", () => {
-  const home = fs.readFileSync(path.join(SRC, "app", "HomeClient.tsx"), "utf8")
+  const home = fs.readFileSync(path.join(SRC, "app", "(en)", "HomeClient.tsx"), "utf8")
   assert.match(home, /const metalOnSide = selectedMetal\(base, target\)/)
   assert.match(home, /\{metalOnSide && \(\s*<HomeMetalCard/)
   assert.match(home, /\{fxPair && \(/)
@@ -41,12 +41,12 @@ test("metal card: the cards' prices and rule, the existing unit note and a link 
   assert.match(card, /formatCardUsd\(usdPerOz, metal, usdPerOz\)/) // same rule as the Precious Metals cards
   assert.match(card, /formatCardUsd\(usdPerOz \/ OZ_TO_GRAM, metal, usdPerOz\)/)
   // the unit note, word for word as on the metals page
-  const metals = fs.readFileSync(path.join(SRC, "app", "metals", "page.tsx"), "utf8").replace(/\s+/g, " ")
+  const metals = fs.readFileSync(path.join(SRC, "app", "(en)", "metals", "page.tsx"), "utf8").replace(/\s+/g, " ")
   const note = "Precious metals are priced per troy ounce ("
   assert.ok(metals.includes(note) && card.replace(/\s+/g, " ").includes(note))
   assert.ok(card.replace(/\s+/g, " ").includes("The ounce used for food is the avoirdupois ounce ({GRAMS_PER_AVOIRDUPOIS_OUNCE} g), which is lighter."))
   // the "no history" sentence matches the method page's statement
-  assert.match(fs.readFileSync(path.join(SRC, "app", "method", "page.tsx"), "utf8"), /The site has no historical metal prices/)
+  assert.match(fs.readFileSync(path.join(SRC, "app", "(en)", "method", "page.tsx"), "utf8"), /The site has no historical metal prices/)
   assert.match(card, /The site has no historical metal prices, so there is no chart\./)
   // no digits written into the card's text: every number comes from data or a unit constant
   const text = card.replace(/\{[^}]*\}/g, "").replace(/className="[^"]*"/g, "").replace(/\/\/.*$/gm, "").replace(/<[^>]+>/g, " ")

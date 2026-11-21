@@ -71,18 +71,18 @@ test("conversion labels: the metal price in the headline uses the same rule, in 
 })
 
 test("pages use the shared rule: no fixed decimals for metal prices on the home cards or the metal pages", () => {
-  const home = fs.readFileSync(path.join(SRC, "app", "HomeClient.tsx"), "utf8")
+  const home = fs.readFileSync(path.join(SRC, "app", "(en)", "HomeClient.tsx"), "utf8")
   assert.match(home, /\{usd !== null \? formatCardUsd\(usd, code, usd\) : "—"\}/)
   assert.match(home, /\$\{formatCardUsd\(gram, code, usd\)\} \/ g/)
-  const page = fs.readFileSync(path.join(SRC, "app", "[pair]", "MetalPageClient.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", "MetalPageClient.tsx"), "utf8")
   assert.doesNotMatch(page, /formatMoney|ozDecimals|gramDecimals|toFixed\(2\)/)
   assert.match(page, /const formatMetal = \(value: number\) => formatSignificant\(value, resultSignificant\)/)
-  const ratio = fs.readFileSync(path.join(SRC, "app", "[pair]", "MetalRatioPageClient.tsx"), "utf8")
+  const ratio = fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", "MetalRatioPageClient.tsx"), "utf8")
   assert.doesNotMatch(ratio, /maximumFractionDigits/)
 })
 
 test("gold/silver page: the ratio is shown by one rule everywhere (headline, converter, large figure, Quick Stats)", () => {
-  const page = fs.readFileSync(path.join(SRC, "app", "[pair]", "MetalRatioPageClient.tsx"), "utf8")
+  const page = fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", "MetalRatioPageClient.tsx"), "utf8")
   assert.doesNotMatch(page, /ratio\.toFixed\(/)
   assert.match(page, /const formatRatio = \(r: number\) => formatSignificant\(r, ratioSignificant\)/)
   assert.equal((page.match(/formatRatio\(ratio\)/g) ?? []).length, 3)
