@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Header } from "@/components/Header"
+import { alternatesFor, languageLinkFor } from "@/lib/tr-pages"
 import Link from "next/link"
 import { CHART_PERIODS } from "@/lib/history"
 import type { ChartSampling } from "@/lib/history"
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   title: "Method — Where the Rates and Prices Come From | CurrencyVersus",
   description:
     "How CurrencyVersus sources and calculates exchange rates (ECB reference rates, cross rates), gold, silver, platinum and palladium prices (spot, troy ounce), historical data, and how to report an error.",
-  alternates: { canonical: "https://currencyversus.com/method/" },
+  alternates: alternatesFor("/method/"), // canonical + hreflang (Turkish version: /tr/yontem/)
 }
 
 const SAMPLING_TEXT: Record<ChartSampling, string> = {
@@ -43,7 +44,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 export default function MethodPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: PV.bg, color: PV.text, ...SANS }}>
-      <Header width="max-w-3xl" current="method" />
+      <Header width="max-w-3xl" current="method" languageLink={languageLinkFor("/method/")} />
 
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 pb-12 flex flex-col gap-10">
         <div className="flex flex-col gap-2 pt-2">

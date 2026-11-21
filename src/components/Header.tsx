@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { TrendingUp } from "lucide-react"
 import { PV } from "./pilot/palette"
+import { TR_NAV } from "@/lib/tr-pages"
+import type { LanguageLink } from "@/lib/tr-pages"
 
 // The site header, on every page: the logo (a link home) and the main menu —
 // Currencies, Metals, Method — as plain <a href> in the static HTML.
@@ -10,6 +12,9 @@ import { PV } from "./pilot/palette"
 // - On narrow screens the menu wraps to its own row under the logo; no menu
 //   script, every link at least 44 px tall.
 // - The section the page belongs to is marked with aria-current.
+// - Turkish pages (lang="tr") get the Turkish menu (src/lib/tr-pages.ts).
+// - A page with a version in the other language shows a link to it, last in
+//   the menu row, named in that language and marked with its lang.
 //
 // No source label here: the footers name the sources (ECB via Frankfurter,
 // gold-api.com for metals).
@@ -24,7 +29,18 @@ export type NavKey = (typeof NAV)[number]["key"]
 // The content column each page uses (its <main> max width).
 export type HeaderWidth = "max-w-6xl" | "max-w-4xl" | "max-w-3xl"
 
-export function Header({ width = "max-w-6xl", current }: { width?: HeaderWidth; current?: NavKey }) {
+export function Header({
+  width = "max-w-6xl",
+  current,
+  lang = "en",
+  languageLink = null,
+}: {
+  width?: HeaderWidth
+  current?: NavKey
+  lang?: "en" | "tr"
+  languageLink?: LanguageLink | null
+}) {
+  const nav = lang === "tr" ? TR_NAV : NAV
   return (
     <header className={`relative z-10 w-full ${width} mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-x-6`}>
       <Link href="/" className="flex items-center gap-2 min-h-[44px]">
@@ -35,9 +51,9 @@ export function Header({ width = "max-w-6xl", current }: { width?: HeaderWidth; 
           Currency<span style={{ color: PV.accentText }}>Versus</span>
         </span>
       </Link>
-      <nav aria-label="Main" className="w-full sm:w-auto -mx-3">
+      <nav aria-label={lang === "tr" ? "Ana menü" : "Main"} className="w-full sm:w-auto -mx-3">
         <ul className="flex items-center">
-          {NAV.map(({ key, href, label }) => (
+          {nav.map(({ key, href, label }) => (
             <li key={key}>
               <Link
                 href={href}
@@ -49,6 +65,20 @@ export function Header({ width = "max-w-6xl", current }: { width?: HeaderWidth; 
               </Link>
             </li>
           ))}
+          {languageLink && (
+            <li>
+              {/* another root layout: a full page load either way, so a plain <a> */}
+              <a
+                href={languageLink.href}
+                hrefLang={languageLink.lang}
+                lang={languageLink.lang}
+                className="inline-flex items-center min-h-[44px] min-w-[44px] px-3 text-sm underline underline-offset-4"
+                style={{ color: PV.dim }}
+              >
+                {languageLink.label}
+              </a>
+            </li>
+          )}
         </ul>
       </nav>
     </header>

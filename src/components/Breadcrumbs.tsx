@@ -6,12 +6,13 @@ import { PV } from "./pilot/palette"
 // Visible breadcrumb trail and its BreadcrumbList structured data, from the
 // same list (src/lib/breadcrumbs.ts). The last step is the current page: text
 // with aria-current, not a link. Earlier steps are real links, 44px tall.
-export function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
+// label: the trail's accessible name ("Sayfa yolu" on Turkish pages).
+export function Breadcrumbs({ crumbs, label = "Breadcrumb" }: { crumbs: Crumb[]; label?: string }) {
   const last = crumbs.length - 1
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(crumbs)) }} />
-      <nav aria-label="Breadcrumb" className="text-sm">
+      <nav aria-label={label} className="text-sm">
         <ol className="flex flex-wrap items-center gap-x-1">
           {crumbs.map((c, i) => (
             <li key={c.path} className="flex items-center gap-x-1">

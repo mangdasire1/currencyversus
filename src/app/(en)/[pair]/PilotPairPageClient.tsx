@@ -13,6 +13,7 @@ import { editorialReviewLabel } from "@/lib/editorial"
 import { funFactCards } from "@/lib/editorial-sections"
 import { pairTitle } from "@/lib/pilot-format"
 import { pairPath } from "@/lib/routes"
+import { languageLinkFor } from "@/lib/tr-pages"
 import { readShareState, shareQuery, sharedLinkNote, shareFieldCount, SHARE_DEFAULT_AMOUNT } from "@/lib/share-state"
 import { pairRelatedLinks } from "@/lib/related"
 import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
@@ -102,7 +103,7 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: PV.bg, color: PV.text, ...SANS }}>
-      <Header width="max-w-3xl" current="currencies" />
+      <Header width="max-w-3xl" current="currencies" languageLink={languageLinkFor(pairPath(base, target))} />
 
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 pb-10 flex flex-col gap-8">
         {/* 1. Title, under the breadcrumb trail */}

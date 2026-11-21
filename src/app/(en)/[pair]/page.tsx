@@ -6,6 +6,7 @@ import { CURRENCIES } from "@/lib/currencies"
 import { getInitialRateData, getBuildTimeMetalPrice, getBuildTimeHistory, getBuildTimeChart } from "@/lib/build-data"
 import { getFAQSchema } from "@/lib/structured-data"
 import { routeCatalog, METAL_SLUGS, isValidPairRoute, codeToSlug } from "@/lib/routes"
+import { alternatesFor } from "@/lib/tr-pages"
 import { METALS } from "@/lib/metals"
 import { PilotPairPageClient } from "./PilotPairPageClient"
 import { MetalPageClient } from "./MetalPageClient"
@@ -91,9 +92,8 @@ export async function generateMetadata({
     return {
       title: `${base} to ${target} Exchange Rate — Convert ${base} to ${target} | CurrencyVersus`,
       description: `Convert ${base} to ${target} with the latest ECB reference rate, updated each business day. Compare ${base} vs ${target} over 1 month, 1 year, 5 years, and 10 years. Free currency comparison tool.`,
-      alternates: {
-        canonical: `https://currencyversus.com/${base.toLowerCase()}-vs-${target.toLowerCase()}/`,
-      },
+      // canonical, plus hreflang en/tr/x-default on the pages with a Turkish version
+      alternates: alternatesFor(`/${base.toLowerCase()}-vs-${target.toLowerCase()}/`),
       openGraph: {
         title: `${base} vs ${target} — Exchange Rate Comparison`,
         description: `${base} to ${target} conversion with daily ECB reference rates and historical data.`,
@@ -129,9 +129,8 @@ export async function generateMetadata({
   return {
     title: `${name} Price in ${target} Today — Convert ${name} to ${target} | CurrencyVersus`,
     description: `${name} price in ${target} per ounce and per gram, from gold-api.com${target === "USD" ? "" : " converted at the daily ECB reference rate"}. Free precious metals converter.`,
-    alternates: {
-      canonical: `https://currencyversus.com/${slug}/`,
-    },
+    // canonical, plus hreflang en/tr/x-default on the pages with a Turkish version
+    alternates: alternatesFor(`/${slug}/`),
     openGraph: {
       title: `${name} Price in ${target} — CurrencyVersus`,
       description: `${name} price in ${target} per ounce and per gram.`,

@@ -2,6 +2,8 @@
 
 import { Header } from "@/components/Header"
 import { metalCrumbs } from "@/lib/breadcrumbs"
+import { pairPath } from "@/lib/routes"
+import { languageLinkFor } from "@/lib/tr-pages"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { useConversionInputs } from "@/hooks/useConversion"
 import { MetalUnitConverter } from "@/components/MetalUnitConverter"
@@ -88,7 +90,7 @@ export function MetalPageClient({
     <>
       {/* Plain surface: no decorative background behind prices and text (Phase 8) */}
       <div className="plain-page relative z-10 min-h-screen flex flex-col">
-        <Header width="max-w-6xl" current="metals" />
+        <Header width="max-w-6xl" current="metals" languageLink={languageLinkFor(pairPath(metal, target))} />
 
         <main className="flex-1 container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex flex-col gap-6">

@@ -54,7 +54,9 @@ test("share link: read after mount from window.location (static HTML unchanged),
   // the amount goes to the clipboard and the address bar only: no request carries it
   for (const f of [page, tool]) assert.doesNotMatch(f, /sendBeacon|fetch\([^)]*amount|gtag|plausible|zaraz/)
   // the canonical is the plain page address, the sitemap lists plain addresses
-  assert.match(fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", "page.tsx"), "utf8"), /canonical: `https:\/\/currencyversus\.com\/\$\{base\.toLowerCase\(\)\}-vs-\$\{target\.toLowerCase\(\)\}\/`/)
+  // (alternatesFor gives the canonical: the site address + this path, no query — tr-pages.test.ts)
+  assert.match(fs.readFileSync(path.join(SRC, "app", "(en)", "[pair]", "page.tsx"), "utf8"), /alternates: alternatesFor\(`\/\$\{base\.toLowerCase\(\)\}-vs-\$\{target\.toLowerCase\(\)\}\/`\)/)
+  assert.match(fs.readFileSync(path.join(SRC, "lib", "tr-pages.ts"), "utf8"), /canonical: `\$\{SITE\}\$\{path\}`/)
   const urlList = fs.readFileSync(path.join(SRC, "..", "scripts", "sitemap-lastmod.mjs"), "utf8").match(/const urls = \[.*\]/)![0]
   assert.doesNotMatch(urlList, /\?/)
 })
