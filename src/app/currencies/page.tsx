@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { indexCrumbs } from "@/lib/breadcrumbs"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { Header } from "@/components/Header"
 import Link from "next/link"
 import { currenciesIndex } from "@/lib/currencies-index"
@@ -23,8 +25,8 @@ export default function CurrenciesIndexPage() {
       <Header width="max-w-3xl" current="currencies" />
 
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 pb-12 flex flex-col gap-10">
-        <div className="flex flex-col gap-2 pt-2">
-          <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>Currencies</p>
+        <div className="flex flex-col gap-2">
+          <Breadcrumbs crumbs={indexCrumbs("currencies")} />
           <h1 className="text-[28px] sm:text-4xl font-bold leading-tight">Exchange rates for {entries.length} currencies</h1>
           <p className="text-[15px] leading-relaxed" style={{ color: PV.dim }}>
             Every currency pair on the site, grouped by the currency you start from. Each page shows the latest European

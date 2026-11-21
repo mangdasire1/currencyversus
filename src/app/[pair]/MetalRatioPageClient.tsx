@@ -1,6 +1,8 @@
 "use client"
 
 import Link from "next/link"
+import { ratioCrumbs } from "@/lib/breadcrumbs"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { Header } from "@/components/Header"
 import { MetalIcon } from "@/components/MetalIcon"
 import { MetalUnitConverter } from "@/components/MetalUnitConverter"
@@ -52,8 +54,9 @@ export function MetalRatioPageClient({
 
         <main className="flex-1 container mx-auto px-4 py-6 max-w-4xl">
           <div className="flex flex-col gap-6">
-            {/* Title */}
+            {/* Title, under the breadcrumb trail */}
             <div className="flex flex-col gap-2">
+              <Breadcrumbs crumbs={ratioCrumbs()} />
               <div className="flex items-center gap-3">
                 <MetalIcon code="XAU" className="w-9 h-9" />
                 <h1 className="text-3xl md:text-4xl font-bold text-white font-heading">

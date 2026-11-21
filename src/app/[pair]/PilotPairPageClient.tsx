@@ -1,6 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { pairCrumbs } from "@/lib/breadcrumbs"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { Header } from "@/components/Header"
 import { useConversion } from "@/hooks/useConversion"
 import { usePairNavigation, takeCarriedView } from "@/hooks/usePairNavigation"
@@ -71,8 +73,9 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
       <Header width="max-w-3xl" current="currencies" />
 
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 pb-10 flex flex-col gap-8">
-        {/* 1. Title */}
-        <div className="flex flex-col gap-1 pt-2">
+        {/* 1. Title, under the breadcrumb trail */}
+        <div className="flex flex-col gap-1">
+          <Breadcrumbs crumbs={pairCrumbs(base, target)} />
           <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>Exchange rate</p>
           <h1 className="text-[28px] sm:text-4xl font-bold leading-tight">{pairTitle(base, target)}</h1>
           <p className="text-sm" style={{ ...MONO, color: PV.dim }}>

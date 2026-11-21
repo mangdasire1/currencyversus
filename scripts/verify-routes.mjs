@@ -72,4 +72,31 @@ else {
   console.log(`verify-routes: /currencies/ index — ${pairLinks.length} pair links, ${targets.length} pair pages to link, ${indexProblems.length} problem(s)`)
 }
 if (indexProblems.length) console.log("  /currencies/: " + indexProblems.join("; "))
-if (missing.length || unlisted.length || indexProblems.length) process.exit(1)
+
+// Breadcrumbs (src/lib/breadcrumbs.ts): every pair, metal and index page has
+// a visible trail and a BreadcrumbList with the same names, and every step is
+// a page in out/ (the site's own URLs, trailing slash).
+const SITE = "https://currencyversus.com"
+const pageExists = (p) => p === "/" ? fs.existsSync(path.join(outDir, "index.html")) : p.endsWith("/") && fs.existsSync(path.join(outDir, p, "index.html"))
+const crumbPages = [...generated, "currencies", "metals"]
+const crumbProblems = []
+let crumbSteps = 0
+for (const page of crumbPages) {
+  const html = fs.readFileSync(path.join(outDir, page, "index.html"), "utf8")
+  const ld = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1])).find((j) => j["@type"] === "BreadcrumbList")
+  const nav = html.replace(/<script\b[\s\S]*?<\/script>/g, "").match(/<nav\b[^>]*aria-label="Breadcrumb"[^>]*>([\s\S]*?)<\/nav>/)?.[1]
+  if (!ld || !nav) { crumbProblems.push(`${page}: ${!ld ? "no BreadcrumbList" : "no visible trail"}`); continue }
+  const visible = [...nav.matchAll(/<(a|span)\b[^>]*>([^<]+)<\/\1>/g)].map((m) => ({ name: m[2], href: m[1] === "a" ? m[0].match(/href="([^"]+)"/)?.[1] : null })).filter((x) => x.name !== "›")
+  const items = ld.itemListElement
+  if (visible.map((v) => v.name).join("|") !== items.map((i) => i.name).join("|")) crumbProblems.push(`${page}: visible "${visible.map((v) => v.name).join(" › ")}" ≠ data "${items.map((i) => i.name).join(" › ")}"`)
+  items.forEach((it, i) => {
+    crumbSteps++
+    const p = it.item.startsWith(SITE) ? it.item.slice(SITE.length) : null
+    if (it.position !== i + 1 || !p || !pageExists(p)) crumbProblems.push(`${page}: step ${i + 1} ${it.item} is not a page in out/`)
+    if (i < items.length - 1 && visible[i]?.href !== p) crumbProblems.push(`${page}: visible link ${visible[i]?.href} ≠ ${p}`)
+  })
+  if (items.at(-1)?.item !== `${SITE}/${page}/`) crumbProblems.push(`${page}: the trail does not end at the page itself`)
+}
+console.log(`verify-routes: breadcrumbs — ${crumbPages.length} pages, ${crumbSteps} steps, ${crumbProblems.length} problem(s)`)
+if (crumbProblems.length) console.log("  " + crumbProblems.slice(0, 10).join("\n  "))
+if (missing.length || unlisted.length || indexProblems.length || crumbProblems.length) process.exit(1)

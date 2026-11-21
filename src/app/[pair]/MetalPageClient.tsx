@@ -1,6 +1,8 @@
 "use client"
 
 import { Header } from "@/components/Header"
+import { metalCrumbs } from "@/lib/breadcrumbs"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { useConversionInputs } from "@/hooks/useConversion"
 import { MetalUnitConverter } from "@/components/MetalUnitConverter"
 import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
@@ -86,8 +88,9 @@ export function MetalPageClient({
 
         <main className="flex-1 container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex flex-col gap-6">
-            {/* Page title */}
+            {/* Page title, under the breadcrumb trail */}
             <div className="flex flex-col gap-2">
+              <Breadcrumbs crumbs={metalCrumbs(metal, target)} />
               <div className="flex items-center gap-3 flex-wrap">
                 <MetalIcon code={metal} className="w-9 h-9" />
                 <h1 className="text-3xl md:text-4xl font-bold text-white font-heading">

@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { indexCrumbs } from "@/lib/breadcrumbs"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { Header } from "@/components/Header"
 import Link from "next/link"
 import { getBuildTimeMetalPrice } from "@/lib/build-data"
@@ -32,8 +34,8 @@ export default async function MetalsIndexPage() {
       <Header width="max-w-3xl" current="metals" />
 
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 pb-12 flex flex-col gap-10">
-        <div className="flex flex-col gap-2 pt-2">
-          <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>Metals</p>
+        <div className="flex flex-col gap-2">
+          <Breadcrumbs crumbs={indexCrumbs("metals")} />
           <h1 className="text-[28px] sm:text-4xl font-bold leading-tight">Gold, silver, platinum and palladium prices</h1>
           <p className="text-[15px] leading-relaxed" style={{ color: PV.dim }}>
             The price of one troy ounce of each metal in US dollars, and a page for every currency the metal is listed
