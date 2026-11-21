@@ -222,3 +222,23 @@ test("text helpers", () => {
   assert.equal(directionNote("USD", "TRY"), "A rising number means one US dollar buys more Turkish lira — good for someone holding US dollars, not for someone earning Turkish lira.")
   assert.equal(pairTitle("USD", "TRY"), "US Dollar to Turkish Lira")
 })
+
+test("404 page: site palette, no gradient, every text colour ≥4.5:1 on its background, 44px links", async () => {
+  const { PV } = await import("../components/pilot/palette.ts")
+  const page = read("app/not-found.tsx").replace(/^\s*\/\/.*$/gm, "") // code only, not the comment
+  assert.doesNotMatch(page, /gradient|text-slate-|#6366f1|#080810/i) // the old colours and the decorative background
+  assert.match(page, /background: PV\.bg/)
+  const pairs: Array<[string, string, string]> = [
+    ["body text dim on bg", PV.dim, PV.bg],
+    ["footer faint on bg", PV.faint, PV.bg],
+    ["button white on selected fill", "#FFFFFF", PV.selectedFill],
+    ["pair link text on surface", PV.text, PV.surface],
+    ["404 accent on bg", PV.accentText, PV.bg],
+  ]
+  for (const [what, fg, bg] of pairs) assert.ok(contrast(fg, bg) >= 4.5, `${what}: ${contrast(fg, bg).toFixed(2)}:1`)
+  assert.match(page, /background: PV\.selectedFill, color: "#FFFFFF"/)
+  for (const m of page.matchAll(/<Link\b[\s\S]*?>/g)) assert.match(m[0], /min-h-\[44px\]/, m[0])
+  const catalog = new Set((await import("./routes.ts")).routeCatalog())
+  for (const m of page.matchAll(/slug: "([a-z-]+)"/g)) assert.ok(catalog.has(m[1]), `${m[1]} is not a generated page`)
+  assert.match(page, /href=\{`\/\$\{slug\}\/`\}/) // trailing slash: the real page address
+})
