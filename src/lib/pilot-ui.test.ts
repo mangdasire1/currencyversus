@@ -242,3 +242,28 @@ test("404 page: site palette, no gradient, every text colour ≥4.5:1 on its bac
   for (const m of page.matchAll(/slug: "([a-z-]+)"/g)) assert.ok(catalog.has(m[1]), `${m[1]} is not a generated page`)
   assert.match(page, /href=\{`\/\$\{slug\}\/`\}/) // trailing slash: the real page address
 })
+
+test("two dates: sentence to copy uses the business days used and each currency's decimals", async () => {
+  const { twoDatesSentence } = await import("./pilot-format.ts")
+  assert.equal(
+    twoDatesSentence(100, "USD", "TRY", { date: "2016-10-21", value: 307.98 }, { date: "2026-11-20", value: 4227.1 }),
+    "100 USD was worth 307.98 TRY on 2016-10-21 and 4,227.10 TRY on 2026-11-20 (ECB reference rates)."
+  )
+  // yen and won have no minor unit; the amount keeps what was typed
+  assert.equal(
+    twoDatesSentence(2500.5, "EUR", "JPY", { date: "2020-03-13", value: 295123.4 }, { date: "2021-03-12", value: 325999.6 }),
+    "2,500.5 EUR was worth 295,123 JPY on 2020-03-13 and 326,000 JPY on 2021-03-12 (ECB reference rates)."
+  )
+})
+
+test("two dates: second date selectable (default today), a used-day note for each date, copy button, the warning stays", () => {
+  const tool = read("components/pilot/TwoDatesTool.tsx")
+  assert.match(tool, /secondDate: string \| null/)
+  assert.match(read("app/[pair]/PilotPairPageClient.tsx"), /useState<string \| null>\(null\)/) // default: today
+  assert.match(tool, /value=\{secondDate \?\? today\}/)
+  assert.match(tool, /usedDayNote\(date, first\.used\.date\)/)
+  assert.match(tool, /usedDayNote\(secondDate, second\.used\.date\)/)
+  assert.match(tool, /navigator\.clipboard\.writeText\(sentence\)/)
+  assert.match(tool, /className="[^"]*min-h-\[44px\] min-w-\[44px\][^"]*"[\s\S]{0,120}Copy sentence/)
+  assert.match(tool, /It is not an investment return: it does not account for inflation,\s+interest earned, or any fee\./)
+})

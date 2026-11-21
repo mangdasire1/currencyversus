@@ -4,12 +4,13 @@ import { useEffect, useId, useState } from "react"
 import { fetchRateOn } from "@/lib/api"
 import { parseAmount, amountErrorMessage } from "@/lib/amount"
 import { formatMoney } from "@/lib/format"
-import { usedDayNote } from "@/lib/pilot-format"
+import { usedDayNote, twoDatesSentence } from "@/lib/pilot-format"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import type { HistoricalPoint } from "@/lib/types"
 import { PV, MONO, SANS } from "./palette"
 
 const EARLIEST = "1999-01-04" // first ECB reference rate
+const ISO = /^\d{4}-\d{2}-\d{2}$/
 
 interface TwoDatesToolProps {
   base: string
@@ -17,61 +18,118 @@ interface TwoDatesToolProps {
   // Server-rendered default: 100 units, ten years ago (from the embedded series)
   defaultRequested: string
   defaultUsed: HistoricalPoint | null
-  // Selected date, owned by the page so a swap can carry it to the reverse pair
+  // First date, owned by the page so a swap can carry it to the reverse pair
   date: string
   onDateChange: (date: string) => void
+  // Second date; null = today (the current rate). Owned by the page.
+  secondDate: string | null
+  onSecondDateChange: (date: string | null) => void
   currentRate: number | null
-  currentDate: string | null
+  currentDate: string | null // ECB date of the current rate
   builtAt: string // ISO; server and first client render use it as "today"
 }
 
-// "Same amount, two dates": what an amount converted to on one date vs today.
-export function TwoDatesTool({ base, target, defaultRequested, defaultUsed, date, onDateChange, currentRate, currentDate, builtAt }: TwoDatesToolProps) {
-  const id = useId()
-  const [amount, setAmount] = useState("100")
-  const [then, setThen] = useState<{ requested: string; used: HistoricalPoint } | null>(
-    defaultUsed ? { requested: defaultRequested, used: defaultUsed } : null
-  )
+interface Loaded {
+  requested: string
+  used: HistoricalPoint
+}
+
+// The rate on one requested date: fetched when the date changes, aborted when
+// it changes again. `initial` is the server-rendered value for the default date.
+function useRateOn(requested: string | null, valid: boolean, base: string, target: string, initial: Loaded | null) {
+  const [loaded, setLoaded] = useState<Loaded | null>(initial)
   const [loading, setLoading] = useState(false)
-  const [fetchError, setFetchError] = useState<string | null>(null)
-
-  // Same value on server and first client render (no hydration mismatch on
-  // the input's max); the real date is set after mount.
-  const [today, setToday] = useState(builtAt.slice(0, 10))
-  useEffect(() => setToday(new Date().toISOString().slice(0, 10)), [])
-  const dateValid = /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= EARLIEST && date <= today
-  const parsed = parseAmount(amount)
-  const value = parsed.ok ? parsed.value : null
-  const amountError = parsed.ok ? null : amountErrorMessage(parsed.reason)
-
+  const [error, setError] = useState<string | null>(null)
   useEffect(() => {
-    if (!dateValid || (then && then.requested === date)) return
+    if (requested === null || !valid || (loaded && loaded.requested === requested)) return
     const controller = new AbortController()
     setLoading(true)
-    setFetchError(null)
-    fetchRateOn(date, base, target, controller.signal)
-      .then((r) => setThen({ requested: date, used: { date: r.date, rate: r.rate } }))
+    setError(null)
+    fetchRateOn(requested, base, target, controller.signal)
+      .then((r) => setLoaded({ requested, used: { date: r.date, rate: r.rate } }))
       .catch((err: Error) => {
-        if (err.name !== "AbortError") setFetchError("The rate for that date could not be loaded. Please try again.")
+        if (err.name !== "AbortError") setError("The rate for that date could not be loaded. Please try again.")
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [date, dateValid, base, target, then])
+  }, [requested, valid, base, target, loaded])
+  const current = requested !== null && loaded && loaded.requested === requested ? loaded.used : null
+  return { used: current, loading, error }
+}
+
+// "Same amount, two dates": what an amount converted to on two dates. The
+// second date is today unless one is chosen.
+export function TwoDatesTool({
+  base,
+  target,
+  defaultRequested,
+  defaultUsed,
+  date,
+  onDateChange,
+  secondDate,
+  onSecondDateChange,
+  currentRate,
+  currentDate,
+  builtAt,
+}: TwoDatesToolProps) {
+  const id = useId()
+  const [amount, setAmount] = useState("100")
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle")
+
+  // Same value on server and first client render (no hydration mismatch on
+  // the inputs' max); the real date is set after mount.
+  const [today, setToday] = useState(builtAt.slice(0, 10))
+  useEffect(() => setToday(new Date().toISOString().slice(0, 10)), [])
+  const inRange = (d: string) => ISO.test(d) && d >= EARLIEST && d <= today
+  const dateValid = inRange(date)
+  const secondValid = secondDate === null || inRange(secondDate)
+
+  const parsed = parseAmount(amount)
+  const value = parsed.ok ? parsed.value : null
+  const amountError = parsed.ok ? null : amountErrorMessage(parsed.reason)
+
+  const first = useRateOn(date, dateValid, base, target, defaultUsed ? { requested: defaultRequested, used: defaultUsed } : null)
+  const second = useRateOn(secondDate, secondValid, base, target, null)
+
+  // Second side: a chosen date's rate, or today's (current) rate.
+  const secondPoint: HistoricalPoint | null =
+    secondDate === null ? (currentRate !== null && currentDate ? { date: currentDate, rate: currentRate } : null) : second.used
 
   const dec = CURRENCY_MAP[target]?.decimals ?? 2
-  const showThen = then && then.requested === date && value !== null
-  const thenValue = showThen ? value! * then!.used.rate : null
-  const nowValue = value !== null && currentRate !== null ? value * currentRate : null
-  const note = showThen ? usedDayNote(then!.requested, then!.used.date) : null
+  const firstValue = first.used && value !== null ? value * first.used.rate : null
+  const secondValue = secondPoint && value !== null ? value * secondPoint.rate : null
+  const notes = [
+    first.used ? usedDayNote(date, first.used.date) : null,
+    secondDate !== null && second.used ? usedDayNote(secondDate, second.used.date) : null,
+  ].filter((n): n is string => n !== null)
+  const sentence =
+    value !== null && first.used && secondPoint && firstValue !== null && secondValue !== null
+      ? twoDatesSentence(value, base, target, { date: first.used.date, value: firstValue }, { date: secondPoint.date, value: secondValue })
+      : null
+
+  // A new result invalidates "Copied".
+  useEffect(() => setCopyState("idle"), [sentence])
+
+  async function copy() {
+    if (!sentence) return
+    try {
+      await navigator.clipboard.writeText(sentence)
+      setCopyState("copied")
+    } catch {
+      setCopyState("failed") // the sentence stays on screen to copy by hand
+    }
+  }
+
+  const inputStyle = { ...MONO, background: PV.raised, border: `1px solid ${PV.border}`, color: PV.text, colorScheme: "dark" as const }
 
   return (
     <section aria-labelledby={`${id}-h`} className="flex flex-col gap-4">
       <h2 id={`${id}-h`} className="text-lg font-semibold" style={{ ...SANS, color: PV.text }}>
         Same amount, two dates
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${id}-amount`} className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
             Amount ({base})
@@ -86,7 +144,7 @@ export function TwoDatesTool({ base, target, defaultRequested, defaultUsed, date
             aria-invalid={amountError !== null}
             aria-describedby={amountError ? `${id}-amount-error` : undefined}
             className="w-full min-w-0 rounded-xl px-4 py-3 min-h-[44px] focus:outline-none"
-            style={{ ...MONO, background: PV.raised, border: `1px solid ${PV.border}`, color: PV.text }}
+            style={inputStyle}
           />
           {amountError && (
             <p id={`${id}-amount-error`} role="alert" className="text-xs" style={{ color: PV.up }}>{amountError}</p>
@@ -94,7 +152,7 @@ export function TwoDatesTool({ base, target, defaultRequested, defaultUsed, date
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${id}-date`} className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
-            Date
+            First date
           </label>
           <input
             id={`${id}-date`}
@@ -106,11 +164,41 @@ export function TwoDatesTool({ base, target, defaultRequested, defaultUsed, date
             aria-invalid={!dateValid}
             aria-describedby={!dateValid ? `${id}-date-error` : undefined}
             className="w-full min-w-0 rounded-xl px-4 py-3 min-h-[44px] focus:outline-none"
-            style={{ ...MONO, background: PV.raised, border: `1px solid ${PV.border}`, color: PV.text, colorScheme: "dark" }}
+            style={inputStyle}
           />
           {!dateValid && (
             <p id={`${id}-date-error`} role="alert" className="text-xs" style={{ color: PV.up }}>
               Choose a date between {EARLIEST} and {today}.
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor={`${id}-date2`} className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
+            Second date
+          </label>
+          <input
+            id={`${id}-date2`}
+            type="date"
+            min={EARLIEST}
+            max={today}
+            value={secondDate ?? today}
+            onChange={(e) => onSecondDateChange(e.target.value === today ? null : e.target.value)}
+            aria-invalid={!secondValid}
+            aria-describedby={!secondValid ? `${id}-date2-error` : `${id}-date2-hint`}
+            className="w-full min-w-0 rounded-xl px-4 py-3 min-h-[44px] focus:outline-none"
+            style={inputStyle}
+          />
+          {!secondValid ? (
+            <p id={`${id}-date2-error`} role="alert" className="text-xs" style={{ color: PV.up }}>
+              Choose a date between {EARLIEST} and {today}.
+            </p>
+          ) : (
+            <p id={`${id}-date2-hint`} className="text-xs" style={{ color: PV.dim }}>
+              {secondDate === null ? "Today: the latest ECB reference rate." : (
+                <button type="button" onClick={() => onSecondDateChange(null)} className="underline underline-offset-4 min-h-[44px]" style={{ color: PV.accentText }}>
+                  Back to today
+                </button>
+              )}
             </p>
           )}
         </div>
@@ -119,24 +207,43 @@ export function TwoDatesTool({ base, target, defaultRequested, defaultUsed, date
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-live="polite">
         <div className="rounded-xl p-4 min-w-0" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
           <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
-            On {showThen ? then!.used.date : date}
+            On {first.used ? first.used.date : date}
           </p>
           <p className="mt-1 text-2xl break-words" style={{ ...MONO, color: PV.text }}>
-            {loading ? "…" : thenValue !== null ? `${formatMoney(thenValue, dec)} ${target}` : "—"}
+            {first.loading ? "…" : firstValue !== null ? `${formatMoney(firstValue, dec)} ${target}` : "—"}
           </p>
         </div>
         <div className="rounded-xl p-4 min-w-0" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
           <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
-            Today{currentDate ? ` (ECB ${currentDate})` : ""}
+            {secondDate === null ? `Today${currentDate ? ` (ECB ${currentDate})` : ""}` : `On ${second.used ? second.used.date : secondDate}`}
           </p>
           <p className="mt-1 text-2xl break-words" style={{ ...MONO, color: PV.text }}>
-            {nowValue !== null ? `${formatMoney(nowValue, dec)} ${target}` : "—"}
+            {second.loading ? "…" : secondValue !== null ? `${formatMoney(secondValue, dec)} ${target}` : "—"}
           </p>
         </div>
       </div>
 
-      {note && <p className="text-sm" style={{ color: PV.dim }}>{note}</p>}
-      {fetchError && <p role="alert" className="text-sm" style={{ color: PV.up }}>{fetchError}</p>}
+      {notes.map((n) => <p key={n} className="text-sm" style={{ color: PV.dim }}>{n}</p>)}
+      {first.error && <p role="alert" className="text-sm" style={{ color: PV.up }}>{first.error}</p>}
+      {second.error && <p role="alert" className="text-sm" style={{ color: PV.up }}>{second.error}</p>}
+
+      {sentence && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl p-4" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
+          <p className="text-sm flex-1 min-w-0 break-words" style={{ color: PV.text }}>{sentence}</p>
+          <button
+            type="button"
+            onClick={copy}
+            className="self-start sm:self-auto inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-4 rounded-xl text-sm font-semibold"
+            style={{ ...MONO, background: PV.selectedFill, color: "#FFFFFF" }}
+          >
+            Copy sentence
+          </button>
+          <span role="status" className="text-xs" style={{ color: PV.dim }}>
+            {copyState === "copied" ? "Copied." : copyState === "failed" ? "Could not copy; select the sentence to copy it." : ""}
+          </span>
+        </div>
+      )}
+
       <p className="text-sm" style={{ color: PV.dim }}>
         This compares exchange rates on two dates. It is not an investment return: it does not account for inflation,
         interest earned, or any fee.

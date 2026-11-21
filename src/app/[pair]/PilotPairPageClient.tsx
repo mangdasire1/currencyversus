@@ -55,6 +55,8 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
   // years ago); a carried view is applied after mount.
   const [period, setPeriod] = useState(DEFAULT_CHART_PERIOD)
   const [thenDate, setThenDate] = useState(defaultThenDate)
+  // Second date of the two-dates tool; null = today (the current rate)
+  const [secondDate, setSecondDate] = useState<string | null>(null)
   const carry = useCallback(() => ({ period, date: thenDate }), [period, thenDate])
   const { handleBaseChange, handleTargetChange, handleSwapNav, swapNotice } = usePairNavigation(base, target, carry)
   useEffect(() => {
@@ -123,6 +125,8 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
           defaultUsed={tenYear?.start ?? null}
           date={thenDate}
           onDateChange={setThenDate}
+          secondDate={secondDate}
+          onSecondDateChange={setSecondDate}
           currentRate={currentRate ?? initialRate}
           currentDate={fxDate}
           builtAt={builtAt}

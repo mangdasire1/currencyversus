@@ -62,3 +62,21 @@ export function directionNote(base: string, target: string): string {
 export function pairTitle(base: string, target: string): string {
   return `${CURRENCY_MAP[base]?.name ?? base} to ${CURRENCY_MAP[target]?.name ?? target}`
 }
+
+// The "same amount, two dates" result as one sentence to copy. Dates are the
+// ECB business days actually used, values in the target's decimals:
+// "100 USD was worth 307.98 TRY on 2016-10-21 and 4,227.10 TRY on 2026-11-20
+// (ECB reference rates)."
+export interface TwoDatesPoint {
+  date: string // business day used (YYYY-MM-DD)
+  value: number // amount × that day's rate
+}
+
+export function twoDatesSentence(amount: number, base: string, target: string, first: TwoDatesPoint, second: TwoDatesPoint): string {
+  const money = (n: number, code: string) => {
+    const d = CURRENCY_MAP[code]?.decimals ?? 2
+    return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d })
+  }
+  const amountText = amount.toLocaleString("en-US", { maximumFractionDigits: CURRENCY_MAP[base]?.decimals ?? 2 })
+  return `${amountText} ${base} was worth ${money(first.value, target)} ${target} on ${first.date} and ${money(second.value, target)} ${target} on ${second.date} (ECB reference rates).`
+}
