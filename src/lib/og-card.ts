@@ -1,5 +1,5 @@
 // Content of the per-page share image (package B6). Pure — tested in
-// og-card.test.ts; drawn by src/app/[pair]/opengraph-image.tsx.
+// og-card.test.ts; drawn by src/lib/share-image.tsx.
 //
 // What a card says, and only that:
 // - the pair's name and codes; for currency pairs the 10-year line and its
@@ -37,6 +37,7 @@ export interface OgCard {
   dataLines: string[] // ["ECB reference rate of 2026-11-20"], one fact per line
   source: string // "Source: European Central Bank via Frankfurter API"
   alt: string
+  date: string | null // data date, YYYY-MM-DD: the ECB rate date; the metal provider's UTC day
 }
 
 const ascii = (s: string) => s.replace(/[^\x20-\x7E]/g, "")
@@ -58,6 +59,7 @@ export function currencyCard(base: string, target: string, rateLabel: string | n
     dataLines: [ecbDate ? `ECB reference rate of ${ecbDate}` : "ECB reference rate"],
     source: "Source: European Central Bank via Frankfurter API",
     alt: `${title} (${base}/${target}): ${rateLabel ?? "exchange rate"}${d ? `, ${d.text} over 10 years` : ""}${ecbDate ? `, ECB reference rate of ${ecbDate}` : ""}. CurrencyVersus`,
+    date: ecbDate,
   }
   return asciiCard(card)
 }
@@ -77,8 +79,15 @@ export function metalCard(metal: string, quote: string, priceLabel: string | nul
     dataLines: [time ? `Price time ${time} (provider)` : "Spot price", fxDate && quote !== "USD" && !isRatio ? `Converted at the ECB reference rate of ${fxDate}` : null].filter((x): x is string => x !== null),
     source: quote === "USD" || isRatio ? "Source: gold-api.com" : "Sources: gold-api.com, European Central Bank via Frankfurter API",
     alt: `${title}: ${priceLabel ?? "spot price per troy ounce"}${time ? `, provider time ${time}` : ""}. CurrencyVersus`,
+    date: priceTime ? priceTime.slice(0, 10) : null,
   }
   return asciiCard(card)
+}
+
+// File name the page's download link offers: the page and the image's data
+// date, e.g. "usd-vs-try-2026-11-21.png" ("usd-vs-try.png" without a date).
+export function shareDownloadName(slug: string, date: string | null): string {
+  return date !== null && /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${slug}-${date}.png` : `${slug}.png`
 }
 
 function asciiCard(c: OgCard): OgCard {

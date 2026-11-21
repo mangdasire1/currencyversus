@@ -6,6 +6,8 @@ import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { useConversionInputs } from "@/hooks/useConversion"
 import { MetalUnitConverter } from "@/components/MetalUnitConverter"
 import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
+import { ShareImageLink } from "@/components/ShareImageLink"
+import type { ShareImageDownload } from "@/components/ShareImageLink"
 import { metalRelatedLinks } from "@/lib/related"
 import { DataFreshness } from "@/components/DataFreshness"
 import { MetalIcon } from "@/components/MetalIcon"
@@ -26,6 +28,7 @@ interface MetalPageClientProps {
   initialPriceTime: string | null
   initialUsdToTargetRate: number | null
   initialFxDate: string | null
+  shareImage: ShareImageDownload
 }
 
 export function MetalPageClient({
@@ -35,6 +38,7 @@ export function MetalPageClient({
   initialPriceTime,
   initialUsdToTargetRate,
   initialFxDate,
+  shareImage,
 }: MetalPageClientProps) {
   // Build-time FX seed (USD→target) so the first paint has a price.
   const initialFx: ExchangeRate | null =
@@ -184,6 +188,9 @@ export function MetalPageClient({
                 ))}
               </div>
             </div>
+
+            {/* The page's share image (price per troy ounce), as a file */}
+            <ShareImageLink image={shareImage} kind="price" />
 
             {/* Common amounts table */}
             <section className="glass-card p-6 flex flex-col gap-4">

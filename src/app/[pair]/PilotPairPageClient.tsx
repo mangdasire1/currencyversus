@@ -16,6 +16,8 @@ import { pairPath } from "@/lib/routes"
 import { readShareState, shareQuery, sharedLinkNote, shareFieldCount, SHARE_DEFAULT_AMOUNT } from "@/lib/share-state"
 import { pairRelatedLinks } from "@/lib/related"
 import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
+import { ShareImageLink } from "@/components/ShareImageLink"
+import type { ShareImageDownload } from "@/components/ShareImageLink"
 import { DEFAULT_CHART_PERIOD } from "@/lib/history"
 import type { ChartPeriod, PeriodHistory } from "@/lib/history"
 import type { ExchangeRate, TimePeriod } from "@/lib/types"
@@ -34,11 +36,12 @@ interface PilotPairPageClientProps {
   initialHistory: PeriodHistory<TimePeriod>[] | null
   chart: ChartPeriod[] | null
   builtAt: string
+  shareImage: ShareImageDownload
 }
 
 // Pilot layout (Phase 7) for the fixed set in src/lib/pilot.ts. Answer first:
 // title, the single converter and the result fill the first screen on mobile.
-export function PilotPairPageClient({ base, target, initialRate, initialDate, initialHistory, chart, builtAt }: PilotPairPageClientProps) {
+export function PilotPairPageClient({ base, target, initialRate, initialDate, initialHistory, chart, builtAt, shareImage }: PilotPairPageClientProps) {
   const serverRate: ExchangeRate | null =
     initialRate !== null && initialDate !== null ? { base, date: initialDate, rates: { [target]: initialRate } } : null
 
@@ -139,6 +142,8 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
 
         {/* 5. Chart */}
         {chart && <PairChart base={base} target={target} periods={chart} selected={period} onSelect={setPeriod} />}
+        {/* The page's share image (10-year line), as a file */}
+        {chart && <ShareImageLink image={shareImage} kind="chart" />}
 
         {/* AD SLOT (reserved, intentionally empty): a full-width block can be
             placed here, between the chart and the two-dates tool. No ad code

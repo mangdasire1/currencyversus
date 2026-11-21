@@ -104,6 +104,8 @@ if (crumbProblems.length) console.log("  " + crumbProblems.slice(0, 10).join("\n
 // the file is in out/ as a 1200×630 PNG under the platforms' size limits
 // (Facebook 8 MB, X 5 MB) and Cloudflare Pages' 25 MiB per file.
 const shareProblems = []
+const shareDownloads = [] // problems with the pages' "Download … image" links
+let datedDownloads = 0
 let shareBytes = 0
 let shareMax = 0
 for (const page of generated) {
@@ -114,6 +116,11 @@ for (const page of generated) {
   const alt = html.match(/<meta property="og:image:alt" content="([^"]+)"/)?.[1]
   if (og !== want || tw !== want) shareProblems.push(`${page}: og:image ${og ?? "none"}, twitter:image ${tw ?? "none"}`)
   if (!alt || alt === "CurrencyVersus") shareProblems.push(`${page}: no descriptive og:image:alt`)
+  // the same file offered for download in the prerendered page, named after the page and its data date
+  const dl = [...html.matchAll(/<a\b[^>]*\bdownload="([^"]*)"[^>]*>/g)].filter((m) => m[0].includes(`href="/${page}/share.png"`))
+  if (dl.length !== 1) shareDownloads.push(`${page}: ${dl.length} download link(s) to /${page}/share.png`)
+  else if (!new RegExp(`^${page}(-\\d{4}-\\d{2}-\\d{2})?\\.png$`).test(dl[0][1])) shareDownloads.push(`${page}: download name "${dl[0][1]}"`)
+  else if (/-\d{4}-\d{2}-\d{2}\.png$/.test(dl[0][1])) datedDownloads++
   const file = path.join(outDir, page, "share.png")
   if (!fs.existsSync(file)) { shareProblems.push(`${page}: share.png missing from out/`); continue }
   const buf = fs.readFileSync(file)
@@ -129,4 +136,6 @@ for (const page of generated) {
 }
 console.log(`verify-routes: share images — ${generated.size} pages, ${(shareBytes / 1048576).toFixed(1)} MB in all, largest ${(shareMax / 1024).toFixed(0)} KB, ${shareProblems.length} problem(s)`)
 if (shareProblems.length) console.log("  " + shareProblems.slice(0, 10).join("\n  "))
-if (missing.length || unlisted.length || indexProblems.length || crumbProblems.length || shareProblems.length) process.exit(1)
+console.log(`verify-routes: share image downloads — ${generated.size - shareDownloads.length} pages link their own share.png with a download name (${datedDownloads} with the data date), ${shareDownloads.length} problem(s)`)
+if (shareDownloads.length) console.log("  " + shareDownloads.slice(0, 10).join("\n  "))
+if (missing.length || unlisted.length || indexProblems.length || crumbProblems.length || shareProblems.length || shareDownloads.length) process.exit(1)

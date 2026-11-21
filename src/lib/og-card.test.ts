@@ -4,7 +4,7 @@ import assert from "node:assert/strict"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { currencyCard, metalCard, OG_CHART_BOX } from "./og-card.ts"
+import { currencyCard, metalCard, shareDownloadName, OG_CHART_BOX } from "./og-card.ts"
 import type { ChartPeriod } from "./history.ts"
 
 const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -76,4 +76,29 @@ test("share image wiring: a .png route prerendered for every page, named in og:i
   assert.equal((page.match(/images: share\.twitter\.images/g) ?? []).length, 3)
   assert.doesNotMatch(page, /logo\.png/)
   assert.match(fs.readFileSync(path.join(SRC, "..", "scripts", "verify-routes.mjs"), "utf8"), /share images —/)
+})
+
+test("download name: the page and the image's own data date (ECB date; the metal provider's UTC day)", () => {
+  const fx = currencyCard("USD", "TRY", "1 USD = 50.572 TRY", "2026-11-20", tenYear(3.3635, 50.572))
+  const gold = metalCard("XAU", "TRY", "1 troy oz Gold = 178,975 TRY", "2026-11-21T08:57:12Z", "2026-11-20")
+  assert.equal(fx.date, "2026-11-20")
+  assert.equal(gold.date, "2026-11-21") // the price's day, not the conversion rate's
+  assert.equal(shareDownloadName("usd-vs-try", fx.date), "usd-vs-try-2026-11-20.png")
+  assert.equal(shareDownloadName("gold-vs-try", gold.date), "gold-vs-try-2026-11-21.png")
+  assert.equal(shareDownloadName("eur-vs-usd", null), "eur-vs-usd.png") // no date → no made-up one
+  assert.equal(shareDownloadName("eur-vs-usd", "20 Nov"), "eur-vs-usd.png")
+})
+
+test("download link: every pair and metal page offers its own share.png (no new image), a plain <a download>, 44px", () => {
+  const page = fs.readFileSync(path.join(SRC, "app", "[pair]", "page.tsx"), "utf8")
+  assert.match(page, /href: `\/\$\{slug\}\/share\.png`, fileName: shareDownloadName\(slug, card\?\.date \?\? null\)/)
+  assert.equal((page.match(/shareImage=\{shareImage\}/g) ?? []).length, 3) // currency, ratio and metal pages
+  for (const [f, kind] of [["PilotPairPageClient.tsx", "chart"], ["MetalPageClient.tsx", "price"], ["MetalRatioPageClient.tsx", "price"]]) {
+    const c = fs.readFileSync(path.join(SRC, "app", "[pair]", f), "utf8")
+    assert.match(c, new RegExp(`<ShareImageLink image=\{shareImage\} kind="${kind}" />`), f)
+  }
+  const link = fs.readFileSync(path.join(SRC, "components", "ShareImageLink.tsx"), "utf8")
+  assert.match(link, /<a\s+href=\{image\.href\}\s+download=\{image\.fileName\}/)
+  assert.match(link, /min-h-\[44px\]/)
+  assert.doesNotMatch(link, /from "next\/(link|og)"/) // a file link, not a page link; draws nothing
 })

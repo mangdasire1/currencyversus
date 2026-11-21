@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { cardFor } from "@/lib/share-image"
-import { OG_SIZE } from "@/lib/og-card"
+import { OG_SIZE, shareDownloadName } from "@/lib/og-card"
+import type { ShareImageDownload } from "@/components/ShareImageLink"
 import { CURRENCIES } from "@/lib/currencies"
 import { getInitialRateData, getBuildTimeMetalPrice, getBuildTimeHistory, getBuildTimeChart } from "@/lib/build-data"
 import { getFAQSchema } from "@/lib/structured-data"
@@ -67,6 +68,13 @@ async function shareImageMeta(slug: string) {
   const card = await cardFor(slug)
   const image = { url: `https://currencyversus.com/${slug}/share.png`, width: OG_SIZE.width, height: OG_SIZE.height, alt: card?.alt ?? "CurrencyVersus", type: "image/png" }
   return { openGraph: { images: [image] }, twitter: { images: [image] } }
+}
+
+// The same image, offered for download on the page (task 0b): its address
+// and a file name with the image's own data date.
+async function shareImageDownload(slug: string): Promise<ShareImageDownload> {
+  const card = await cardFor(slug)
+  return { href: `/${slug}/share.png`, fileName: shareDownloadName(slug, card?.date ?? null) }
 }
 
 export async function generateMetadata({
@@ -140,6 +148,7 @@ export default async function PairPage({
   params: Promise<{ pair: string }>
 }) {
   const { pair } = await params
+  const shareImage = await shareImageDownload(pair)
 
   // --- Currency pair ---
   const currencyParsed = parsePair(pair)
@@ -171,6 +180,7 @@ export default async function PairPage({
           initialHistory={history}
           chart={chart}
           builtAt={new Date().toISOString()}
+          shareImage={shareImage}
         />
       </>
     )
@@ -191,6 +201,7 @@ export default async function PairPage({
         initialSilverUsd={silverData?.price ?? null}
         initialGoldTime={goldData?.priceTime ?? null}
         initialSilverTime={silverData?.priceTime ?? null}
+        shareImage={shareImage}
       />
     )
   }
@@ -218,6 +229,7 @@ export default async function PairPage({
       initialPriceTime={metalData?.priceTime ?? null}
       initialUsdToTargetRate={initialUsdToTargetRate}
       initialFxDate={target === "USD" ? null : (usdRateData?.date ?? null)}
+      shareImage={shareImage}
     />
   )
 }

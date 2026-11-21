@@ -7,6 +7,8 @@ import { Header } from "@/components/Header"
 import { MetalIcon } from "@/components/MetalIcon"
 import { MetalUnitConverter } from "@/components/MetalUnitConverter"
 import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
+import { ShareImageLink } from "@/components/ShareImageLink"
+import type { ShareImageDownload } from "@/components/ShareImageLink"
 import { ratioRelatedLinks } from "@/lib/related"
 import { formatSignificant, metalPriceSignificant } from "@/lib/metal-units"
 import { RefreshCw } from "lucide-react"
@@ -21,6 +23,7 @@ interface MetalRatioPageClientProps {
   initialSilverUsd: number | null
   initialGoldTime: string | null
   initialSilverTime: string | null
+  shareImage: ShareImageDownload
 }
 
 export function MetalRatioPageClient({
@@ -28,6 +31,7 @@ export function MetalRatioPageClient({
   initialSilverUsd,
   initialGoldTime,
   initialSilverTime,
+  shareImage,
 }: MetalRatioPageClientProps) {
   const gold = useMetalRate("XAU", initialGoldUsd, true, initialGoldTime)
   const silver = useMetalRate("XAG", initialSilverUsd, true, initialSilverTime)
@@ -141,6 +145,9 @@ export function MetalRatioPageClient({
                 ))}
               </div>
             </div>
+
+            {/* The page's share image (the ratio), as a file */}
+            <ShareImageLink image={shareImage} kind="price" />
 
             {/* About GSR */}
             <section className="glass-card p-6 flex flex-col gap-4">
