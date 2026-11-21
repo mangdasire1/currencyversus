@@ -99,7 +99,7 @@ export function HomeClient({
     <>
       {/* Plain surface: no decorative background behind prices and text (Phase 8) */}
       <div className="plain-page relative z-10 min-h-screen flex flex-col">
-        <Header />
+        <Header width="max-w-6xl" />
         <main className="flex-1 container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex flex-col gap-6">
             {/* Hero + Converter */}
@@ -220,7 +220,7 @@ export function HomeClient({
               </div>
             </section>
 
-            {/* Popular pairs — target of the header's "Currencies" link */}
+            {/* Popular pairs; the full list is the /currencies/ index */}
             <section id="currencies" className="flex flex-col gap-4 scroll-mt-4 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
               <div className="flex flex-wrap items-center justify-between gap-x-4">
                 <h2 className="text-lg font-semibold text-slate-300 font-heading">

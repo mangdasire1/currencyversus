@@ -66,7 +66,7 @@ test("metals index page: server-rendered from build-time prices, linked from the
   assert.match(page, /canonical: "https:\/\/currencyversus\.com\/metals\/"/)
   assert.match(page, /formatSignificant\(price, sig\)/) // the same precision rule as the metal pages
   for (const m of page.matchAll(/<Link\b[\s\S]*?>/g)) assert.match(m[0], /min-h-\[44px\]/, m[0])
-  assert.match(fs.readFileSync(path.join(SRC, "components", "Header.tsx"), "utf8"), /\{ href: "\/metals\/", label: "Metals" \}/)
+  assert.match(fs.readFileSync(path.join(SRC, "components", "Header.tsx"), "utf8"), /\{ key: "metals", href: "\/metals\/", label: "Metals" \}/)
   const verify = fs.readFileSync(path.join(SRC, "..", "scripts", "verify-metals.mjs"), "utf8")
   assert.match(verify, /checkMetalsIndexHtml\(/)
 })

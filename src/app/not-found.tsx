@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { TrendingUp } from "lucide-react"
+import { Header } from "@/components/Header"
 import { PV, MONO, SANS } from "@/components/pilot/palette"
 import { MethodFooterLink } from "@/components/RelatedLinks"
 
@@ -19,16 +19,7 @@ const QUICK_PAIRS = [
 export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: PV.bg, color: PV.text, ...SANS }}>
-      <header className="flex items-center px-4 sm:px-6 py-3">
-        <Link href="/" className="flex items-center gap-2 min-h-[44px]">
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg" style={{ background: PV.raised, border: `1px solid ${PV.border}` }}>
-            <TrendingUp className="w-4 h-4" style={{ color: PV.accentText }} aria-hidden="true" />
-          </span>
-          <span className="text-lg font-bold tracking-tight">
-            Currency<span style={{ color: PV.accentText }}>Versus</span>
-          </span>
-        </Link>
-      </header>
+      <Header width="max-w-3xl" />
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-10 gap-8 text-center">
         <div className="flex flex-col gap-3">

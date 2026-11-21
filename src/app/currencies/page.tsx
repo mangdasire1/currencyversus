@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
+import { Header } from "@/components/Header"
 import Link from "next/link"
-import { TrendingUp } from "lucide-react"
 import { currenciesIndex } from "@/lib/currencies-index"
 import { PV, SANS } from "@/components/pilot/palette"
 
@@ -20,16 +20,7 @@ export default function CurrenciesIndexPage() {
   const entries = currenciesIndex()
   return (
     <div className="min-h-screen flex flex-col" style={{ background: PV.bg, color: PV.text, ...SANS }}>
-      <header className="flex items-center justify-between px-4 sm:px-6 py-3">
-        <Link href="/" className="flex items-center gap-2 min-h-[44px]">
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg" style={{ background: PV.raised, border: `1px solid ${PV.border}` }}>
-            <TrendingUp className="w-4 h-4" style={{ color: PV.accentText }} aria-hidden="true" />
-          </span>
-          <span className="text-lg font-bold tracking-tight">
-            Currency<span style={{ color: PV.accentText }}>Versus</span>
-          </span>
-        </Link>
-      </header>
+      <Header width="max-w-3xl" current="currencies" />
 
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 pb-12 flex flex-col gap-10">
         <div className="flex flex-col gap-2 pt-2">

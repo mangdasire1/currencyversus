@@ -63,24 +63,38 @@ test("home chart: reuses the pair pages' PairChart (no copy), seeded from build-
   assert.match(hook, /fetchPairSeries\(base, target, start, end, controller\.signal\)/)
 })
 
-test("home header: real links to the pairs and metals sections and the method page, 44px targets, no ECB-only source label", async () => {
+test("site header on every page: one component, the menu to three real pages, aligned to each page's content column", async () => {
   const fs = await import("node:fs")
   const path = await import("node:path")
   const { fileURLToPath } = await import("node:url")
   const src = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
   const header = fs.readFileSync(path.join(src, "components", "Header.tsx"), "utf8")
-  const home = fs.readFileSync(path.join(src, "app", "HomeClient.tsx"), "utf8")
-  const nav = [...header.matchAll(/\{ href: "([^"]+)", label: "([^"]+)" \}/g)].map((m) => [m[1], m[2]])
-  assert.deepEqual(nav, [["#currencies", "Currencies"], ["/metals/", "Metals"], ["/method/", "Method"]])
-  assert.ok(fs.existsSync(path.join(src, "app", "metals", "page.tsx")))
-  for (const [href] of nav.filter(([h]) => h.startsWith("#"))) assert.match(home, new RegExp(`<section id="${href.slice(1)}"`), href)
-  assert.ok(fs.existsSync(path.join(src, "app", "method", "page.tsx")))
-  for (const m of header.matchAll(/className="(inline-flex[^"]*)"/g)) assert.match(m[1], /min-h-\[44px\]/)
-  // same container as the content
-  assert.match(header, /<header className="[^"]*container mx-auto max-w-6xl px-4/)
-  assert.match(home, /<main className="[^"]*container mx-auto px-4[^"]*max-w-6xl/)
-  // code (not comments) never claims all data comes from the ECB
+  const nav = [...header.matchAll(/\{ key: "(\w+)", href: "([^"]+)", label: "([^"]+)" \}/g)].map((m) => [m[2], m[3]])
+  assert.deepEqual(nav, [["/currencies/", "Currencies"], ["/metals/", "Metals"], ["/method/", "Method"]])
+  for (const [href] of nav) assert.ok(fs.existsSync(path.join(src, "app", href.slice(1, -1), "page.tsx")), `${href} is a page`)
+  for (const m of header.matchAll(/className=\{?[`"]([^`"]*inline-flex[^`"]*)[`"]/g)) assert.match(m[1], /min-h-\[44px\]/)
+  assert.match(header, /aria-current=\{current === key \? "page" : undefined\}/)
   assert.doesNotMatch(header.replace(/\/\/.*$/gm, ""), /Powered by ECB/)
+  // every page renders it, at its <main>'s width, and has no header of its own
+  const pages: Array<[string, string, string | null]> = [
+    ["app/HomeClient.tsx", "max-w-6xl", null],
+    ["app/[pair]/PilotPairPageClient.tsx", "max-w-3xl", "currencies"],
+    ["app/[pair]/MetalPageClient.tsx", "max-w-6xl", "metals"],
+    ["app/[pair]/MetalRatioPageClient.tsx", "max-w-4xl", "metals"],
+    ["app/currencies/page.tsx", "max-w-3xl", "currencies"],
+    ["app/metals/page.tsx", "max-w-3xl", "metals"],
+    ["app/method/page.tsx", "max-w-3xl", "method"],
+    ["app/not-found.tsx", "max-w-3xl", null],
+  ]
+  for (const [file, width, current] of pages) {
+    const code = fs.readFileSync(path.join(src, file), "utf8")
+    const call = code.match(/<Header\b[^>]*\/>/)?.[0]
+    assert.ok(call, `${file}: no <Header />`)
+    assert.match(call!, new RegExp(`width="${width}"`), file)
+    assert.match(call!, current ? new RegExp(`current="${current}"`) : /^(?![\s\S]*current=)/, file)
+    assert.doesNotMatch(code, /<header\b/, `${file}: a header of its own`)
+    if (!file.includes("not-found")) assert.match(code, new RegExp(`<main className="[^"]*${width}`), `${file}: main is not ${width}`)
+  }
 })
 
 test("home copy names all four metals (no gold-and-silver-only wording on the home page or its meta description)", async () => {

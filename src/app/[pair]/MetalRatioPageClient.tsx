@@ -1,12 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { Header } from "@/components/Header"
 import { MetalIcon } from "@/components/MetalIcon"
 import { MetalUnitConverter } from "@/components/MetalUnitConverter"
 import { RelatedLinks, MethodFooterLink } from "@/components/RelatedLinks"
 import { ratioRelatedLinks } from "@/lib/related"
 import { formatSignificant, metalPriceSignificant } from "@/lib/metal-units"
-import { TrendingUp, ArrowLeft, RefreshCw } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import { useMetalRate } from "@/hooks/useMetalRate"
 import { GOLD_SILVER_RATIO_INFO } from "@/lib/metal-info"
 import { formatUtcTime } from "@/lib/utils"
@@ -47,24 +48,7 @@ export function MetalRatioPageClient({
     <>
       {/* Plain surface: no decorative background behind prices and text (Phase 8) */}
       <div className="plain-page relative z-10 min-h-screen flex flex-col">
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2 min-h-[44px] hover:opacity-80 transition-opacity">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#6366f1]/20 border border-[#6366f1]/30">
-              <TrendingUp className="w-4 h-4 text-[#6366f1]" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white font-heading">
-              Currency<span className="text-[#6366f1]">Versus</span>
-            </span>
-          </Link>
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 min-h-[44px] text-xs text-slate-400 hover:text-white transition-colors font-mono"
-          >
-            <ArrowLeft className="w-3 h-3" />
-            All currencies
-          </Link>
-        </header>
+        <Header width="max-w-4xl" current="metals" />
 
         <main className="flex-1 container mx-auto px-4 py-6 max-w-4xl">
           <div className="flex flex-col gap-6">
