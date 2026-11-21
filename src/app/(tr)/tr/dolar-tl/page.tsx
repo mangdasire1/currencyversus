@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { TrPageShell } from "@/components/tr/TrPageShell"
 import { TrFxPage } from "@/components/tr/TrFxPage"
-import { alternatesFor } from "@/lib/tr-pages"
+import { trPageMetadata } from "@/lib/tr-metadata"
 import { getInitialRateData, getBuildTimeChart } from "@/lib/build-data"
 import { PV } from "@/components/pilot/palette"
 
@@ -11,11 +11,9 @@ const PATH = "/tr/dolar-tl/"
 const TITLE = "Dolar kaç TL? Dolar/TL ECB referans kuru | CurrencyVersus"
 const DESCRIPTION = "1 doların kaç TL ettiği, Avrupa Merkez Bankası'nın (ECB) günlük referans kuruyla; 1 aydan 10 yıla grafik ve iki tarih karşılaştırması. Canlı piyasa kuru ya da banka kuru değildir."
 
-export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
-  alternates: alternatesFor(PATH),
-  openGraph: { title: TITLE, description: DESCRIPTION, url: `https://currencyversus.com${PATH}` },
+// title, description, canonical + hreflang, and the page's Turkish share image
+export async function generateMetadata(): Promise<Metadata> {
+  return trPageMetadata(PATH, TITLE, DESCRIPTION)
 }
 
 export default async function Page() {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { TrPageShell } from "@/components/tr/TrPageShell"
-import { alternatesFor } from "@/lib/tr-pages"
+import { trPageMetadata } from "@/lib/tr-metadata"
 import { CHART_PERIODS } from "@/lib/history"
 import type { ChartSampling } from "@/lib/history"
 import { GRAMS_PER_TROY_OUNCE, GRAMS_PER_AVOIRDUPOIS_OUNCE } from "@/lib/metal-units"
@@ -20,11 +20,9 @@ const DESCRIPTION =
 const ISSUES_URL = "https://github.com/mangdasire1/currencyversus/issues"
 const FIRST_ECB_RATE = "1999-01-04"
 
-export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
-  alternates: alternatesFor(PATH),
-  openGraph: { title: TITLE, description: DESCRIPTION, url: `https://currencyversus.com${PATH}` },
+// title, description, canonical + hreflang, and the page's Turkish share image
+export async function generateMetadata(): Promise<Metadata> {
+  return trPageMetadata(PATH, TITLE, DESCRIPTION)
 }
 
 const SAMPLING_TR: Record<ChartSampling, string> = {

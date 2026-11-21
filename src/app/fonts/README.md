@@ -26,3 +26,20 @@ The files are unmodified (renamed only).
 of each family with `next/font/local`; `fonts.css` declares the other subsets
 (not preloaded, downloaded only when a page uses their characters) and the
 metric-adjusted Arial fallbacks.
+
+## Share images (`/<page>/share.png`, `/tr/<page>/share.png`)
+
+The share images are drawn at build time by `next/og` (Satori), which cannot
+read `.woff2`. They use `next/og`'s built-in font, **Geist Regular**, which
+ships inside the `next` package
+(`node_modules/next/dist/compiled/@vercel/og/Geist-Regular.ttf`); no font file
+is copied into this repository and nothing is downloaded while building.
+
+- Upstream: https://github.com/vercel/geist-font — SIL Open Font License 1.1.
+- Coverage: every Turkish letter (ç ğ ı İ ö ş ü and capitals), ▲ ▼, €, $,
+  % and the dashes used on the cards. It has no ₺: Turkish pages and images
+  write "TL".
+- Guard: before drawing, `src/lib/share-image.tsx` looks every character of
+  the card up in the font's cmap (`src/lib/glyphs.ts`). A missing glyph stops
+  the build with its name (e.g. `"₺" U+20BA`) instead of letting the renderer
+  fetch a font over the network.

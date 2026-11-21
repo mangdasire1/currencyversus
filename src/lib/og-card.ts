@@ -19,6 +19,8 @@ import { directionOf } from "./chart.ts"
 import { chartGeometry } from "./chart.ts"
 import type { ChartBox } from "./chart.ts"
 import type { ChartPeriod } from "./history.ts"
+import { trPercent, trMonthYear, trDateShort, trUtcTime } from "./format-tr.ts"
+import { trCurrencyName, trRateLabel } from "./pilot-format-tr.ts"
 
 export const OG_SIZE = { width: 1200, height: 630 }
 export const OG_CHART_BOX: ChartBox = { width: 1040, height: 220, padTop: 8, padBottom: 8 }
@@ -99,3 +101,71 @@ function asciiCard(c: OgCard): OgCard {
     change: c.change ? { ...c.change, text: ascii(c.change.text) } : null,
   }
 }
+
+// ---- Turkish pilot pages (task C3-4) -------------------------------------
+// Same layout and rules as the English cards; Turkish text and formats
+// (format-tr.ts, pilot-format-tr.ts). Not filtered to ASCII: every character
+// must be in the image font instead (glyphs.ts; checked before drawing, the
+// build fails on a missing glyph rather than fetching a font).
+
+export function trCurrencyCard(base: string, target: string, rate: number | null, ecbDate: string | null, tenYear: ChartPeriod | null): OgCard {
+  const pair = `${trCurrencyName(base)}/${trCurrencyName(target)}`
+  const title = `${capitalTr(trCurrencyName(base))} / ${trCurrencyName(target)}`
+  const d = tenYear?.changePct != null ? directionOf(tenYear.changePct) : null
+  const path = tenYear && tenYear.points.length > 1 ? chartGeometry(tenYear.points, OG_CHART_BOX).path : null
+  const first = tenYear?.points[0]?.date
+  const last = tenYear?.points.at(-1)?.date
+  const figure = rate !== null ? trRateLabel(base, target, rate) : null
+  const change = d ? trPercent(d.text) : null
+  return {
+    eyebrow: "Döviz kuru",
+    title,
+    codes: `${base} / ${target}`,
+    figure,
+    change: d ? { text: change!, kind: d.kind, label: `${pair} kurunun 10 yıldaki değişimi` } : null,
+    path,
+    range: first && last ? `${trMonthYear(first)} – ${trMonthYear(last)}` : null,
+    dataLines: [ecbDate ? `ECB referans kuru, ${trDateShort(ecbDate)}` : "ECB referans kuru"],
+    source: "Kaynak: Avrupa Merkez Bankası (Frankfurter API üzerinden)",
+    alt: `${title} (${base}/${target}): ${figure ?? "döviz kuru"}${change ? `, 10 yılda ${change}` : ""}${ecbDate ? `, ECB referans kuru ${trDateShort(ecbDate)}` : ""}. CurrencyVersus`,
+    date: ecbDate,
+  }
+}
+
+// Gram gold in TL, ounce gold in USD: figure as the page's converter shows it.
+export function trGoldCard(kind: "gram" | "ons", figure: string | null, priceTime: string | null, fxDate: string | null): OgCard {
+  const title = kind === "gram" ? "Gram altın" : "Ons altın"
+  const time = trUtcTime(priceTime)
+  return {
+    eyebrow: kind === "gram" ? "Altın fiyatı (TL)" : "Altın fiyatı (dolar)",
+    title,
+    codes: kind === "gram" ? "XAU / TRY" : "XAU / USD",
+    figure,
+    change: null,
+    path: null,
+    range: null,
+    dataLines: [time ? `Fiyat zamanı ${time} (sağlayıcı)` : "Spot fiyat", kind === "gram" && fxDate ? `ECB referans kuruyla çevrildi, ${trDateShort(fxDate)}` : null].filter((x): x is string => x !== null),
+    source: kind === "gram" ? "Kaynaklar: gold-api.com, Avrupa Merkez Bankası" : "Kaynak: gold-api.com",
+    alt: `${title}: ${figure ?? "spot fiyat"}${time ? `, sağlayıcı zamanı ${time}` : ""}. Spot fiyattan teorik değer, kuyumcu fiyatı değildir. CurrencyVersus`,
+    date: priceTime ? priceTime.slice(0, 10) : null,
+  }
+}
+
+// The method page: no figure, what the page is about.
+export function trMethodCard(): OgCard {
+  return {
+    eyebrow: "Yöntem",
+    title: "Kurlar ve fiyatlar nereden geliyor?",
+    codes: "ECB referans kurları · gold-api.com spot fiyatları",
+    figure: null,
+    change: null,
+    path: null,
+    range: null,
+    dataLines: ["Çapraz kur, troy ons, tarihsel veri, hata bildirimi"],
+    source: "Banka kuru ve kuyumcu fiyatı neden farklı?",
+    alt: "Yöntem: CurrencyVersus'taki kurlar ve altın fiyatları nereden geliyor ve nasıl hesaplanıyor. CurrencyVersus",
+    date: null,
+  }
+}
+
+const capitalTr = (s: string) => s.replace(/^./, (c) => c.toLocaleUpperCase("tr"))

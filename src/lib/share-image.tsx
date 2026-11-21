@@ -1,10 +1,15 @@
+import fs from "node:fs"
+import path from "node:path"
 import { ImageResponse } from "next/og"
 import { parsePairSlug } from "@/lib/routes"
 import { getInitialRateData, getBuildTimeChart, getBuildTimeMetalPrice } from "@/lib/build-data"
 import { computeConversion, isMetalCode } from "@/lib/conversion"
 import { pairSignificantDigits } from "@/lib/ecb"
 import { formatFxRate } from "@/lib/format"
-import { currencyCard, metalCard, OG_SIZE, OG_CHART_BOX } from "@/lib/og-card"
+import { currencyCard, metalCard, trCurrencyCard, trGoldCard, trMethodCard, OG_SIZE, OG_CHART_BOX } from "@/lib/og-card"
+import { cmapCodePoints, missingGlyphs } from "@/lib/glyphs"
+import { formatSignificant } from "@/lib/metal-units"
+import { trMoney } from "@/lib/format-tr"
 import type { OgCard } from "@/lib/og-card"
 import type { MetalCode } from "@/lib/metals"
 import { PV } from "@/components/pilot/palette"
@@ -54,6 +59,58 @@ function Arrow({ kind }: { kind: "up" | "down" }) {
 export async function shareImage(pair: string): Promise<ImageResponse> {
   const card = await cardFor(pair)
   if (!card) throw new Error(`no share image for ${pair}`)
+  return drawCard(card, pair)
+}
+
+// Turkish pilot pages (task C3-4): /tr/<page>/share.png, the same data as the
+// page (build-time ECB rate and chart; gold-api.com price).
+export async function trCardFor(trPath: string): Promise<OgCard> {
+  if (trPath === "/tr/yontem/") return trMethodCard()
+  if (trPath === "/tr/dolar-tl/" || trPath === "/tr/euro-tl/") {
+    const base = trPath === "/tr/dolar-tl/" ? "USD" : "EUR"
+    const [rate, chart] = await Promise.all([getInitialRateData(base, "TRY"), getBuildTimeChart(base, "TRY")])
+    return trCurrencyCard(base, "TRY", rate?.rate ?? null, rate?.date ?? null, chart?.find((c) => c.key === "10y") ?? null)
+  }
+  if (trPath === "/tr/gram-altin/" || trPath === "/tr/ons-altin/") {
+    const gram = trPath === "/tr/gram-altin/"
+    const [metal, fx] = await Promise.all([getBuildTimeMetalPrice("XAU"), gram ? getInitialRateData("USD", "TRY") : Promise.resolve(null)])
+    const conv = metal
+      ? computeConversion({
+          base: "XAU",
+          quote: gram ? "TRY" : "USD",
+          amount: 1,
+          metalUnit: gram ? "g" : "oz",
+          fx: fx ? { base: "USD", quote: "TRY", rate: fx.rate, date: fx.date, fetchedAt: null, stale: false, staleAgeMs: null } : null,
+          metals: { XAU: { metal: "XAU", usdPerOz: metal.price, priceTime: metal.priceTime, fetchedAt: null, stale: false, staleAgeMs: null } },
+          fxLoading: false,
+          metalLoading: false,
+        })
+      : null
+    // the figure as the page's converter shows it: "1 gram altın = 5.754,2 TL"
+    const value = conv?.rate != null && conv.significant != null ? formatSignificant(conv.rate, conv.significant) : null
+    const figure = value === null ? null : gram ? `1 gram altın = ${trMoney(value, "TRY")}` : `1 troy ons altın = ${trMoney(value, "USD")}`
+    return trGoldCard(gram ? "gram" : "ons", figure, metal?.priceTime ?? null, fx?.date ?? null)
+  }
+  throw new Error(`no Turkish share image for ${trPath}`)
+}
+
+export async function trShareImage(trPath: string): Promise<ImageResponse> {
+  return drawCard(await trCardFor(trPath), trPath)
+}
+
+// next/og's built-in font (see glyphs.ts): the characters it can draw.
+let imageFont: Set<number> | null = null
+function imageFontCoverage(): Set<number> {
+  imageFont ??= cmapCodePoints(fs.readFileSync(path.join(process.cwd(), "node_modules", "next", "dist", "compiled", "@vercel", "og", "Geist-Regular.ttf")))
+  return imageFont
+}
+
+function drawCard(card: OgCard, page: string): ImageResponse {
+  // every character must be in the font: a missing one fails the build here
+  // instead of making the renderer download a font
+  const text = [card.eyebrow, card.title, card.codes, card.figure, card.range, card.change?.label, card.change?.text, ...card.dataLines, card.source, "CurrencyVersus"].filter(Boolean).join(" ")
+  const missing = missingGlyphs(text, imageFontCoverage())
+  if (missing.length) throw new Error(`share image for ${page}: the image font has no glyph for ${missing.map((c) => `"${c}" U+${c.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`).join(", ")}`)
   const line = card.path
     ? `data:image/svg+xml;utf8,${encodeURIComponent(
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${OG_CHART_BOX.width} ${OG_CHART_BOX.height}" width="${OG_CHART_BOX.width}" height="${OG_CHART_BOX.height}"><path d="${card.path}" fill="none" stroke="${PV.accentText}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>`

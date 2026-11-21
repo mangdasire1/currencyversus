@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { TrPageShell } from "@/components/tr/TrPageShell"
 import { TrGoldPage } from "@/components/tr/TrGoldPage"
-import { alternatesFor } from "@/lib/tr-pages"
+import { trPageMetadata } from "@/lib/tr-metadata"
 import { getBuildTimeMetalPrice, getInitialRateData } from "@/lib/build-data"
 import { GRAMS_PER_TROY_OUNCE } from "@/lib/metal-units"
 import { trNumber } from "@/lib/format-tr"
@@ -14,11 +14,9 @@ const PATH = "/tr/gram-altin/"
 const TITLE = "Gram altın kaç TL? Spot fiyattan teorik değer | CurrencyVersus"
 const DESCRIPTION = "1 gram saf altının spot fiyattan TL karşılığı: gold-api.com fiyatı, ECB referans kuruyla TL'ye çevrilir. Kuyumcu, banka ya da Kapalıçarşı fiyatı değildir."
 
-export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
-  alternates: alternatesFor(PATH),
-  openGraph: { title: TITLE, description: DESCRIPTION, url: `https://currencyversus.com${PATH}` },
+// title, description, canonical + hreflang, and the page's Turkish share image
+export async function generateMetadata(): Promise<Metadata> {
+  return trPageMetadata(PATH, TITLE, DESCRIPTION)
 }
 
 // 31.1034768 → "31,1035" (the method page gives the exact definition)

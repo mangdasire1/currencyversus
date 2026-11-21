@@ -69,7 +69,7 @@ test("wiring: lang=\"tr\" root layout; every Turkish page uses its own alternate
   for (const p of TR_PAGES) {
     const page = read("app", "(tr)", ...p.tr.split("/").filter(Boolean), "page.tsx")
     assert.ok(page.includes(`const PATH = "${p.tr}"`), p.tr)
-    assert.match(page, /alternates: alternatesFor\(PATH\)/)
+    assert.match(page, /return trPageMetadata\(PATH, TITLE, DESCRIPTION\)/) // canonical + hreflang via alternatesFor (tr-metadata.ts)
     assert.match(page, /<TrPageShell path=\{PATH\}/)
   }
   const shell = read("components", "tr", "TrPageShell.tsx")
