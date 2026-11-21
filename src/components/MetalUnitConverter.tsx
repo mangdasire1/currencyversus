@@ -7,6 +7,9 @@ import {
 } from "@/lib/metal-units"
 import type { ConverterSide, WeightUnit } from "@/lib/metal-units"
 import { PV, MONO, SANS } from "@/components/pilot/palette"
+import { trNumber, trCurrency } from "@/lib/format-tr"
+import { trParseAmount, trAmountErrorMessage } from "@/lib/amount-tr"
+import type { Locale } from "@/lib/i18n"
 
 // The right-hand side: money in a currency (metal pages), or a weight of the
 // other metal of equal value (gold/silver page; same unit on both sides).
@@ -20,7 +23,17 @@ interface MetalUnitConverterProps {
   pricePerTroyOunce: number | null
   significant: number // display precision of the result (least precise input)
   status?: string | null // e.g. "Loading price…" when no price yet
+  // Turkish pilot pages: Turkish text and figures, the unit the page opens
+  // with (gram on /tr/gram-altin/), and a note placed right under the result.
+  locale?: Locale
+  initialUnit?: WeightUnit
+  resultNote?: React.ReactNode
 }
+
+// Turkish unit names: control label, plural/singular are the same in Turkish.
+const UNIT_TR: Record<WeightUnit, string> = { ozt: "troy ons", g: "gram", kg: "kg", oz: `ons (${trNumber(GRAMS_PER_AVOIRDUPOIS_OUNCE.toFixed(2))} g)` }
+const UNIT_TR_NAME: Record<WeightUnit, string> = { ozt: "troy ons", g: "gram", kg: "kilogram", oz: "avoirdupois ons" }
+const TROY_NOTE_TR = `Troy ons (${trNumber(GRAMS_PER_TROY_OUNCE.toFixed(4))} g), değerli metallerin standart birimidir; gıdada kullanılan ${trNumber(GRAMS_PER_AVOIRDUPOIS_OUNCE.toFixed(2))} g'lık ons değildir.`
 
 const TROY_NOTE = `Troy ounce (${GRAMS_PER_TROY_OUNCE.toFixed(4)} g) — the standard unit for precious metals, not the ${GRAMS_PER_AVOIRDUPOIS_OUNCE.toFixed(2)} g ounce used for food.`
 
@@ -28,27 +41,34 @@ const TROY_NOTE = `Troy ounce (${GRAMS_PER_TROY_OUNCE.toFixed(4)} g) — the sta
 // the amount, the other is computed — "1 oz silver to USD" and "how much
 // silver for $500" are the same arithmetic. Default 1 troy ounce, rendered on
 // the server from the build-time price (state starts from props, no effect).
-export function MetalUnitConverter({ metalName, quote, pricePerTroyOunce, significant, status }: MetalUnitConverterProps) {
+export function MetalUnitConverter({ metalName, quote, pricePerTroyOunce, significant, status, locale = "en", initialUnit = DEFAULT_WEIGHT_UNIT, resultNote }: MetalUnitConverterProps) {
+  const tr = locale === "tr"
   const id = useId()
-  const [unit, setUnit] = useState<WeightUnit>(DEFAULT_WEIGHT_UNIT)
+  const [unit, setUnit] = useState<WeightUnit>(initialUnit)
   const [side, setSide] = useState<ConverterSide>("weight")
   const [text, setText] = useState("1")
 
   // Weight of the other metal: same unit on both sides, so the ratio applies
   // as is (no conversion through troy ounces).
-  const sol = solveConverter(text, side, quote.kind === "weight" ? "ozt" : unit, pricePerTroyOunce)
+  // Turkish input ("1.000,5") is read by the Turkish amount policy and handed
+  // over in English form: same arithmetic, Turkish error message.
+  const trParsed = tr ? trParseAmount(text) : null
+  const solved = solveConverter(trParsed && trParsed.ok ? trParsed.canonical : text, side, quote.kind === "weight" ? "ozt" : unit, pricePerTroyOunce)
+  const sol = trParsed && !trParsed.ok ? { weight: null, value: null, error: trAmountErrorMessage(trParsed.reason) } : solved
   const u = unitInfo(unit)
-  const quoteLabel = quote.kind === "money" ? quote.code : `${u.label} ${quote.name.toLowerCase()}`
-  const fmt = (n: number | null) => (n === null ? "" : formatSignificant(n, significant))
+  const quoteLabel = quote.kind === "money" ? (tr ? trCurrency(quote.code) : quote.code) : `${u.label} ${quote.name.toLowerCase()}`
+  const fmt = (n: number | null) => (n === null ? "" : tr ? trNumber(formatSignificant(n, significant)) : formatSignificant(n, significant))
   const weightText = side === "weight" ? text : fmt(sol.weight)
   const valueText = side === "value" ? text : fmt(sol.value)
 
   // The typed number is repeated as typed (grouped); only the computed side is rounded.
-  const typed = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 8 })
+  const typed = (n: number) => (tr ? trNumber(n.toLocaleString("en-US", { maximumFractionDigits: 8 })) : n.toLocaleString("en-US", { maximumFractionDigits: 8 }))
   const w = sol.weight !== null ? (side === "weight" ? typed(sol.weight) : fmt(sol.weight)) : null
   const v = sol.value !== null ? (side === "value" ? typed(sol.value) : fmt(sol.value)) : null
   const sentence =
-    w !== null && v !== null
+    w !== null && v !== null && tr && quote.kind === "money"
+      ? `${w} ${UNIT_TR_NAME[unit]} ${metalName.toLocaleLowerCase("tr")} = ${v} ${trCurrency(quote.code)}`
+      : w !== null && v !== null
       ? `${w} ${sol.weight === 1 ? u.one : u.name} of ${metalName.toLowerCase()} = ${v} ${quote.kind === "money" ? quote.code : `${sol.value === 1 ? u.one : u.name} of ${quote.name.toLowerCase()}`}`
       : null
 
@@ -85,12 +105,12 @@ export function MetalUnitConverter({ metalName, quote, pricePerTroyOunce, signif
   return (
     <section aria-labelledby={`${id}-h`} className="flex flex-col gap-4">
       <h2 id={`${id}-h`} className="text-lg font-semibold" style={{ ...SANS, color: PV.text }}>
-        {metalName} {quote.kind === "money" ? `to ${quote.code}` : `to ${quote.name}`} by weight
+        {tr ? `Ağırlığa göre ${metalName.toLocaleLowerCase("tr")} değeri (${quote.kind === "money" ? trCurrency(quote.code) : quote.name})` : <>{metalName} {quote.kind === "money" ? `to ${quote.code}` : `to ${quote.name}`} by weight</>}
       </h2>
       <div className="rounded-2xl p-4 sm:p-5 flex flex-col gap-4" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
         <fieldset className="flex flex-col gap-1.5 min-w-0">
           <legend className="text-xs uppercase tracking-widest mb-1.5" style={{ color: PV.faint }}>
-            Unit
+            {tr ? "Birim" : "Unit"}
           </legend>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {WEIGHT_UNITS.map((w) => {
@@ -115,7 +135,7 @@ export function MetalUnitConverter({ metalName, quote, pricePerTroyOunce, signif
                     onChange={() => setUnit(w.key)}
                     className="sr-only"
                   />
-                  {w.label}
+                  {tr ? UNIT_TR[w.key] : w.label}
                 </label>
               )
             })}
@@ -123,8 +143,8 @@ export function MetalUnitConverter({ metalName, quote, pricePerTroyOunce, signif
         </fieldset>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {field("weight", `Weight (${u.label})`, weightText)}
-          {field("value", `Value (${quoteLabel})`, valueText)}
+          {field("weight", tr ? `Ağırlık (${UNIT_TR[unit]})` : `Weight (${u.label})`, weightText)}
+          {field("value", tr ? `Değer (${quoteLabel})` : `Value (${quoteLabel})`, valueText)}
         </div>
         {sol.error && (
           <p id={`${id}-error`} role="alert" className="text-xs" style={{ color: PV.up }}>
@@ -135,17 +155,18 @@ export function MetalUnitConverter({ metalName, quote, pricePerTroyOunce, signif
         <p className="text-[26px] sm:text-[32px] leading-tight font-semibold break-words" style={{ ...MONO, color: PV.text }}>
           {sentence ?? (status || "—")}
         </p>
+        {resultNote}
         <div className="sr-only" aria-live="polite" aria-atomic="true">
           {announced}
         </div>
 
-        <p className="text-sm" style={{ color: PV.dim }}>{TROY_NOTE}</p>
+        <p className="text-sm" style={{ color: PV.dim }}>{tr ? TROY_NOTE_TR : TROY_NOTE}</p>
         {unit === "oz" && (
           <p className="text-sm" style={{ color: PV.dim }}>
-            You chose the avoirdupois ounce ({GRAMS_PER_AVOIRDUPOIS_OUNCE.toFixed(4)} g), the ounce used for food.
+            {tr ? `Avoirdupois onsu (${trNumber(GRAMS_PER_AVOIRDUPOIS_OUNCE.toFixed(4))} g) seçtiniz; gıdada kullanılan ons budur.` : <>You chose the avoirdupois ounce ({GRAMS_PER_AVOIRDUPOIS_OUNCE.toFixed(4)} g), the ounce used for food.</>}
           </p>
         )}
-        {quote.kind === "money" && (
+        {quote.kind === "money" && !tr && (
           <p className="text-sm" style={{ color: PV.dim }}>
             Spot value of the pure metal. A jeweller&apos;s or dealer&apos;s buying and selling prices are different.
           </p>

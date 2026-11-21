@@ -261,9 +261,10 @@ test("two dates: second date selectable (default today), a used-day note for eac
   assert.match(tool, /secondDate: string \| null/)
   assert.match(read("app/(en)/[pair]/PilotPairPageClient.tsx"), /useState<string \| null>\(null\)/) // default: today
   assert.match(tool, /value=\{secondDate \?\? today\}/)
-  assert.match(tool, /usedDayNote\(date, first\.used\.date\)/)
-  assert.match(tool, /usedDayNote\(secondDate, second\.used\.date\)/)
+  assert.match(tool, /const note = tr \? trUsedDayNote : usedDayNote/) // English pages: usedDayNote
+  assert.match(tool, /note\(date, first\.used\.date\)/)
+  assert.match(tool, /note\(secondDate, second\.used\.date\)/)
   assert.match(tool, /navigator\.clipboard\.writeText\(sentence\)/)
-  assert.match(tool, /className="[^"]*min-h-\[44px\] min-w-\[44px\][^"]*"[\s\S]{0,120}Copy sentence/)
+  assert.match(tool, /className="[^"]*min-h-\[44px\] min-w-\[44px\][^"]*"[\s\S]{0,160}"Copy sentence"/)
   assert.match(tool, /It is not an investment return: it does not account for inflation,\s+interest earned, or any fee\./)
 })

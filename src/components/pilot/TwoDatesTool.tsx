@@ -7,6 +7,10 @@ import { formatMoney } from "@/lib/format"
 import { usedDayNote, twoDatesSentence } from "@/lib/pilot-format"
 import { CURRENCY_MAP } from "@/lib/currencies"
 import type { HistoricalPoint } from "@/lib/types"
+import { trMoney, trDateShort, trDateLong } from "@/lib/format-tr"
+import { trParseAmount, trAmountErrorMessage } from "@/lib/amount-tr"
+import { trUsedDayNote, trTwoDatesSentence, trCurrencyName } from "@/lib/pilot-format-tr"
+import type { Locale } from "@/lib/i18n"
 import { PV, MONO, SANS } from "./palette"
 
 const EARLIEST = "1999-01-04" // first ECB reference rate
@@ -32,6 +36,9 @@ interface TwoDatesToolProps {
   currentRate: number | null
   currentDate: string | null // ECB date of the current rate
   builtAt: string // ISO; server and first client render use it as "today"
+  // "tr" on the Turkish pilot pages: Turkish text, figures and amount input
+  // ("1.000,5"); the arithmetic and the fetches are the same.
+  locale?: Locale
 }
 
 interface Loaded {
@@ -41,7 +48,7 @@ interface Loaded {
 
 // The rate on one requested date: fetched when the date changes, aborted when
 // it changes again. `initial` is the server-rendered value for the default date.
-function useRateOn(requested: string | null, valid: boolean, base: string, target: string, initial: Loaded | null) {
+function useRateOn(requested: string | null, valid: boolean, base: string, target: string, initial: Loaded | null, loadError: string) {
   const [loaded, setLoaded] = useState<Loaded | null>(initial)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -53,13 +60,13 @@ function useRateOn(requested: string | null, valid: boolean, base: string, targe
     fetchRateOn(requested, base, target, controller.signal)
       .then((r) => setLoaded({ requested, used: { date: r.date, rate: r.rate } }))
       .catch((err: Error) => {
-        if (err.name !== "AbortError") setError("The rate for that date could not be loaded. Please try again.")
+        if (err.name !== "AbortError") setError(loadError)
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [requested, valid, base, target, loaded])
+  }, [requested, valid, base, target, loaded, loadError])
   const current = requested !== null && loaded && loaded.requested === requested ? loaded.used : null
   return { used: current, loading, error }
 }
@@ -82,7 +89,9 @@ export function TwoDatesTool({
   currentRate,
   currentDate,
   builtAt,
+  locale = "en",
 }: TwoDatesToolProps) {
+  const tr = locale === "tr"
   const id = useId()
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle")
   const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle")
@@ -95,27 +104,32 @@ export function TwoDatesTool({
   const dateValid = inRange(date)
   const secondValid = secondDate === null || inRange(secondDate)
 
-  const parsed = parseAmount(amount)
+  // the same amount policy in both languages; Turkish writes "1.000,5" (amount-tr.ts)
+  const parsed = tr ? trParseAmount(amount) : parseAmount(amount)
   const value = parsed.ok ? parsed.value : null
-  const amountError = parsed.ok ? null : amountErrorMessage(parsed.reason)
+  const amountError = parsed.ok ? null : tr ? trAmountErrorMessage(parsed.reason) : amountErrorMessage(parsed.reason as Exclude<typeof parsed.reason, "dot">)
+  const loadError = tr ? "Bu tarihin kuru yüklenemedi. Lütfen tekrar deneyin." : "The rate for that date could not be loaded. Please try again."
 
-  const first = useRateOn(date, dateValid, base, target, defaultUsed ? { requested: defaultRequested, used: defaultUsed } : null)
-  const second = useRateOn(secondDate, secondValid, base, target, null)
+  const first = useRateOn(date, dateValid, base, target, defaultUsed ? { requested: defaultRequested, used: defaultUsed } : null, loadError)
+  const second = useRateOn(secondDate, secondValid, base, target, null, loadError)
 
   // Second side: a chosen date's rate, or today's (current) rate.
   const secondPoint: HistoricalPoint | null =
     secondDate === null ? (currentRate !== null && currentDate ? { date: currentDate, rate: currentRate } : null) : second.used
 
   const dec = CURRENCY_MAP[target]?.decimals ?? 2
+  const money = (n: number) => (tr ? trMoney(formatMoney(n, dec), target) : `${formatMoney(n, dec)} ${target}`)
+  const day = (iso: string) => (tr ? (trDateShort(iso) ?? iso) : iso)
   const firstValue = first.used && value !== null ? value * first.used.rate : null
   const secondValue = secondPoint && value !== null ? value * secondPoint.rate : null
+  const note = tr ? trUsedDayNote : usedDayNote
   const notes = [
-    first.used ? usedDayNote(date, first.used.date) : null,
-    secondDate !== null && second.used ? usedDayNote(secondDate, second.used.date) : null,
+    first.used ? note(date, first.used.date) : null,
+    secondDate !== null && second.used ? note(secondDate, second.used.date) : null,
   ].filter((n): n is string => n !== null)
   const sentence =
     value !== null && first.used && secondPoint && firstValue !== null && secondValue !== null
-      ? twoDatesSentence(value, base, target, { date: first.used.date, value: firstValue }, { date: secondPoint.date, value: secondValue })
+      ? (tr ? trTwoDatesSentence : twoDatesSentence)(value, base, target, { date: first.used.date, value: firstValue }, { date: secondPoint.date, value: secondValue })
       : null
 
   // A new result invalidates "Copied".
@@ -148,7 +162,7 @@ export function TwoDatesTool({
   return (
     <section aria-labelledby={`${id}-h`} className="flex flex-col gap-4">
       <h2 id={`${id}-h`} className="text-lg font-semibold" style={{ ...SANS, color: PV.text }}>
-        Same amount, two dates
+        {tr ? "Aynı tutar, iki tarih" : "Same amount, two dates"}
       </h2>
       {sharedNote && (
         <p role="status" className="text-sm rounded-xl p-3" style={{ color: PV.text, background: PV.surface, border: `1px solid ${PV.border}` }}>
@@ -158,7 +172,7 @@ export function TwoDatesTool({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${id}-amount`} className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
-            Amount ({base})
+            {tr ? `Tutar (${trCurrencyName(base)})` : <>Amount ({base})</>}
           </label>
           <input
             id={`${id}-amount`}
@@ -178,7 +192,7 @@ export function TwoDatesTool({
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${id}-date`} className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
-            First date
+            {tr ? "Birinci tarih" : "First date"}
           </label>
           <input
             id={`${id}-date`}
@@ -194,13 +208,13 @@ export function TwoDatesTool({
           />
           {!dateValid && (
             <p id={`${id}-date-error`} role="alert" className="text-xs" style={{ color: PV.up }}>
-              Choose a date between {EARLIEST} and {today}.
+              {tr ? `${trDateLong(EARLIEST)} ile ${trDateLong(today)} arasında bir tarih seçin.` : <>Choose a date between {EARLIEST} and {today}.</>}
             </p>
           )}
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${id}-date2`} className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
-            Second date
+            {tr ? "İkinci tarih" : "Second date"}
           </label>
           <input
             id={`${id}-date2`}
@@ -216,13 +230,13 @@ export function TwoDatesTool({
           />
           {!secondValid ? (
             <p id={`${id}-date2-error`} role="alert" className="text-xs" style={{ color: PV.up }}>
-              Choose a date between {EARLIEST} and {today}.
+              {tr ? `${trDateLong(EARLIEST)} ile ${trDateLong(today)} arasında bir tarih seçin.` : <>Choose a date between {EARLIEST} and {today}.</>}
             </p>
           ) : (
             <p id={`${id}-date2-hint`} className="text-xs" style={{ color: PV.dim }}>
-              {secondDate === null ? "Today: the latest ECB reference rate." : (
+              {secondDate === null ? (tr ? "Bugün: en son ECB referans kuru." : "Today: the latest ECB reference rate.") : (
                 <button type="button" onClick={() => onSecondDateChange(null)} className="underline underline-offset-4 min-h-[44px]" style={{ color: PV.accentText }}>
-                  Back to today
+                  {tr ? "Bugüne dön" : "Back to today"}
                 </button>
               )}
             </p>
@@ -233,18 +247,20 @@ export function TwoDatesTool({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-live="polite">
         <div className="rounded-xl p-4 min-w-0" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
           <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
-            On {first.used ? first.used.date : date}
+            {tr ? day(first.used ? first.used.date : date) : <>On {first.used ? first.used.date : date}</>}
           </p>
           <p className="mt-1 text-2xl break-words" style={{ ...MONO, color: PV.text }}>
-            {first.loading ? "…" : firstValue !== null ? `${formatMoney(firstValue, dec)} ${target}` : "—"}
+            {first.loading ? "…" : firstValue !== null ? money(firstValue) : "—"}
           </p>
         </div>
         <div className="rounded-xl p-4 min-w-0" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
           <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>
-            {secondDate === null ? `Today${currentDate ? ` (ECB ${currentDate})` : ""}` : `On ${second.used ? second.used.date : secondDate}`}
+            {tr
+              ? secondDate === null ? `Bugün${currentDate ? ` (ECB ${day(currentDate)})` : ""}` : day(second.used ? second.used.date : secondDate)
+              : secondDate === null ? `Today${currentDate ? ` (ECB ${currentDate})` : ""}` : `On ${second.used ? second.used.date : secondDate}`}
           </p>
           <p className="mt-1 text-2xl break-words" style={{ ...MONO, color: PV.text }}>
-            {second.loading ? "…" : secondValue !== null ? `${formatMoney(secondValue, dec)} ${target}` : "—"}
+            {second.loading ? "…" : secondValue !== null ? money(secondValue) : "—"}
           </p>
         </div>
       </div>
@@ -262,10 +278,10 @@ export function TwoDatesTool({
             className="self-start sm:self-auto inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-4 rounded-xl text-sm font-semibold"
             style={{ ...MONO, background: PV.selectedFill, color: "#FFFFFF" }}
           >
-            Copy sentence
+            {tr ? "Cümleyi kopyala" : "Copy sentence"}
           </button>
           <span role="status" className="text-xs" style={{ color: PV.dim }}>
-            {copyState === "copied" ? "Copied." : copyState === "failed" ? "Could not copy; select the sentence to copy it." : ""}
+            {copyState === "copied" ? (tr ? "Kopyalandı." : "Copied.") : copyState === "failed" ? (tr ? "Kopyalanamadı; cümleyi seçip kopyalayabilirsiniz." : "Could not copy; select the sentence to copy it.") : ""}
           </span>
         </div>
       )}
@@ -277,22 +293,28 @@ export function TwoDatesTool({
           className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-4 rounded-xl text-sm"
           style={{ ...MONO, background: PV.raised, border: `1px solid ${PV.border}`, color: PV.text }}
         >
-          Share this comparison
+          {tr ? "Bu karşılaştırmayı paylaş" : "Share this comparison"}
         </button>
         <span role="status" className="text-xs" style={{ color: PV.dim }}>
           {shareState === "copied"
             ? secondDate === null
-              ? "Link copied. It opens with today's rate for the second date."
-              : "Link copied. Both dates are fixed in it."
+              ? tr ? "Bağlantı kopyalandı. İkinci tarih için, bağlantının açıldığı günün kuru kullanılır." : "Link copied. It opens with today's rate for the second date."
+              : tr ? "Bağlantı kopyalandı. İki tarih de bağlantıda sabit." : "Link copied. Both dates are fixed in it."
             : shareState === "failed"
-              ? "Could not copy; the link is in the address bar."
+              ? tr ? "Kopyalanamadı; bağlantı adres çubuğunda." : "Could not copy; the link is in the address bar."
               : ""}
         </span>
       </div>
 
       <p className="text-sm" style={{ color: PV.dim }}>
-        This compares exchange rates on two dates. It is not an investment return: it does not account for inflation,
-        interest earned, or any fee.
+        {tr ? (
+          "Bu, iki tarihteki döviz kurlarını karşılaştırır. Bir yatırım getirisi değildir: enflasyonu, kazanılan faizi ve hiçbir masrafı hesaba katmaz."
+        ) : (
+          <>
+            This compares exchange rates on two dates. It is not an investment return: it does not account for inflation,
+            interest earned, or any fee.
+          </>
+        )}
       </p>
     </section>
   )

@@ -8,6 +8,9 @@ import { chartGeometry, chartAriaLabel, DEFAULT_CHART_BOX } from "@/lib/chart"
 import { formatFxRate } from "@/lib/format"
 import { pairSignificantDigits } from "@/lib/ecb"
 import { usedDayNote } from "@/lib/pilot-format"
+import { trNumber, trDateShort } from "@/lib/format-tr"
+import { trCurrencyName, TR_PERIOD_SHORT, trObservationSentence, trUsedDayNote, trChartAriaLabel } from "@/lib/pilot-format-tr"
+import type { Locale } from "@/lib/i18n"
 import { Direction } from "./Direction"
 import { PV, MONO, SANS } from "./palette"
 
@@ -19,6 +22,7 @@ interface PairChartProps {
   periods: ChartPeriod[]
   selected: string // period key, owned by the page (carried across a swap)
   onSelect: (key: string) => void
+  locale?: Locale // "tr" on the Turkish pilot pages; English by default
 }
 
 // One chart, seven period tabs. The default period is rendered on the server
@@ -28,12 +32,14 @@ interface PairChartProps {
 // The periods are one single-choice group: WAI-ARIA tabs (tablist / tab /
 // aria-selected, one tabpanel). Only the selected tab is in the Tab order;
 // arrow keys, Home and End move the selection and the focus together.
-export function PairChart({ base, target, periods, selected, onSelect }: PairChartProps) {
+export function PairChart({ base, target, periods, selected, onSelect, locale = "en" }: PairChartProps) {
+  const tr = locale === "tr"
   const id = useId()
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   const period = periods.find((p) => p.key === selected) ?? periods[periods.length - 1]
   const sig = pairSignificantDigits(base, target)
-  const fmt = (n: number) => formatFxRate(n, sig)
+  const fmt = (n: number) => (tr ? trNumber(formatFxRate(n, sig)) : formatFxRate(n, sig))
+  const day = (iso: string | undefined) => (iso && tr ? trDateShort(iso) : iso)
   const tabId = (key: string) => `${id}-tab-${key}`
   const panelId = `${id}-panel`
 
@@ -53,19 +59,19 @@ export function PairChart({ base, target, periods, selected, onSelect }: PairCha
   const g = chartGeometry(period.points, BOX)
   const first = period.points[0]
   const last = period.points.at(-1)
-  const shiftNote = period.start ? usedDayNote(period.requestedStart, period.start.date) : null
+  const shiftNote = period.start ? (tr ? trUsedDayNote : usedDayNote)(period.requestedStart, period.start.date) : null
 
   return (
     <section aria-labelledby="chart-heading" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="chart-heading" className="text-lg font-semibold" style={{ ...SANS, color: PV.text }}>
-          {base} to {target} over time
+          {tr ? `${trCurrencyName(base).replace(/^./, (c) => c.toLocaleUpperCase("tr"))}/${trCurrencyName(target)} kurunun seyri` : <>{base} to {target} over time</>}
         </h2>
       </div>
 
       {/* Tabs scroll sideways on narrow screens instead of wrapping or shrinking */}
       <div className="relative -mx-1 overflow-x-auto">
-        <div className="flex gap-1.5 px-1 w-max" role="tablist" aria-label="Chart period">
+        <div className="flex gap-1.5 px-1 w-max" role="tablist" aria-label={tr ? "Grafik dönemi" : "Chart period"}>
           {periods.map((p, i) => (
             <button
               key={p.key}
@@ -88,7 +94,7 @@ export function PairChart({ base, target, periods, selected, onSelect }: PairCha
                 border: `1px solid ${p.key === period.key ? PV.selectedFill : PV.border}`,
               }}
             >
-              {p.short}
+              {tr ? TR_PERIOD_SHORT[p.key] : p.short}
             </button>
           ))}
         </div>
@@ -106,7 +112,7 @@ export function PairChart({ base, target, periods, selected, onSelect }: PairCha
         <div className="relative" style={{ height: BOX.height }}>
           <svg
             role="img"
-            aria-label={chartAriaLabel(base, target, period)}
+            aria-label={(tr ? trChartAriaLabel : chartAriaLabel)(base, target, period)}
             viewBox={`0 0 ${BOX.width} ${BOX.height}`}
             preserveAspectRatio="none"
             width="100%"
@@ -125,39 +131,39 @@ export function PairChart({ base, target, periods, selected, onSelect }: PairCha
           </span>
         </div>
         <div className="mt-3 flex justify-between text-xs" style={{ ...MONO, color: PV.faint }}>
-          <span>{first?.date ?? "—"}</span>
-          <span>{last?.date ?? "—"}</span>
+          <span>{day(first?.date) ?? "—"}</span>
+          <span>{day(last?.date) ?? "—"}</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="rounded-xl p-4" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
-          <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>Change</p>
-          <p className="mt-1 text-xl"><Direction value={period.changePct} /></p>
+          <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>{tr ? "Değişim" : "Change"}</p>
+          <p className="mt-1 text-xl"><Direction value={period.changePct} locale={locale} /></p>
           <p className="mt-1 text-xs" style={{ ...MONO, color: PV.dim }}>
             {period.start && period.end
               ? `${fmt(period.start.rate)} → ${fmt(period.end.rate)}`
               : period.coverageStart
-                ? `Data only from ${period.coverageStart}`
+                ? (tr ? `Veri yalnızca ${day(period.coverageStart)} tarihinden itibaren` : `Data only from ${period.coverageStart}`)
                 : "—"}
           </p>
         </div>
         {(
           [
-            ["Low", period.low],
-            ["High", period.high],
+            [tr ? "En düşük" : "Low", period.low],
+            [tr ? "En yüksek" : "High", period.high],
           ] as const
         ).map(([label, point]) => (
           <div key={label} className="rounded-xl p-4" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
             <p className="text-xs uppercase tracking-widest" style={{ color: PV.faint }}>{label}</p>
             <p className="mt-1 text-xl" style={{ ...MONO, color: PV.text }}>{point ? fmt(point.rate) : "—"}</p>
-            <p className="mt-1 text-xs" style={{ ...MONO, color: PV.dim }}>{point?.date ?? ""}</p>
+            <p className="mt-1 text-xs" style={{ ...MONO, color: PV.dim }}>{day(point?.date) ?? ""}</p>
           </div>
         ))}
       </div>
 
       <p className="text-sm" style={{ color: PV.dim }}>
-        {observationSentence(period)}
+        {(tr ? trObservationSentence : observationSentence)(period)}
         {shiftNote && <> {shiftNote}</>}
       </p>
     </section>
