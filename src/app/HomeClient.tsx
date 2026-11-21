@@ -19,6 +19,8 @@ import { CURRENCY_MAP } from "@/lib/currencies"
 import { isMetal, OZ_TO_GRAM } from "@/lib/metals"
 import type { MetalCode } from "@/lib/metals"
 import { formatCardUsd } from "@/lib/metal-cards"
+import { HomeMetalCard } from "@/components/HomeMetalCard"
+import { selectedMetal } from "@/lib/home-metal-card"
 
 const POPULAR_PAIRS = [
   { base: "USD", target: "EUR" },
@@ -94,6 +96,7 @@ export function HomeClient({
   const { price: platinumUsd } = useMetalRate("XPT", initialPlatinumUsd)
   const { price: palladiumUsd } = useMetalRate("XPD", initialPalladiumUsd)
   const metalUsd: Record<MetalCode, number | null> = { XAU: goldUsd, XAG: silverUsd, XPT: platinumUsd, XPD: palladiumUsd }
+  const metalOnSide = selectedMetal(base, target)
 
   return (
     <>
@@ -126,11 +129,21 @@ export function HomeClient({
                 />
               </div>
 
-              {/* Right column: the chart only. Base, target and the current rate are
+              {/* Right column: the chart for a currency pair, a card for a selected
+                  metal (no history to chart). Base, target and the current rate are
                   already in the converter card; the inverse rate is on its result
-                  line (showInverse). On narrow screens the chart follows the
+                  line (showInverse). On narrow screens this column follows the
                   converter and its result — the answer comes first. */}
               <div className="flex flex-col gap-6 min-w-0">
+              {/* A metal is selected: its prices, the unit, its page */}
+              {metalOnSide && (
+                <HomeMetalCard
+                  metal={metalOnSide}
+                  name={METAL_CARDS.find((m) => m.code === metalOnSide)!.name}
+                  other={metalOnSide === base ? target : base}
+                  usdPerOz={metalUsd[metalOnSide as MetalCode]}
+                />
+              )}
               {/* Chart — currency pairs only, like the historical table */}
               {fxPair && (
                 <div className="glass-card p-6">
