@@ -80,3 +80,14 @@ test("pages use the shared rule: no fixed decimals for metal prices on the home 
   const ratio = fs.readFileSync(path.join(SRC, "app", "[pair]", "MetalRatioPageClient.tsx"), "utf8")
   assert.doesNotMatch(ratio, /maximumFractionDigits/)
 })
+
+test("gold/silver page: the ratio is shown by one rule everywhere (headline, converter, large figure, Quick Stats)", () => {
+  const page = fs.readFileSync(path.join(SRC, "app", "[pair]", "MetalRatioPageClient.tsx"), "utf8")
+  assert.doesNotMatch(page, /ratio\.toFixed\(/)
+  assert.match(page, /const formatRatio = \(r: number\) => formatSignificant\(r, ratioSignificant\)/)
+  assert.equal((page.match(/formatRatio\(ratio\)/g) ?? []).length, 3)
+  assert.match(page, /significant=\{ratioSignificant\}/) // the converter uses the same digits
+  // 2026-11-21: gold 3,539.00 (6 significant digits) / silver 41.080 (5) → 5 digits
+  const sig = Math.min(metalPriceSignificant("XAU", 3539.0), metalPriceSignificant("XAG", 41.08))
+  assert.equal(formatSignificant(3539.0 / 41.08, sig), "86.149")
+})

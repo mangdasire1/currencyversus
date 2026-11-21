@@ -40,6 +40,12 @@ export function MetalRatioPageClient({
       ? goldUsd / silverUsd
       : null
 
+  // One rule for every place the ratio is shown (headline, converter, the
+  // large figure, Quick Stats): the significant digits of the less precise of
+  // the two prices it is derived from (METAL_PRICE_DECIMALS, metal-units.ts).
+  const ratioSignificant = Math.min(metalPriceSignificant("XAU", goldUsd ?? 0), metalPriceSignificant("XAG", silverUsd ?? 0))
+  const formatRatio = (r: number) => formatSignificant(r, ratioSignificant)
+
   const goldTimeLabel = formatUtcTime(goldTime)
   const silverTimeLabel = formatUtcTime(silverTime)
   const isStale = goldStale || silverStale
@@ -69,7 +75,7 @@ export function MetalRatioPageClient({
                 <p className="text-slate-300 font-mono text-sm">
                   1 oz Gold ={" "}
                   <span className="text-white font-semibold">
-                    {ratio.toFixed(2)} oz Silver
+                    {formatRatio(ratio)} oz Silver
                   </span>
                 </p>
               ) : (
@@ -105,7 +111,7 @@ export function MetalRatioPageClient({
               metalName="Gold"
               quote={{ kind: "weight", code: "XAG", name: "Silver" }}
               pricePerTroyOunce={ratio}
-              significant={Math.min(metalPriceSignificant("XAU", goldUsd ?? 0), metalPriceSignificant("XAG", silverUsd ?? 0))}
+              significant={ratioSignificant}
               status={ratio === null ? "Loading prices…" : null}
             />
 
@@ -115,13 +121,13 @@ export function MetalRatioPageClient({
                 Gold / Silver Ratio
               </p>
               <p className="text-7xl font-bold font-mono text-white">
-                {ratio !== null ? ratio.toFixed(1) : "—"}
+                {ratio !== null ? formatRatio(ratio) : "—"}
               </p>
               <div className="w-full mt-2 grid grid-cols-3 gap-3 text-center">
                 {[
                   { label: "Gold (USD/oz)", value: goldUsd !== null ? `$${formatSignificant(goldUsd, metalPriceSignificant("XAU", goldUsd))}` : "—" },
                   { label: "Silver (USD/oz)", value: silverUsd !== null ? `$${formatSignificant(silverUsd, metalPriceSignificant("XAG", silverUsd))}` : "—" },
-                  { label: "Ratio", value: ratio !== null ? `${ratio.toFixed(2)} : 1` : "—" },
+                  { label: "Ratio", value: ratio !== null ? `${formatRatio(ratio)} : 1` : "—" },
                 ].map(({ label, value }) => (
                   <div
                     key={label}
