@@ -65,6 +65,12 @@ export default function MethodPage() {
 
         <Section id="fx" title="Exchange rates">
           <p>
+            <Link href="/currencies/" className="underline underline-offset-4" style={{ color: PV.accentText }}>
+              All currency pairs are listed on the currencies page
+            </Link>
+            .
+          </p>
+          <p>
             Currency rates are the European Central Bank&apos;s euro foreign exchange reference rates, served by the
             Frankfurter API. The ECB publishes them once per business day, at around 16:00 CET. They do not change at
             weekends or on ECB holidays; the page then shows the last published rate with its date.

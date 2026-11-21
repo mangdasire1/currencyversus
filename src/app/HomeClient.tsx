@@ -222,9 +222,14 @@ export function HomeClient({
 
             {/* Popular pairs — target of the header's "Currencies" link */}
             <section id="currencies" className="flex flex-col gap-4 scroll-mt-4 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
-              <h2 className="text-lg font-semibold text-slate-300 font-heading">
-                Popular Pairs
-              </h2>
+              <div className="flex flex-wrap items-center justify-between gap-x-4">
+                <h2 className="text-lg font-semibold text-slate-300 font-heading">
+                  Popular Pairs
+                </h2>
+                <Link href="/currencies/" className="inline-flex items-center min-h-[44px] text-sm text-slate-300 underline underline-offset-4 hover:text-white">
+                  All currency pairs
+                </Link>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {POPULAR_PAIRS.map(({ base: b, target: t }, i) => {
                   const bc = CURRENCY_MAP[b]

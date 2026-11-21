@@ -21,7 +21,7 @@ const outDir = path.join(root, "out")
 const manifestUrl = process.env.LASTMOD_MANIFEST_URL || `${SITE}/lastmod-manifest.json`
 const today = new Date().toISOString().slice(0, 10)
 
-const urls = ["/", "/method/", "/metals/", ...routeCatalog().map((slug) => `/${slug}/`)]
+const urls = ["/", "/method/", "/metals/", "/currencies/", ...routeCatalog().map((slug) => `/${slug}/`)]
 const fingerprints = {}
 for (const url of urls) {
   const file = path.join(outDir, url, "index.html")
