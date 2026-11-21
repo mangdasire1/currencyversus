@@ -105,23 +105,31 @@ test("Y axis: domain is [dataMin, dataMax], never anchored at 0", () => {
   assert.equal(span, plot) // highest point at the top, lowest at the bottom
 })
 
-test("Y axis: every Recharts chart in src declares YAxis domain [dataMin, dataMax]", () => {
+test("Y axis: every line in src is drawn by chartGeometry ([dataMin, dataMax]); no charting library", () => {
   const srcDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
   const files: string[] = []
   const walk = (d: string) => {
     for (const f of fs.readdirSync(d)) {
       const p = path.join(d, f)
       if (fs.statSync(p).isDirectory()) walk(p)
-      else if (f.endsWith(".tsx")) files.push(p)
+      else if (/\.tsx?$/.test(f) && !f.endsWith(".test.ts")) files.push(p)
     }
   }
   walk(srcDir)
-  const charts = files.filter((f) => /<(LineChart|AreaChart|BarChart|ComposedChart)\b/.test(fs.readFileSync(f, "utf8")))
-  for (const f of charts) {
-    const src = fs.readFileSync(f, "utf8")
-    assert.match(src, /<YAxis\b[^>]*domain=\{\["dataMin", "dataMax"\]\}/, `${path.basename(f)}: chart without YAxis domain [dataMin, dataMax]`)
-  }
-  console.log(`    Recharts chart files checked: ${charts.map((f) => path.basename(f)).join(", ")}`)
+  // no Recharts (its default Y axis starts at 0) or any other chart library
+  const libs = files.filter((f) => /from "recharts"|<(LineChart|AreaChart|BarChart|ComposedChart)\b/.test(fs.readFileSync(f, "utf8")))
+  assert.deepEqual(libs.map((f) => path.basename(f)), [])
+  // every component that draws an SVG path for data uses chartGeometry
+  const drawing = files.filter((f) => /<path\b[^>]*d=\{/.test(fs.readFileSync(f, "utf8")))
+  for (const f of drawing) assert.match(fs.readFileSync(f, "utf8"), /chartGeometry\(/, `${path.basename(f)}: a data line not drawn by chartGeometry`)
+  console.log(`    data lines drawn by chartGeometry: ${drawing.map((f) => path.basename(f)).join(", ")}`)
+  assert.deepEqual(drawing.map((f) => path.basename(f)).sort(), ["PairChart.tsx", "Sparkline.tsx"])
+  // the home page's trend line box: a narrow series fills it top to bottom
+  const box = { width: 112, height: 40, padTop: 3, padBottom: 3 }
+  const g = chartGeometry([{ date: "2026-01-01", rate: 0.85 }, { date: "2026-02-01", rate: 0.9 }, { date: "2026-03-01", rate: 0.87 }], box)
+  const ys = g.vertices.map((v) => v.y)
+  assert.deepEqual([Math.min(...ys), Math.max(...ys)], [box.padTop, box.height - box.padBottom])
+  assert.match(fs.readFileSync(path.join(srcDir, "components", "Sparkline.tsx"), "utf8"), /const BOX: ChartBox = \{ width: 112, height: 40, padTop: 3, padBottom: 3 \}/)
 })
 
 test("aria-label carries the real numbers", () => {
