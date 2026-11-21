@@ -69,7 +69,9 @@ test("direction colours: no green/red in anything the home page renders (whole i
   }
   console.log(`    home import graph: ${files.length} files; green/red direction hits: ${hits.length}`)
   assert.ok(files.includes("components/HomeHistoryTable.tsx") && files.includes("components/Sparkline.tsx"))
-  assert.ok(!files.includes("components/PercentChange.tsx"), "the green/red change badge is not used on the home page")
+  for (const gone of ["components/PercentChange.tsx", "components/HistoricalTable.tsx", "app/[pair]/PairPageClient.tsx"]) {
+    assert.ok(!fs.existsSync(path.join(SRC, gone)), `${gone}: the old layout's green/red code is removed`)
+  }
   assert.deepEqual(hits, [])
 })
 
@@ -79,7 +81,7 @@ test("home table: no repeated Now column; the current rate is stated once above 
   assert.deepEqual(heads, ["Period", "Then", "Change", "Low", "High", "Trend"])
   assert.equal((t.match(/Now: \{currentLabel/g) ?? []).length, 1)
   assert.match(t, /<Direction value=\{c\.percentChange\} \/>/)
-  assert.match(t, /upColor=\{PV\.up\}\s+downColor=\{PV\.down\}/)
+  assert.match(read("components/Sparkline.tsx"), /sparklineIsUp\(data\) \? PV\.up : PV\.down/)
   assert.match(t, /<div className="overflow-x-auto">/) // the table scrolls sideways on phones, not squeezed
 })
 

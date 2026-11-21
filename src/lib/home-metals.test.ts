@@ -107,9 +107,7 @@ test("home: no Quick Stats card; the inverse rate is on the converter's rate lin
   assert.doesNotMatch(home, /Quick Stats|Inverse Rate|Current Rate/)
   assert.match(home, /<CurrencyConverter[\s\S]*?showInverse[\s\S]*?\/>/)
   const conv = fs.readFileSync(path.join(src, "components", "CurrencyConverter.tsx"), "utf8")
-  assert.match(conv, /showInverse = false,/) // off unless a page asks: the old pair layout is unchanged
+  assert.match(conv, /showInverse = false,/) // off unless a page asks
   assert.match(conv, /showInverse && base !== target && conv\.rate !== null \? `\$\{conv\.rateLabel\} · \$\{conv\.inverseRateLabel\}` : conv\.rateLabel/)
   assert.equal((conv.match(/\{rateLine\}/g) ?? []).length, 2)
-  const oldLayout = fs.readFileSync(path.join(src, "app", "[pair]", "PairPageClient.tsx"), "utf8")
-  assert.doesNotMatch(oldLayout, /showInverse/)
 })

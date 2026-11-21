@@ -56,16 +56,7 @@ test("flag values are only read behind showFlags (besides the hidden form value)
   assert.deepEqual(hits, [])
 })
 
-test("old pair layout: codes and names stay, no code added next to a name", () => {
-  const src = fs.readFileSync(path.join(SRC, "app", "[pair]", "PairPageClient.tsx"), "utf8")
-  assert.match(src, /\{base\} — \{baseInfo\.name\}/) // "EUR — Euro", not "EUR EUR — Euro"
-  assert.match(src, /\{base\} Drivers/)
-  assert.match(src, /\{baseInfo\.country\}/)
-  assert.doesNotMatch(src, /\{base\} \{baseInfo\.country\}/) // the country name stands alone
-  assert.match(src, /\{ label: "Base", value: base \}/)
-})
-
-test("shared converter (home, old pair layout): swap, amount field and Refresh are at least 44px", () => {
+test("shared converter (home page): swap, amount field and Refresh are at least 44px", () => {
   const conv = fs.readFileSync(path.join(SRC, "components", "CurrencyConverter.tsx"), "utf8")
   assert.match(conv, /className="swap-btn [^"]*min-w-\[44px\] min-h-\[44px\]/)
   assert.match(conv, /className="flex-1 min-w-0 min-h-\[44px\] bg-transparent/)

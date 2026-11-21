@@ -27,8 +27,6 @@ interface HomeHistoryTableProps {
 // - a change is shown as sign + ▲/▼ in amber (up) / teal (down), never in
 //   judging colours, because a rising rate is good for some readers and bad
 //   for others. A change that rounds to 0.00% has no arrow and no sign.
-// The old layout's HistoricalTable (194 pair pages, including the 20 November
-// control pages) is left as it is.
 export function HomeHistoryTable({ base, target, currentRate, currentLabel, currentDate, initialRows }: HomeHistoryTableProps) {
   const { comparisons, loading } = useHistoricalRates(base, target, currentRate, initialRows)
   const sig = pairSignificantDigits(base, target)
@@ -110,8 +108,6 @@ export function HomeHistoryTable({ base, target, currentRate, currentLabel, curr
                     <div className="flex justify-end">
                       <Sparkline
                         data={c.sparklineData}
-                        upColor={PV.up}
-                        downColor={PV.down}
                         title={`${base}/${target}, ${
                           c.coverageStart ? `since ${c.coverageStart}` : `last ${c.period.label.toLowerCase()}`
                         }, ${c.percentChange !== null ? formatPercentChange(c.percentChange) : "change unavailable"}`}

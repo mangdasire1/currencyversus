@@ -1,11 +1,9 @@
 import { notFound } from "next/navigation"
 import { CURRENCIES } from "@/lib/currencies"
 import { getInitialRateData, getBuildTimeMetalPrice, getBuildTimeHistory, getBuildTimeChart } from "@/lib/build-data"
-import { hasNewLayout } from "@/lib/pilot"
 import { getFAQSchema } from "@/lib/structured-data"
 import { routeCatalog, METAL_SLUGS, isValidPairRoute, codeToSlug } from "@/lib/routes"
 import { METALS } from "@/lib/metals"
-import { PairPageClient } from "./PairPageClient"
 import { PilotPairPageClient } from "./PilotPairPageClient"
 import { MetalPageClient } from "./MetalPageClient"
 import { MetalRatioPageClient } from "./MetalRatioPageClient"
@@ -142,41 +140,23 @@ export default async function PairPage({
     }
     const faqSchema = getFAQSchema(base, target, rateData?.rate ?? null, rateData?.date ?? null)
 
-    // NEW_LAYOUT_PAIRS (src/lib/pilot.ts): new layout with the chart; all
-    // other pages keep the existing layout.
-    if (hasNewLayout(pair)) {
-      const chart = await getBuildTimeChart(base, target)
-      return (
-        <>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-          />
-          <PilotPairPageClient
-            base={base}
-            target={target}
-            initialRate={rateData?.rate ?? null}
-            initialDate={rateData?.date ?? null}
-            initialHistory={history}
-            chart={chart}
-            builtAt={new Date().toISOString()}
-          />
-        </>
-      )
-    }
-
+    // Every currency pair renders the pair layout of Phase 7 (all 210 since
+    // 2026-11-20; the old layout was removed afterwards).
+    const chart = await getBuildTimeChart(base, target)
     return (
       <>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
-        <PairPageClient
+        <PilotPairPageClient
           base={base}
           target={target}
           initialRate={rateData?.rate ?? null}
           initialDate={rateData?.date ?? null}
           initialHistory={history}
+          chart={chart}
+          builtAt={new Date().toISOString()}
         />
       </>
     )

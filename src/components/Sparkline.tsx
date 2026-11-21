@@ -2,6 +2,7 @@
 
 import { LineChart, Line, YAxis } from "recharts"
 import { sparklineIsUp } from "@/lib/history"
+import { PV } from "./pilot/palette"
 import type { HistoricalPoint } from "@/lib/types"
 
 // Fixed pixel size: a sparkline never needs ResponsiveContainer, whose
@@ -15,19 +16,16 @@ interface SparklineProps {
   // chart carries information, so it gets an SVG <title> rather than being
   // hidden as decoration.
   title: string
-  // Line colour by direction (first vs last drawn point). Set by the caller:
-  // the old pair layout passes its own colours, the home page amber/teal.
-  upColor: string
-  downColor: string
 }
 
-export function Sparkline({ data, title, upColor, downColor }: SparklineProps) {
+export function Sparkline({ data, title }: SparklineProps) {
   if (!data || data.length < 2) {
     return <div className="rounded bg-white/5 animate-pulse" style={{ width: WIDTH, height: HEIGHT }} />
   }
 
-  // Colour comes from the drawn line's own first/last point.
-  const color = sparklineIsUp(data) ? upColor : downColor
+  // Direction colour from the drawn line's own first/last point: amber up,
+  // teal down — never green/red (pilot-ui.test.ts).
+  const color = sparklineIsUp(data) ? PV.up : PV.down
 
   return (
     <LineChart
