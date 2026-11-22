@@ -33,6 +33,7 @@ globalThis.fetch = (async (input: string | URL) => {
 const { startAutoRefresh } = await import("./refresh.ts")
 const { fetchMetalPrice, getLatestRate } = await import("./api.ts")
 const { FRESH_TTL } = await import("./cache.ts")
+const { retryAt } = await import("./backoff.ts")
 
 const MIN = 60_000
 const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve() }
@@ -60,6 +61,7 @@ function metalTab(visibility: ReturnType<typeof fakeVisibility>["source"]) {
     start: () => startAutoRefresh({
       freshTtlMs: FRESH_TTL.metal,
       getFetchedAt: () => fetchedAt,
+      retryAt: () => retryAt("metal_v2_XAU"),
       refresh: ({ force }) => load(force),
       visibility,
     }),
@@ -98,7 +100,7 @@ test("FX: after the 1-hour fresh TTL a visible tab sends a new provider request"
   let fetchedAt: number | null = null
   const load = async (force: boolean) => { fetchedAt = Date.parse((await getLatestRate("USD", "EUR", { force })).fetchedAt!) }
   await load(false)
-  const auto = startAutoRefresh({ freshTtlMs: FRESH_TTL.latest, getFetchedAt: () => fetchedAt, refresh: ({ force }) => load(force), visibility: vis.source })
+  const auto = startAutoRefresh({ freshTtlMs: FRESH_TTL.latest, getFetchedAt: () => fetchedAt, retryAt: () => retryAt("USD_EUR_latest_v2"), refresh: ({ force }) => load(force), visibility: vis.source })
   mock.timers.tick(59 * MIN); await flush()
   assert.equal(calls.fx, 1)
   mock.timers.tick(1 * MIN); await flush()

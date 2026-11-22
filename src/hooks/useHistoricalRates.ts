@@ -9,6 +9,7 @@ import { TIME_PERIODS } from "@/lib/currencies"
 import { loadPeriodHistory } from "@/lib/history"
 import type { PeriodHistory } from "@/lib/history"
 import { fetchPairSeries } from "@/lib/pair-series"
+import { documentVisibility, whenVisible } from "@/lib/refresh"
 import type { HistoricalComparison, TimePeriod } from "@/lib/types"
 
 interface UseHistoricalRatesResult {
@@ -102,40 +103,44 @@ export function useHistoricalRates(
     // requests (e.g. the home page's chart on the same pair) share one fetch.
     const fetchSeries = (start: string, end: string, signal?: AbortSignal) => fetchPairSeries(base, target, start, end, signal)
 
-    loadPeriodHistory(today, TIME_PERIODS, fetchSeries, controller.signal)
-      .then((rows) => {
-        if (cancelled) return
-        cacheSet(cacheKey, toCache(rows), FRESH_TTL.shortHistory, "history")
-        setState({ pairKey, rows, error: null })
-      })
-      .catch((err: Error) => {
-        if (cancelled) return
-        const stale = cacheGetStale(cacheKey, isCachedHistory)
-        const staleRows = stale ? fromCache(stale.data) : null
-        setState((prev) =>
-          staleRows
-            ? { pairKey, rows: staleRows, error: null }
-            : prev?.pairKey === pairKey && prev.rows.length > 0
-              ? { ...prev, error: err.message } // keep the embedded/previous rows for this pair
-              : {
-                  pairKey,
-                  rows: TIME_PERIODS.map((period) => ({
-                    period,
-                    requestedDate: toISODate(subtractMonths(today, period.months)),
-                    historicalDate: null,
-                    historicalRate: null,
-                    low: null,
-                    high: null,
-                    coverageStart: null,
-                    sparklineData: [],
-                  })),
-                  error: err.message,
-                }
-        )
-      })
+    // a background refresh: not from a hidden tab
+    const cancelWait = whenVisible(documentVisibility(), () => {
+      loadPeriodHistory(today, TIME_PERIODS, fetchSeries, controller.signal)
+        .then((rows) => {
+          if (cancelled) return
+          cacheSet(cacheKey, toCache(rows), FRESH_TTL.shortHistory, "history")
+          setState({ pairKey, rows, error: null })
+        })
+        .catch((err: Error) => {
+          if (cancelled) return
+          const stale = cacheGetStale(cacheKey, isCachedHistory)
+          const staleRows = stale ? fromCache(stale.data) : null
+          setState((prev) =>
+            staleRows
+              ? { pairKey, rows: staleRows, error: null }
+              : prev?.pairKey === pairKey && prev.rows.length > 0
+                ? { ...prev, error: err.message } // keep the embedded/previous rows for this pair
+                : {
+                    pairKey,
+                    rows: TIME_PERIODS.map((period) => ({
+                      period,
+                      requestedDate: toISODate(subtractMonths(today, period.months)),
+                      historicalDate: null,
+                      historicalRate: null,
+                      low: null,
+                      high: null,
+                      coverageStart: null,
+                      sparklineData: [],
+                    })),
+                    error: err.message,
+                  }
+          )
+        })
+    })
 
     return () => {
       cancelled = true
+      cancelWait()
       controller.abort()
     }
   }, [base, target, pairKey])

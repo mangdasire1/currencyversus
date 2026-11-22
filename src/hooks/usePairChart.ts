@@ -6,6 +6,7 @@ import { deriveChartPeriods, seriesRange } from "@/lib/history"
 import type { ChartPeriod } from "@/lib/history"
 import { isMetal } from "@/lib/metals"
 import { fetchPairSeries } from "@/lib/pair-series"
+import { documentVisibility, whenVisible } from "@/lib/refresh"
 
 // Chart periods are tagged with the pair they were derived for; periods for
 // any other pair are never returned.
@@ -39,20 +40,24 @@ export function usePairChart(
     const controller = new AbortController()
     const today = new Date()
     const { start, end } = seriesRange(today, TIME_PERIODS)
-    fetchPairSeries(base, target, start, end, controller.signal)
-      .then((series) => {
-        if (cancelled) return
-        const periods = series.length > 0 ? deriveChartPeriods(series, today) : null
-        // An empty answer never replaces periods this pair already shows.
-        setState((prev) => (periods ? { pairKey, periods, error: null } : prev?.pairKey === pairKey ? prev : { pairKey, periods: null, error: "no data" }))
-      })
-      .catch((err: Error) => {
-        if (cancelled) return
-        // Keep the embedded/previous periods for this pair; otherwise say so.
-        setState((prev) => (prev?.pairKey === pairKey && prev.periods ? { ...prev, error: err.message } : { pairKey, periods: null, error: err.message }))
-      })
+    // a background refresh: not from a hidden tab
+    const cancelWait = whenVisible(documentVisibility(), () => {
+      fetchPairSeries(base, target, start, end, controller.signal)
+        .then((series) => {
+          if (cancelled) return
+          const periods = series.length > 0 ? deriveChartPeriods(series, today) : null
+          // An empty answer never replaces periods this pair already shows.
+          setState((prev) => (periods ? { pairKey, periods, error: null } : prev?.pairKey === pairKey ? prev : { pairKey, periods: null, error: "no data" }))
+        })
+        .catch((err: Error) => {
+          if (cancelled) return
+          // Keep the embedded/previous periods for this pair; otherwise say so.
+          setState((prev) => (prev?.pairKey === pairKey && prev.periods ? { ...prev, error: err.message } : { pairKey, periods: null, error: err.message }))
+        })
+    })
     return () => {
       cancelled = true
+      cancelWait()
       controller.abort()
     }
   }, [base, target, pairKey, applicable])

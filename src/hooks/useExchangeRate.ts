@@ -5,6 +5,7 @@ import { getLatestRate, latestCacheKey } from "@/lib/api"
 import { cacheGet, cacheGetStale, onCacheUpdated, FRESH_TTL } from "@/lib/cache"
 import { isExchangeRateFor } from "@/lib/cache-schemas"
 import { startAutoRefresh, documentVisibility } from "@/lib/refresh"
+import { retryAt } from "@/lib/backoff"
 import type { AutoRefresh } from "@/lib/refresh"
 import { isMetal } from "@/lib/metals"
 import type { ExchangeRate } from "@/lib/types"
@@ -28,7 +29,8 @@ function isForPair(data: ExchangeRate | null, base: string, target: string): dat
 // and the effect revalidates silently in the background.
 //
 // The rate is kept current: re-checked when it passes its fresh TTL (1 hour)
-// while the tab is visible, and on return to the tab.
+// while the tab is visible, and on return to the tab. A failed check is
+// retried after a growing wait (src/lib/backoff.ts).
 export function useExchangeRate(
   base: string,
   target: string,
@@ -104,15 +106,16 @@ export function useExchangeRate(
 
     setError(null)
     setStale(false)
-    void load(false)
 
     const auto = startAutoRefresh({
       freshTtlMs: FRESH_TTL.latest,
+      retryAt: () => retryAt(latestCacheKey(base, target)),
       getFetchedAt: () => (fetchedAtRef.current ? Date.parse(fetchedAtRef.current) : null),
       refresh: ({ force }) => load(force),
       visibility: documentVisibility(),
     })
     autoRef.current = auto
+    void auto.check()
 
     // Another surface refreshed the same pair: show it here too.
     const key = latestCacheKey(base, target)

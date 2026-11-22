@@ -6,6 +6,7 @@ import { cacheGet, cacheSet, FRESH_TTL } from "./cache.ts"
 import { isExchangeRateFor, isMetalPriceFor } from "./cache-schemas.ts"
 import { parseGoldApiPrice } from "./gold-api.ts"
 import { sharedRequest } from "./inflight.ts"
+import { acceptCached, assertMayRequest, tracked } from "./backoff.ts"
 import { eurSymbols, crossRates, crossSeries } from "./ecb.ts"
 
 const BASE_URL = "https://api.frankfurter.dev/v1"
@@ -39,7 +40,8 @@ export function latestCacheKey(base: string, target: string): string {
 }
 
 // Latest FX rate for one pair. A fresh cache entry is returned without a
-// request unless `force` is set (manual "check now").
+// request unless `force` is set (manual "check now"). After a failure, requests
+// without `force` wait (backoff.ts).
 export async function getLatestRate(
   base: string,
   target: string,
@@ -48,14 +50,22 @@ export async function getLatestRate(
   const cacheKey = latestCacheKey(base, target)
   if (!force) {
     const cached = cacheGet(cacheKey, isExchangeRateFor(base, target))
-    if (cached) return cached
+    if (cached && acceptCached(cacheKey, cached.fetchedAt)) return cached
+    assertMayRequest(cacheKey)
   }
   // Identical concurrent requests (e.g. converter + Quick Stats on the same
-  // pair refreshing together) share one provider call.
-  const result = await sharedRequest(`latest_${base}_${target}`, () => fetchLatestRates(base, [target]))
-  const withMeta: ExchangeRate = { ...result, fetchedAt: new Date().toISOString() }
-  cacheSet(cacheKey, withMeta, FRESH_TTL.latest, "fx")
-  return withMeta
+  // pair refreshing together) share one provider call, and count as one
+  // success or failure.
+  return sharedRequest(`latest_${base}_${target}`, () =>
+    tracked(cacheKey, async () => {
+      const result = await fetchLatestRates(base, [target])
+      const withMeta: ExchangeRate = { ...result, fetchedAt: new Date().toISOString() }
+      // an answer without this pair's rate is a failure, not new data
+      if (!isExchangeRateFor(base, target)(withMeta)) throw new Error("rate response does not match the requested pair")
+      cacheSet(cacheKey, withMeta, FRESH_TTL.latest, "fx")
+      return withMeta
+    })
+  )
 }
 
 export async function fetchTimeSeries(
@@ -86,6 +96,7 @@ export function metalCacheKey(metal: MetalCode): string {
 }
 
 // A fresh cache entry is returned without a request unless `force` is set.
+// After a failure, requests without `force` wait (backoff.ts).
 export async function fetchMetalPrice(
   metal: MetalCode,
   { force = false }: { force?: boolean } = {}
@@ -93,24 +104,26 @@ export async function fetchMetalPrice(
   const cacheKey = metalCacheKey(metal)
   if (!force) {
     const cached = cacheGet(cacheKey, isMetalPriceFor(metal))
-    if (cached) return cached as MetalPrice // validator checked metal === requested metal
+    if (cached && acceptCached(cacheKey, cached.fetchedAt)) return cached as MetalPrice // validator checked metal === requested metal
+    assertMayRequest(cacheKey)
   }
 
-  const parsed = await sharedRequest(`metal_${metal}`, async () => {
-    const res = await fetch(`${METAL_API_BASE}/price/${metal}`)
-    if (!res.ok) throw new Error(`gold-api error: ${res.status}`)
-    return parseGoldApiPrice(await res.json())
-  })
-  if (!parsed) throw new Error("gold-api: price missing")
-
-  const result: MetalPrice = {
-    metal,
-    price: parsed.price,
-    priceTime: parsed.priceTime,
-    fetchedAt: new Date().toISOString(),
-  }
-  cacheSet(cacheKey, result, FRESH_TTL.metal, "metal")
-  return result
+  return sharedRequest(`metal_${metal}`, () =>
+    tracked(cacheKey, async () => {
+      const res = await fetch(`${METAL_API_BASE}/price/${metal}`)
+      if (!res.ok) throw new Error(`gold-api error: ${res.status}`)
+      const parsed = parseGoldApiPrice(await res.json())
+      if (!parsed) throw new Error("gold-api: price missing")
+      const result: MetalPrice = {
+        metal,
+        price: parsed.price,
+        priceTime: parsed.priceTime,
+        fetchedAt: new Date().toISOString(),
+      }
+      cacheSet(cacheKey, result, FRESH_TTL.metal, "metal")
+      return result
+    })
+  )
 }
 
 // Rate on a given date for one pair. The provider answers with the last

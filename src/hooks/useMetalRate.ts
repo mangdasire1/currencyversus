@@ -6,6 +6,7 @@ import type { MetalPrice } from "@/lib/api"
 import { cacheGet, cacheGetStale, onCacheUpdated, FRESH_TTL } from "@/lib/cache"
 import { isMetalPriceFor } from "@/lib/cache-schemas"
 import { startAutoRefresh, documentVisibility } from "@/lib/refresh"
+import { retryAt } from "@/lib/backoff"
 import type { AutoRefresh } from "@/lib/refresh"
 import type { MetalCode } from "@/lib/metals"
 
@@ -26,7 +27,8 @@ interface UseMetalRateResult {
 // initialPriceTime: the provider timestamp that belongs to initialPriceUsd.
 //
 // While enabled, the price is kept current: re-checked when it passes its
-// fresh TTL (15 min) while the tab is visible, and on return to the tab.
+// fresh TTL (15 min) while the tab is visible, and on return to the tab. A failed
+// check is retried after a growing wait (src/lib/backoff.ts).
 export function useMetalRate(
   metal: MetalCode,
   initialPriceUsd?: number | null,
@@ -94,15 +96,16 @@ export function useMetalRate(
       setLoading(false)
       return
     }
-    void load(false)
 
     const auto = startAutoRefresh({
       freshTtlMs: FRESH_TTL.metal,
+      retryAt: () => retryAt(metalCacheKey(metal)),
       getFetchedAt: () => (fetchedAtRef.current ? Date.parse(fetchedAtRef.current) : null),
       refresh: ({ force }) => load(force),
       visibility: documentVisibility(),
     })
     autoRef.current = auto
+    void auto.check()
 
     // Another surface refreshed the same metal: show it here too.
     const unsubscribe = onCacheUpdated(metalCacheKey(metal), () => {
