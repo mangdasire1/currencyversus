@@ -42,13 +42,15 @@ export function trMoney(en: string, code: string): string {
 
 // Percent sign before the number, as in Turkish ("%5"); the sign of a change
 // stays in front: "+60.07%" → "+%60,07", "-5.10%" → "-%5,10", "~0%" → "~%0".
+// Grouped like every Turkish number, although the English text is not (toFixed):
+// "+1403.57%" → "+%1.403,57".
 // Takes the text of formatPercentChange (format.ts): same rounding, same
 // "~0%" threshold as the English pages.
 export function trPercent(en: string): string {
   if (en === "—") return en
   const m = /^([+\-−~]?)(\d+(?:\.\d+)?)%$/.exec(en)
   if (!m) throw new Error(`trPercent: not an English percentage: ${JSON.stringify(en)}`)
-  return `${m[1]}%${trNumber(m[2])}`
+  return `${m[1]}%${trNumber(m[2].replace(/^\d+/, (int) => int.replace(/\B(?=(\d{3})+$)/g, ",")))}`
 }
 
 function parts(iso: string | null | undefined): [number, number, number] | null {

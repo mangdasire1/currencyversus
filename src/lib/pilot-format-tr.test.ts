@@ -56,7 +56,7 @@ test("sentences: two dates, used day, observations, rate line, chart label, shar
   assert.equal(trRateLabel("USD", "TRY", 50.5722), "1 dolar = 50,572 TL") // ECB significant digits, as "1 USD = 50.572 TRY"
   assert.equal(
     trChartAriaLabel("USD", "TRY", { points: [{ date: "2016-11-21", rate: 3.3635 }, { date: "2026-11-20", rate: 50.572 }], changePct: 1403.5677, start: null, end: null }),
-    "dolar/TL, Kasım 2016 ile Kasım 2026 arasında 3,3635 değerinden 50,572 değerine yükseldi; değişim +%1403,57",
+    "dolar/TL, Kasım 2016 ile Kasım 2026 arasında 3,3635 değerinden 50,572 değerine yükseldi; değişim +%1.403,57",
   )
   assert.match(trSharedLinkNote(null, [], 1), /^Paylaşılan bir bağlantıdan açıldı\. İkinci değer bugünün/)
   assert.match(trSharedLinkNote("2020-01-02", ["amount"], 3), /iki tarih de sabit.*yok sayıldı \(tutar\)\.$/)

@@ -45,7 +45,7 @@ test("Turkish currency card: Turkish names and formats, the 10-year line, neutra
   assert.equal(c.title, "Dolar / TL")
   assert.equal(c.codes, "USD / TRY")
   assert.equal(c.figure, "1 dolar = 50,572 TL") // ECB significant digits, as on the page
-  assert.deepEqual(c.change, { text: "+%1403,55", kind: "up", label: "dolar/TL kurunun 10 yıldaki değişimi" })
+  assert.deepEqual(c.change, { text: "+%1.403,55", kind: "up", label: "dolar/TL kurunun 10 yıldaki değişimi" })
   assert.equal(c.range, "Kasım 2016 – Kasım 2026")
   assert.deepEqual(c.dataLines, ["ECB referans kuru, 20.11.2026"])
   assert.equal(c.source, "Kaynak: Avrupa Merkez Bankası (Frankfurter API üzerinden)")

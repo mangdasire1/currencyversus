@@ -10,28 +10,31 @@ import { trParseAmount, trAmountErrorMessage, trAmountInput } from "@/lib/amount
 import { trCurrencyName, trRateLabel, trSharedLinkNote } from "@/lib/pilot-format-tr"
 import { readShareState, shareQuery, shareFieldCount, SHARE_DEFAULT_AMOUNT } from "@/lib/share-state"
 import { DEFAULT_CHART_PERIOD } from "@/lib/history"
-import type { ChartPeriod } from "@/lib/history"
-import type { ExchangeRate } from "@/lib/types"
+import type { ChartPeriod, PeriodHistory } from "@/lib/history"
+import type { ExchangeRate, TimePeriod } from "@/lib/types"
 import { PairChart } from "@/components/pilot/PairChart"
 import { TwoDatesTool } from "@/components/pilot/TwoDatesTool"
+import { PilotHistoryTable } from "@/components/pilot/PilotHistoryTable"
+import { trHistoryTableText } from "@/lib/history-table-tr"
 import { PV, MONO } from "@/components/pilot/palette"
 
 interface TrFxPageProps {
   path: string // "/tr/dolar-tl/"
-  base: string // "USD"
-  target: string // "TRY"
+  base: "USD" | "EUR"
+  target: "TRY"
   initialRate: number | null
   initialDate: string | null
   chart: ChartPeriod[] | null
+  initialHistory: PeriodHistory<TimePeriod>[] | null
   builtAt: string
 }
 
 // Turkish pilot currency page (task C3-3): Dolar/TL, Euro/TL. The same data
-// and components as the English pair page (build-time rate and 7-period chart
-// in the static HTML; the browser checks for a newer ECB rate), Turkish text
+// and components as the English pair page (build-time rate, 7-period chart and
+// history table in the static HTML; the browser checks for a newer ECB rate), Turkish text
 // and formats. No currency selectors: the page is about one pair; the
 // converter works in both directions in place.
-export function TrFxPage({ path, base, target, initialRate, initialDate, chart, builtAt }: TrFxPageProps) {
+export function TrFxPage({ path, base, target, initialRate, initialDate, chart, initialHistory, builtAt }: TrFxPageProps) {
   const id = useId()
   const serverRate: ExchangeRate | null =
     initialRate !== null && initialDate !== null ? { base, date: initialDate, rates: { [target]: initialRate } } : null
@@ -167,6 +170,16 @@ export function TrFxPage({ path, base, target, initialRate, initialDate, chart, 
         currentDate={fxDate}
         builtAt={builtAt}
         locale="tr"
+      />
+
+      <PilotHistoryTable
+        base={base}
+        target={target}
+        currentRate={rate}
+        currentLabel={rate !== null ? trRateLabel(base, target, rate) : null}
+        currentDate={fxDate}
+        initialRows={initialHistory}
+        text={trHistoryTableText(base, target)}
       />
     </>
   )

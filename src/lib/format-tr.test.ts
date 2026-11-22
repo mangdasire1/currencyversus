@@ -55,6 +55,10 @@ test("percent: sign of the change in front, % before the number, same ~0% thresh
   assert.equal(trPercent(formatPercentChange(-5.1)), "-%5,10")
   assert.equal(trPercent(formatPercentChange(0.004)), "~%0")
   assert.equal(formatPercentChange(60.0712), "+60.07%") // English unchanged
+  // thousands separator, as in every Turkish number
+  assert.equal(trPercent("+1403.57%"), "+%1.403,57")
+  assert.equal(trPercent("-999.99%"), "-%999,99")
+  assert.equal(trPercent("+1234567.00%"), "+%1.234.567,00")
 })
 
 test("dates: \"21 Kasım 2026\" in running text, \"21.11.2026\" in tables; UTC time kept in UTC", () => {
@@ -101,6 +105,7 @@ test("no leak: verify-locale fails a build where a Turkish format is on an Engli
     ["tr", "ECB kuru 2026-11-21", "ISO date"],
     ["tr", "Nov 2026", "English month"],
     ["tr", "değişim 60.07%", "English percentage"],
+    ["tr", "değişim +%1403,57", "ungrouped percentage"],
   ]
   for (const [lang, body, what] of leaks) {
     const out = run(site({ ...clean, "x/index.html": page(lang, body) }))

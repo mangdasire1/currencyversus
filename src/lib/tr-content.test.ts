@@ -34,7 +34,7 @@ test("currency pages: 7-period chart, two-dates tool with its share link, and a 
   for (const t of ["günlük referans kurudur", "iş günlerinde yaklaşık 16:00 CET", "Canlı piyasa kuru değildir", "döviz bürosunun alış/satış kuru da değildir"]) assert.ok(note.includes(t), t)
   for (const [slug, base] of [["dolar-tl", "USD"], ["euro-tl", "EUR"]]) {
     const p = page(slug)
-    assert.match(p, new RegExp(`getInitialRateData\\("${base}", "TRY"\\), getBuildTimeChart\\("${base}", "TRY"\\)`), slug) // build-time data → static HTML
+    assert.match(p, new RegExp(`getInitialRateData\\("${base}", "TRY"\\),\\s*getBuildTimeChart\\("${base}", "TRY"\\)`), slug) // build-time data → static HTML
     assert.match(p, /<TrFxPage/)
   }
 })

@@ -13,6 +13,7 @@
 //   an ISO date in the text                2026-11-21 (Turkish pages write 21.11.2026)
 //   an English month abbreviation + year   Nov 2026
 //   an English percentage                  60.07%
+//   a percentage without grouping          %1403,57 (Turkish writes %1.403,57)
 import fs from "node:fs"
 import path from "node:path"
 
@@ -30,6 +31,7 @@ const RULES = {
     ["ISO date", /\b\d{4}-\d{2}-\d{2}\b/],
     ["English month", /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{4}\b/],
     ["English percentage", /\d(?:\.\d+)?%/],
+    ["ungrouped percentage", /%\d{4,}/],
   ],
 }
 

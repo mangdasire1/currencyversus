@@ -15,6 +15,8 @@
 // - links to the other four Turkish pages;
 // - currency pages: the 7 Turkish chart tabs and the line, and the same rate
 //   as the English page in Turkish format ("1 USD = 50.572 TRY" ⇔ "1 dolar = 50,572 TL");
+// - currency pages' history table: the English table's seven rows, figure for
+//   figure, in Turkish formats, with the same neutral colours and arrows;
 // - gold pages: the build-time price in the static HTML, the English page's
 //   figure in Turkish format (per gram in TL; per troy ounce in USD).
 import fs from "node:fs"
@@ -32,6 +34,50 @@ const decode = (s) => s.replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(
 const text = (h) => decode(h.replace(/<script\b[\s\S]*?<\/script>/g, " ").replace(/<style\b[\s\S]*?<\/style>/g, " ").replace(/<!-- -->/g, "").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ")
 const alternates = (h) => Object.fromEntries([...h.matchAll(/<link rel="alternate" hrefLang="([^"]+)" href="([^"]+)"\/>/g)].map((m) => [m[1], m[2]]))
 const fileFor = (url) => path.join(outDir, url.replace(SITE, ""), "index.html")
+
+// The history table as text cells. Written without the site's formatters on
+// purpose: a bug in format-tr.ts must not be able to agree with itself here.
+function historyTable(h) {
+  const s = h.match(/<section aria-labelledby="history-heading"[\s\S]*?<\/section>/)?.[0]
+  if (!s) return null
+  const cells = (row) => [...row.matchAll(/<(td|th)\b[^>]*>([\s\S]*?)<\/\1>/g)].map((c) => ({ html: c[0], text: text(c[2]).trim() }))
+  const head = s.match(/<thead>[\s\S]*?<\/thead>/)?.[0] ?? ""
+  const body = s.match(/<tbody>[\s\S]*?<\/tbody>/)?.[0] ?? ""
+  return { columns: cells(head).map((c) => c.text), rows: [...body.matchAll(/<tr\b[\s\S]*?<\/tr>/g)].map((r) => cells(r[0])), text: text(s) }
+}
+const EN_PERIODS = ["1 Month", "3 Months", "6 Months", "1 Year", "3 Years", "5 Years", "10 Years"]
+const TR_PERIODS = ["1 ay", "3 ay", "6 ay", "1 yıl", "3 yıl", "5 yıl", "10 yıl"]
+const swapSeparators = (n) => n.replace(/[.,]/g, (c) => (c === "." ? "," : "."))
+const dotted = (s) => s.replace(/(\d{4})-(\d{2})-(\d{2})/g, "$3.$2.$1")
+const colour = (cell) => cell.html.match(/color:(#[0-9A-Fa-f]{6})/g)?.at(-1)?.slice(6).toUpperCase()
+
+function checkHistory(page, trHtml, enHtml, base) {
+  const t = historyTable(trHtml)
+  const e = historyTable(enHtml)
+  ok(t && e, page, "no history table in the static HTML")
+  if (!t || !e) return
+  ok(t.columns.join("|") === "Dönem|O zaman|Kullanılan gün|Değişim", page, `history columns "${t.columns.join("|")}"`)
+  const now = e.text.match(new RegExp(`Now: 1 ${base} = ([\\d,.]+) TRY \\(ECB reference rate of ([\\d-]+)\\)`))
+  const nowTr = now && `Şimdi: 1 ${base === "USD" ? "dolar" : "euro"} = ${swapSeparators(now[1])} TL (ECB referans kuru, ${dotted(now[2])})`
+  ok(nowTr && t.text.includes(nowTr), page, `history "Şimdi" line is not "${nowTr}"`)
+  ok(t.rows.length === 7 && e.rows.length === 7, page, `history rows: ${t.rows.length}, English ${e.rows.length}`)
+  if (t.rows.length !== 7 || e.rows.length !== 7) return
+  e.rows.forEach(([period, then, day, change], i) => {
+    const row = `history row "${TR_PERIODS[i]}"`
+    const [trPeriod, trThen, trDay, trChange] = t.rows[i]
+    ok(period.text.startsWith(EN_PERIODS[i]) && trPeriod.text.startsWith(TR_PERIODS[i]), page, `${row}: period "${trPeriod.text}"`)
+    ok(/\d/.test(trThen.text) || trPeriod.text.includes("veri yalnızca"), page, `${row}: no value`)
+    ok(trThen.text === swapSeparators(then.text), page, `${row}: then "${trThen.text}", English "${then.text}"`)
+    ok(trDay.text === dotted(day.text).replace(/\bfor /, "istenen: "), page, `${row}: used day "${trDay.text}", English "${day.text}"`)
+    const m = change.text.match(/^(?:([▲▼]) ?)?([+-]?)(\d+)\.(\d\d)% ?(up|down|unchanged)$/)
+    const wanted = m
+      ? `${m[1] ? m[1] + " " : ""}${m[2]}%${m[3].replace(/\B(?=(\d{3})+$)/g, ".")},${m[4]} ${{ up: "yükseliş", down: "düşüş", unchanged: "değişmedi" }[m[5]]}`
+      : change.text
+    ok(trChange.text === wanted, page, `${row}: change "${trChange.text}", expected "${wanted}"`)
+    const neutral = !m ? null : m[5] === "up" ? "#D99A4E" : m[5] === "down" ? "#52B6C4" : "#9AA1AE"
+    ok(colour(trChange) === colour(change) && (!neutral || colour(trChange) === neutral), page, `${row}: colour ${colour(trChange)}, expected ${neutral}`)
+  })
+}
 
 let checks = 0
 const ok = (cond, page, what) => { checks++; if (!cond) fail(page, what) }
@@ -114,6 +160,7 @@ for (const p of TR_PAIRS) {
     ok(JSON.stringify(tabs) === JSON.stringify(Object.values(TR_PERIOD_SHORT)), p.tr, `chart tabs ${JSON.stringify(tabs)}`)
     ok(/<svg role="img" aria-label="[^"]+"[^>]*>[\s\S]*?<path d="M[\d.]+/.test(tr), p.tr, "no chart line in the static HTML")
     const enRate = e.match(new RegExp(`1 ${base} = ([\\d,.]+) TRY`))?.[1]
+    checkHistory(p.tr, tr, en, base)
     const name = base === "USD" ? "dolar" : "euro"
     ok(enRate && t.includes(`1 ${name} = ${trNumber(enRate)} TL`), p.tr, `rate: English "1 ${base} = ${enRate} TRY", Turkish page lacks "1 ${name} = ${enRate ? trNumber(enRate) : "?"} TL"`)
   }
