@@ -22,10 +22,10 @@ test("history table text: Turkish columns, periods, figures and dates", () => {
   assert.equal(t.coverage("2005-01-03"), "veri yalnızca 03.01.2005 tarihinden itibaren")
   assert.equal(t.now("1 dolar = 50,572 TL", "2026-11-20"), "Şimdi: 1 dolar = 50,572 TL (ECB referans kuru, 20.11.2026)")
   assert.equal(t.now(null, null), "Şimdi: —")
-  assert.equal(t.direction, "Sayının yükselmesi, 1 doların daha çok TL ettiği anlamına gelir: elinde dolar olan için iyidir, TL kazanan için değil.")
+  assert.equal(t.direction, "Sayının yükselmesi, 1 doların daha çok TL ettiği anlamına gelir: elinde dolar olan için iyidir, geliri TL olan için değil.")
   const euro = trHistoryTableText("EUR", "TRY")
   assert.equal(euro.heading, "Euro/TL: önceki tarihlerle karşılaştırma")
-  assert.match(euro.direction, /1 euronun daha çok TL .* elinde euro olan/)
+  assert.equal(euro.direction, "Sayının yükselmesi, 1 euronun daha çok TL ettiği anlamına gelir: elinde euro olan için iyidir, geliri TL olan için değil.")
   assert.match(t.footnote, /gün içi seviye değildir/)
 })
 

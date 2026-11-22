@@ -38,7 +38,7 @@ export function trHistoryTableText(base: "USD" | "EUR", target: "TRY"): HistoryT
     requested: (iso) => `istenen: ${day(iso)}`,
     coverage: (iso) => `veri yalnızca ${day(iso)} tarihinden itibaren`,
     // directionNote (pilot-format.ts): no value judgement, only whom it helps
-    direction: `Sayının yükselmesi, 1 ${GENITIVE[base]} daha çok ${to} ettiği anlamına gelir: elinde ${from} olan için iyidir, ${to} kazanan için değil.`,
+    direction: `Sayının yükselmesi, 1 ${GENITIVE[base]} daha çok ${to} ettiği anlamına gelir: elinde ${from} olan için iyidir, geliri ${to} olan için değil.`,
     footnote:
       "“O zaman”, dönemin başladığı gün ya da ondan önceki son iş günü yayımlanan günlük ECB referans kurudur (gün içi seviye değildir). " +
       "“istenen”, hafta sonuna ya da tatile denk geldiği için kuru olmayan tarihi gösterir.",
