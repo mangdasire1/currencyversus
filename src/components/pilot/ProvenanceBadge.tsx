@@ -22,7 +22,7 @@ export function ProvenanceBadge({ fxDate, fetchedAt, builtAt, stale, staleAgeMs,
   const checked = fetchedAt ? formatUtcTime(fetchedAt) : `${formatUtcTime(builtAt)} (when this page was built)`
   return (
     <details className="group" style={{ color: PV.dim }}>
-      <summary className="flex flex-wrap items-center gap-x-3 gap-y-1 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-sm">
+      <summary className="flex flex-wrap items-center gap-x-3 gap-y-1 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-sm min-h-[44px]">
         <span className="inline-flex items-center gap-2 rounded-full px-3 py-1" style={{ background: PV.raised, border: `1px solid ${PV.border}`, ...MONO }}>
           <span aria-hidden="true" className="inline-block w-2 h-2 rounded-full" style={{ background: PV.accentFill }} />
           <span style={{ color: PV.text }}>ECB</span>
