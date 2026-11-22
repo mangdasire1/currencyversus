@@ -2,7 +2,7 @@ import { RefreshCw } from "lucide-react"
 import { PV, MONO } from "./palette"
 import { formatBadgeDate } from "@/lib/pilot-format"
 import { formatUtcTime } from "@/lib/utils"
-import { formatAge } from "@/lib/format"
+import { SavedDataNote } from "@/components/SavedDataNote"
 
 interface ProvenanceBadgeProps {
   fxDate: string | null // ECB publication date of the rate shown
@@ -32,11 +32,7 @@ export function ProvenanceBadge({ fxDate, fetchedAt, builtAt, stale, staleAgeMs,
           <span className="group-open:hidden">Where this comes from</span>
           <span className="hidden group-open:inline">Hide details</span>
         </span>
-        {stale && (
-          <span style={{ color: PV.up }}>
-            Showing saved data{staleAgeMs !== null ? ` (${formatAge(staleAgeMs)})` : ""}
-          </span>
-        )}
+        {stale && <SavedDataNote ageMs={staleAgeMs} />}
       </summary>
       <div className="mt-3 rounded-xl p-4 text-sm leading-relaxed flex flex-col gap-2" style={{ background: PV.surface, border: `1px solid ${PV.border}` }}>
         <p>

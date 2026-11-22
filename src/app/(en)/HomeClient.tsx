@@ -21,6 +21,7 @@ import { isMetal, OZ_TO_GRAM } from "@/lib/metals"
 import type { MetalCode } from "@/lib/metals"
 import { formatCardUsd } from "@/lib/metal-cards"
 import { HomeMetalCard } from "@/components/HomeMetalCard"
+import { SavedDataNote } from "@/components/SavedDataNote"
 import { selectedMetal } from "@/lib/home-metal-card"
 
 const POPULAR_PAIRS = [
@@ -96,11 +97,12 @@ export function HomeClient({
   const [chartPeriod, setChartPeriod] = useState(DEFAULT_CHART_PERIOD)
 
   // Metal prices for Precious Metals section (refreshed client-side, seeded with build-time values)
-  const { price: goldUsd } = useMetalRate("XAU", initialGoldUsd, true, initialMetalTimes.XAU)
-  const { price: silverUsd } = useMetalRate("XAG", initialSilverUsd, true, initialMetalTimes.XAG)
-  const { price: platinumUsd } = useMetalRate("XPT", initialPlatinumUsd, true, initialMetalTimes.XPT)
-  const { price: palladiumUsd } = useMetalRate("XPD", initialPalladiumUsd, true, initialMetalTimes.XPD)
-  const metalUsd: Record<MetalCode, number | null> = { XAU: goldUsd, XAG: silverUsd, XPT: platinumUsd, XPD: palladiumUsd }
+  const gold = useMetalRate("XAU", initialGoldUsd, true, initialMetalTimes.XAU)
+  const silver = useMetalRate("XAG", initialSilverUsd, true, initialMetalTimes.XAG)
+  const platinum = useMetalRate("XPT", initialPlatinumUsd, true, initialMetalTimes.XPT)
+  const palladium = useMetalRate("XPD", initialPalladiumUsd, true, initialMetalTimes.XPD)
+  const metalRates = { XAU: gold, XAG: silver, XPT: platinum, XPD: palladium }
+  const metalUsd: Record<MetalCode, number | null> = { XAU: gold.price, XAG: silver.price, XPT: platinum.price, XPD: palladium.price }
   const metalOnSide = selectedMetal(base, target)
 
   return (
@@ -148,6 +150,8 @@ export function HomeClient({
                   name={METAL_CARDS.find((m) => m.code === metalOnSide)!.name}
                   other={metalOnSide === base ? target : base}
                   usdPerOz={metalUsd[metalOnSide as MetalCode]}
+                  stale={metalRates[metalOnSide as MetalCode].stale}
+                  staleAgeMs={metalRates[metalOnSide as MetalCode].staleAgeMs}
                 />
               )}
               {/* Chart — currency pairs only, like the historical table */}
@@ -201,6 +205,7 @@ export function HomeClient({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {METAL_CARDS.map(({ code, name, href, more }) => {
                   const usd = metalUsd[code]
+                  const { stale, staleAgeMs } = metalRates[code]
                   const gram = usd !== null ? usd / OZ_TO_GRAM : null
                   return (
                     <Link
@@ -229,6 +234,11 @@ export function HomeClient({
                         <div className="text-sm font-mono text-slate-400">
                           {gram !== null && usd !== null ? `${formatCardUsd(gram, code, usd)} / g` : ""}
                         </div>
+                        {stale && usd !== null && (
+                          <div className="text-sm">
+                            <SavedDataNote ageMs={staleAgeMs} />
+                          </div>
+                        )}
                       </div>
                       <div className="text-[10px] text-[#6366f1] font-mono uppercase tracking-wider group-hover:underline">
                         {more}

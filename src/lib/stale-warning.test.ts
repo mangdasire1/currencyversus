@@ -37,10 +37,25 @@ test("Turkish pages: one saved-data note, under the result on the four detail pa
 test("English pair, metal and ratio pages: the warning they show for saved data", () => {
   assert.match(read("app", "(en)", "[pair]", "PilotPairPageClient.tsx"), /stale=\{forThisPair && conv\.status === "stale"\}/)
   // in the summary, so it is visible while the details are closed
-  assert.match(read("components", "pilot", "ProvenanceBadge.tsx"), /<summary\b[\s\S]*\{stale && \([\s\S]*Showing saved data[\s\S]*<\/summary>/)
+  assert.match(read("components", "pilot", "ProvenanceBadge.tsx"), /<summary\b[\s\S]*\{stale && <SavedDataNote ageMs=\{staleAgeMs\} \/>\}[\s\S]*<\/summary>/)
   assert.match(read("app", "(en)", "[pair]", "MetalPageClient.tsx"), /\{perOz\.status === "stale" && \(\s*<DataFreshness /)
   assert.match(read("components", "DataFreshness.tsx"), /\{conv\.status === "stale" && \([\s\S]{0,120}Showing cached data/)
   const ratio = read("app", "(en)", "[pair]", "MetalRatioPageClient.tsx")
   assert.match(ratio, /const isStale = goldStale \|\| silverStale/)
   assert.match(ratio, /\{isStale && \([\s\S]{0,120}Showing cached data/)
+})
+
+test("home: each metal card says so for its own saved price, with the pair pages' component", () => {
+  const note = read("components", "SavedDataNote.tsx")
+  assert.match(note, /<span style=\{\{ color: PV\.up \}\}>Showing saved data\{ageMs !== null \? ` \(\$\{formatAge\(ageMs\)\}\)` : ""\}<\/span>/)
+  const home = read("app", "(en)", "HomeClient.tsx")
+  assert.match(home, /const metalRates = \{ XAU: gold, XAG: silver, XPT: platinum, XPD: palladium \}/)
+  assert.match(home, /const \{ stale, staleAgeMs \} = metalRates\[code\]/)
+  assert.match(home, /\{stale && usd !== null && \(\s*<div className="text-sm">\s*<SavedDataNote ageMs=\{staleAgeMs\} \/>/)
+  assert.match(home, /stale=\{metalRates\[metalOnSide as MetalCode\]\.stale\}\s*staleAgeMs=\{metalRates\[metalOnSide as MetalCode\]\.staleAgeMs\}/)
+  assert.match(read("components", "HomeMetalCard.tsx"), /\{stale && usdPerOz !== null && \(\s*<p className="text-sm">\s*<SavedDataNote ageMs=\{staleAgeMs\} \/>/)
+  // one wording, one place
+  for (const f of [["app", "(en)", "HomeClient.tsx"], ["components", "HomeMetalCard.tsx"], ["components", "pilot", "ProvenanceBadge.tsx"]]) {
+    assert.doesNotMatch(read(...f), /Showing saved data/, f.join("/"))
+  }
 })

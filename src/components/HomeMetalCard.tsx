@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { MetalIcon } from "./MetalIcon"
+import { SavedDataNote } from "./SavedDataNote"
 import { formatCardUsd } from "@/lib/metal-cards"
 import { GRAMS_PER_TROY_OUNCE, GRAMS_PER_AVOIRDUPOIS_OUNCE } from "@/lib/metal-units"
 import { OZ_TO_GRAM } from "@/lib/metals"
@@ -9,7 +10,21 @@ import { metalPagePath } from "@/lib/home-metal-card"
 // Only what the page already shows elsewhere: the same USD prices as the
 // Precious Metals cards (same rule, formatCardUsd), the troy-ounce note of
 // the metals and method pages, and a link to the metal's own page.
-export function HomeMetalCard({ metal, name, other, usdPerOz }: { metal: string; name: string; other: string; usdPerOz: number | null }) {
+export function HomeMetalCard({
+  metal,
+  name,
+  other,
+  usdPerOz,
+  stale,
+  staleAgeMs,
+}: {
+  metal: string
+  name: string
+  other: string
+  usdPerOz: number | null
+  stale: boolean
+  staleAgeMs: number | null
+}) {
   const href = metalPagePath(metal, other)
   const currency = href.split("-vs-")[1].replace("/", "").toUpperCase()
   return (
@@ -28,6 +43,11 @@ export function HomeMetalCard({ metal, name, other, usdPerOz }: { metal: string;
         <p className="text-sm font-mono text-slate-300">
           {usdPerOz !== null ? `${formatCardUsd(usdPerOz / OZ_TO_GRAM, metal, usdPerOz)} per gram` : ""}
         </p>
+        {stale && usdPerOz !== null && (
+          <p className="text-sm">
+            <SavedDataNote ageMs={staleAgeMs} />
+          </p>
+        )}
         <p className="text-xs text-slate-400">In US dollars, from gold-api.com. The site has no historical metal prices, so there is no chart.</p>
       </div>
       <p className="text-sm text-slate-300 leading-relaxed">
