@@ -17,6 +17,7 @@ import { TwoDatesTool } from "@/components/pilot/TwoDatesTool"
 import { PilotHistoryTable } from "@/components/pilot/PilotHistoryTable"
 import { trHistoryTableText } from "@/lib/history-table-tr"
 import { PV, MONO } from "@/components/pilot/palette"
+import { TrStaleNote } from "./TrStaleNote"
 
 interface TrFxPageProps {
   path: string // "/tr/dolar-tl/"
@@ -49,6 +50,7 @@ export function TrFxPage({ path, base, target, initialRate, initialDate, chart, 
   const forThisPair = conv.base === base && conv.quote === target
   const rate = (forThisPair ? conv.rate : null) ?? initialRate
   const fxDate = (forThisPair ? conv.fxDate : null) ?? initialDate
+  const stale = forThisPair && conv.status === "stale"
   const from = reversed ? target : base
   const to = reversed ? base : target
   const result = value !== null && rate !== null ? (reversed ? value / rate : value * rate) : null
@@ -132,6 +134,7 @@ export function TrFxPage({ path, base, target, initialRate, initialDate, chart, 
             </p>
           )}
         </div>
+        {stale && <TrStaleNote />}
       </section>
 
       {/* What the figure is, short and visible: the reader will compare it with the bank's rate */}

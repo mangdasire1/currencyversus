@@ -9,6 +9,7 @@ import { trMoney, trDateShort, trUtcTime } from "@/lib/format-tr"
 import { trRateLabel } from "@/lib/pilot-format-tr"
 import type { ExchangeRate } from "@/lib/types"
 import { PV, MONO } from "@/components/pilot/palette"
+import { TrStaleNote } from "./TrStaleNote"
 
 interface TrHomeListProps {
   usd: { rate: number; date: string } | null // ECB USD→TRY at build time
@@ -84,11 +85,7 @@ export function TrHomeList({ usd, eur, gold }: TrHomeListProps) {
         </p>
       </section>
 
-      {stale && (
-        <p role="status" className="text-sm" style={{ color: PV.up }}>
-          Güncel veri alınamadı; kayıtlı değerler gösteriliyor.
-        </p>
-      )}
+      {stale && <TrStaleNote />}
     </>
   )
 }

@@ -8,6 +8,7 @@ import { trUtcTime, trDateShort } from "@/lib/format-tr"
 import type { ExchangeRate } from "@/lib/types"
 import { MetalUnitConverter } from "@/components/MetalUnitConverter"
 import { PV, MONO } from "@/components/pilot/palette"
+import { TrStaleNote } from "./TrStaleNote"
 
 interface TrGoldPageProps {
   target: "TRY" | "USD"
@@ -46,7 +47,13 @@ export function TrGoldPage({ target, initialOzPriceUsd, initialPriceTime, initia
         status={perOz.status === "loading" ? "Fiyat yükleniyor…" : perOz.rate === null ? "Fiyat şu anda alınamıyor." : null}
         locale="tr"
         initialUnit={initialUnit}
-        resultNote={resultNote}
+        resultNote={
+          <>
+            {resultNote}
+            {/* in the result's card, after the note that must come first */}
+            {perOz.status === "stale" && <TrStaleNote />}
+          </>
+        }
       />
       <div className="flex flex-col gap-1 text-xs" style={{ ...MONO, color: PV.faint }}>
         <p>
