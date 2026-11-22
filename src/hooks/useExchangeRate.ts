@@ -6,6 +6,7 @@ import { cacheGet, cacheGetStale, onCacheUpdated, FRESH_TTL } from "@/lib/cache"
 import { isExchangeRateFor } from "@/lib/cache-schemas"
 import { startAutoRefresh, documentVisibility } from "@/lib/refresh"
 import { retryAt } from "@/lib/backoff"
+import { newest, rateTime } from "@/lib/newer"
 import type { AutoRefresh } from "@/lib/refresh"
 import { isMetal } from "@/lib/metals"
 import type { ExchangeRate } from "@/lib/types"
@@ -26,7 +27,8 @@ function isForPair(data: ExchangeRate | null, base: string, target: string): dat
 
 // initialData: pass a pre-built ExchangeRate for SSR hydration (pair pages).
 // When provided, the component renders with real data immediately (no skeleton)
-// and the effect revalidates silently in the background.
+// and the effect revalidates silently in the background. From then on the
+// newer of build and browser data is shown (src/lib/newer.ts).
 //
 // The rate is kept current: re-checked when it passes its fresh TTL (1 hour)
 // while the tab is visible, and on return to the tab. A failed check is
@@ -46,16 +48,35 @@ export function useExchangeRate(
   const requestId = useRef(0) // only the latest request may write state
   const fetchedAtRef = useRef<string | null>(null)
   const autoRef = useRef<AutoRefresh | null>(null)
+  const shownRef = useRef<ExchangeRate | null>(initialData ?? null)
+  const buildRef = useRef(initialData)
+  buildRef.current = initialData
 
   const applicable = !!base && !!target && base !== target && !isMetal(base) && !isMetal(target)
 
-  const apply = useCallback((rate: ExchangeRate) => {
-    fetchedAtRef.current = rate.fetchedAt ?? null
-    setData(rate)
-    setStale(false)
-    setStaleAgeMs(null)
-    setError(null)
-  }, [])
+  // Shows the newest of the candidate, the build's rate and the one on screen
+  // (the last two only for this pair) and returns it.
+  const show = useCallback(
+    (candidate: ExchangeRate): ExchangeRate => {
+      const held = [shownRef.current, buildRef.current ?? null].map((r) => (isForPair(r, base, target) ? r : null))
+      const best = newest(candidate, held, rateTime)
+      shownRef.current = best
+      setData(best)
+      return best
+    },
+    [base, target]
+  )
+
+  const apply = useCallback(
+    (rate: ExchangeRate) => {
+      fetchedAtRef.current = rate.fetchedAt ?? null // when last checked, even if older than what is shown
+      show(rate)
+      setStale(false)
+      setStaleAgeMs(null)
+      setError(null)
+    },
+    [show]
+  )
 
   const load = useCallback(
     async (force: boolean) => {
@@ -70,9 +91,10 @@ export function useExchangeRate(
         const staleHit = cacheGetStale(latestCacheKey(base, target), isExchangeRateFor(base, target))
         if (staleHit) {
           fetchedAtRef.current = staleHit.data.fetchedAt ?? null
-          setData(staleHit.data)
+          const shown = show(staleHit.data)
           setStale(true)
-          setStaleAgeMs(staleHit.ageMs)
+          // the entry's age says nothing about newer data kept on screen
+          setStaleAgeMs(shown === staleHit.data ? staleHit.ageMs : null)
         } else {
           // Keep whatever this pair already shows (e.g. build-time data) and
           // mark it stale; with nothing to show, surface the error.
@@ -87,7 +109,7 @@ export function useExchangeRate(
         }
       }
     },
-    [base, target, apply]
+    [base, target, apply, show]
   )
 
   useEffect(() => {
@@ -106,6 +128,13 @@ export function useExchangeRate(
 
     setError(null)
     setStale(false)
+    // Before any answer (it can take 10 s, or wait until the tab is seen): the
+    // build's rate, or the saved one when that is newer.
+    const build = buildRef.current ?? null
+    if (isForPair(build, base, target)) {
+      const kept = cacheGetStale(latestCacheKey(base, target), isExchangeRateFor(base, target))
+      show(newest(build, [kept?.data], rateTime))
+    }
 
     const auto = startAutoRefresh({
       freshTtlMs: FRESH_TTL.latest,
@@ -134,7 +163,7 @@ export function useExchangeRate(
       unsubscribe()
       setRefreshing(false)
     }
-  }, [base, target, applicable, load, apply]) // initialData intentionally excluded: used only as useState seed
+  }, [base, target, applicable, load, apply, show]) // initialData intentionally excluded: read through buildRef
 
   const refresh = useCallback(() => {
     if (autoRef.current) void autoRef.current.refreshNow()

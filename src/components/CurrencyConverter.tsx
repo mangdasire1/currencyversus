@@ -27,6 +27,8 @@ interface CurrencyConverterProps {
   initialOzPriceTargetUsd?: number | null
   initialMetalPriceTime?: string | null // provider time of the seeded metal price
   showFlags?: boolean // flag emoji next to codes (see CurrencySelect)
+  // build-time prices with their provider times (home page): one per metal
+  initialMetals?: { usd: Partial<Record<MetalCode, number | null>>; time: Partial<Record<MetalCode, string | null>> }
   initialFx?: ExchangeRate | null // build-time rate (home page's default pair); seeds the first view
   showInverse?: boolean // add the inverse rate to the rate line (home page; off on the old pair layout)
 }
@@ -43,6 +45,7 @@ export function CurrencyConverter({
   initialMetalPriceTime,
   showFlags = true,
   initialFx,
+  initialMetals,
   showInverse = false,
 }: CurrencyConverterProps) {
   const [amount, setAmount] = useState("1")
@@ -62,8 +65,8 @@ export function CurrencyConverter({
   const amountErrorId = `${idBase}-amount-error`
   const resultLabelId = `${idBase}-result-label`
 
-  const initialMetalUsd: Partial<Record<MetalCode, number | null>> = {}
-  const initialMetalTime: Partial<Record<MetalCode, string | null>> = {}
+  const initialMetalUsd: Partial<Record<MetalCode, number | null>> = { ...initialMetals?.usd }
+  const initialMetalTime: Partial<Record<MetalCode, string | null>> = { ...initialMetals?.time }
   if (baseIsMetal && initialOzPriceBaseUsd != null) {
     initialMetalUsd[base as MetalCode] = initialOzPriceBaseUsd
     initialMetalTime[base as MetalCode] = initialMetalPriceTime ?? null

@@ -32,6 +32,12 @@ export default async function Page() {
       initialSilverUsd={silverData?.price ?? null}
       initialPlatinumUsd={platinumData?.price ?? null}
       initialPalladiumUsd={palladiumData?.price ?? null}
+      initialMetalTimes={{
+        XAU: goldData?.priceTime ?? null,
+        XAG: silverData?.priceTime ?? null,
+        XPT: platinumData?.priceTime ?? null,
+        XPD: palladiumData?.priceTime ?? null,
+      }}
       defaultBase={DEFAULT_BASE}
       defaultTarget={DEFAULT_TARGET}
       initialRate={rateData?.rate ?? null}

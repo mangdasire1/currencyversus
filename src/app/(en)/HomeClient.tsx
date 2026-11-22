@@ -43,6 +43,8 @@ interface HomeClientProps {
   initialSilverUsd: number | null
   initialPlatinumUsd: number | null
   initialPalladiumUsd: number | null
+  // the provider's time of each price: is the build's or the browser's newer?
+  initialMetalTimes: Record<MetalCode, string | null>
   // Build-time data for the default pair (page.tsx), embedded in the HTML
   defaultBase: string
   defaultTarget: string
@@ -65,6 +67,7 @@ export function HomeClient({
   initialSilverUsd,
   initialPlatinumUsd,
   initialPalladiumUsd,
+  initialMetalTimes,
   defaultBase,
   defaultTarget,
   initialRate,
@@ -83,7 +86,8 @@ export function HomeClient({
       : null
   const isDefaultPair = base === defaultBase && target === defaultTarget
   // The table's "Now" line; metals are quoted per gram so the unit is explicit.
-  const conv = useConversion(base, target, { metalUnit: "g", initialFx })
+  const initialMetals = { XAU: initialGoldUsd, XAG: initialSilverUsd, XPT: initialPlatinumUsd, XPD: initialPalladiumUsd }
+  const conv = useConversion(base, target, { metalUnit: "g", initialFx, initialMetalUsd: initialMetals, initialMetalTime: initialMetalTimes })
   const forPair = conv.base === base && conv.quote === target // never show another pair's rate
   // The pair pages' chart (Phase 7), for the selected pair. The default pair's
   // periods are embedded, so its default period is in the server HTML.
@@ -92,10 +96,10 @@ export function HomeClient({
   const [chartPeriod, setChartPeriod] = useState(DEFAULT_CHART_PERIOD)
 
   // Metal prices for Precious Metals section (refreshed client-side, seeded with build-time values)
-  const { price: goldUsd } = useMetalRate("XAU", initialGoldUsd)
-  const { price: silverUsd } = useMetalRate("XAG", initialSilverUsd)
-  const { price: platinumUsd } = useMetalRate("XPT", initialPlatinumUsd)
-  const { price: palladiumUsd } = useMetalRate("XPD", initialPalladiumUsd)
+  const { price: goldUsd } = useMetalRate("XAU", initialGoldUsd, true, initialMetalTimes.XAU)
+  const { price: silverUsd } = useMetalRate("XAG", initialSilverUsd, true, initialMetalTimes.XAG)
+  const { price: platinumUsd } = useMetalRate("XPT", initialPlatinumUsd, true, initialMetalTimes.XPT)
+  const { price: palladiumUsd } = useMetalRate("XPD", initialPalladiumUsd, true, initialMetalTimes.XPD)
   const metalUsd: Record<MetalCode, number | null> = { XAU: goldUsd, XAG: silverUsd, XPT: platinumUsd, XPD: palladiumUsd }
   const metalOnSide = selectedMetal(base, target)
 
@@ -126,6 +130,7 @@ export function HomeClient({
                   includeMetals={true}
                   showFlags={false}
                   initialFx={initialFx}
+                  initialMetals={{ usd: initialMetals, time: initialMetalTimes }}
                   showInverse
                 />
               </div>

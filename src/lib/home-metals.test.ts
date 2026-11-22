@@ -31,7 +31,7 @@ test("home page: the default pair's rate and history are build-time data seeding
   assert.match(page, /getInitialRateData\(DEFAULT_BASE, DEFAULT_TARGET\)/)
   assert.match(page, /getBuildTimeHistory\(DEFAULT_BASE, DEFAULT_TARGET\)/)
   // the seed reaches every surface that shows the default pair
-  assert.match(home, /useConversion\(base, target, \{ metalUnit: "g", initialFx \}\)/)
+  assert.match(home, /useConversion\(base, target, \{ metalUnit: "g", initialFx, initialMetalUsd: initialMetals, initialMetalTime: initialMetalTimes \}\)/)
   assert.match(home, /<CurrencyConverter[\s\S]*?initialFx=\{initialFx\}[\s\S]*?\/>/)
   assert.match(home, /<HomeHistoryTable[^>]*initialRows=\{isDefaultPair \? initialHistory : null\}/)
   // Phase 7 trap: never filled from an effect

@@ -7,8 +7,16 @@ import { cacheGet, cacheGetStale, onCacheUpdated, FRESH_TTL } from "@/lib/cache"
 import { isMetalPriceFor } from "@/lib/cache-schemas"
 import { startAutoRefresh, documentVisibility } from "@/lib/refresh"
 import { retryAt } from "@/lib/backoff"
+import { newest, metalTime } from "@/lib/newer"
 import type { AutoRefresh } from "@/lib/refresh"
 import type { MetalCode } from "@/lib/metals"
+
+// A price with its times; fetchedAt is null for the build's price.
+interface Quote {
+  price: number
+  priceTime: string | null
+  fetchedAt: string | null
+}
 
 interface UseMetalRateResult {
   price: number | null
@@ -24,7 +32,9 @@ interface UseMetalRateResult {
 // initialPriceUsd: pass the build-time USD oz price for SSR hydration (no skeleton flicker).
 // enabled: set false to skip fetching (useful when metal hook is called unconditionally
 //          but the current converter pair does not involve this metal).
-// initialPriceTime: the provider timestamp that belongs to initialPriceUsd.
+// initialPriceTime: the provider timestamp that belongs to initialPriceUsd; it
+// decides whether the build's price or the browser's is newer (src/lib/newer.ts),
+// so pass it with every initialPriceUsd.
 //
 // While enabled, the price is kept current: re-checked when it passes its
 // fresh TTL (15 min) while the tab is visible, and on return to the tab. A failed
@@ -47,16 +57,32 @@ export function useMetalRate(
   const requestId = useRef(0) // only the latest request may write state
   const fetchedAtRef = useRef<string | null>(null)
   const autoRef = useRef<AutoRefresh | null>(null)
+  const build: Quote | null = initialPriceUsd != null ? { price: initialPriceUsd, priceTime: initialPriceTime ?? null, fetchedAt: null } : null
+  const buildRef = useRef(build)
+  buildRef.current = build
+  const shownRef = useRef(build)
 
-  const apply = useCallback((r: MetalPrice) => {
-    fetchedAtRef.current = r.fetchedAt
-    setPrice(r.price)
-    setPriceTime(r.priceTime)
-    setFetchedAt(r.fetchedAt)
-    setStale(false)
-    setStaleAgeMs(null)
-    setFailed(false)
+  // Shows the newest of the candidate, the build's price and the one on
+  // screen, and returns it.
+  const show = useCallback((candidate: Quote): Quote => {
+    const best = newest(candidate, [shownRef.current, buildRef.current], metalTime)
+    shownRef.current = best
+    setPrice(best.price)
+    setPriceTime(best.priceTime)
+    setFetchedAt(best.fetchedAt)
+    return best
   }, [])
+
+  const apply = useCallback(
+    (r: MetalPrice) => {
+      fetchedAtRef.current = r.fetchedAt // when last checked, even if older than what is shown
+      show(r)
+      setStale(false)
+      setStaleAgeMs(null)
+      setFailed(false)
+    },
+    [show]
+  )
 
   const load = useCallback(
     async (force: boolean) => {
@@ -71,11 +97,10 @@ export function useMetalRate(
         const staleHit = cacheGetStale(metalCacheKey(metal), isMetalPriceFor(metal))
         if (staleHit) {
           fetchedAtRef.current = staleHit.data.fetchedAt
-          setPrice(staleHit.data.price)
-          setPriceTime(staleHit.data.priceTime)
-          setFetchedAt(staleHit.data.fetchedAt)
+          const shown = show(staleHit.data)
           setStale(true)
-          setStaleAgeMs(staleHit.ageMs)
+          // the entry's age says nothing about a newer price kept on screen
+          setStaleAgeMs(shown === staleHit.data ? staleHit.ageMs : null)
         } else {
           setStale(true)
           setStaleAgeMs(null)
@@ -88,13 +113,19 @@ export function useMetalRate(
         }
       }
     },
-    [metal, apply]
+    [metal, apply, show]
   )
 
   useEffect(() => {
     if (!enabled) {
       setLoading(false)
       return
+    }
+    // Before any answer (it can take 10 s, or wait until the tab is seen): the
+    // build's price, or the saved one when that is newer.
+    if (buildRef.current) {
+      const kept = cacheGetStale(metalCacheKey(metal), isMetalPriceFor(metal))
+      show(newest<Quote>(buildRef.current, [kept?.data], metalTime))
     }
 
     const auto = startAutoRefresh({
@@ -123,7 +154,7 @@ export function useMetalRate(
       unsubscribe()
       setRefreshing(false)
     }
-  }, [metal, enabled, load, apply]) // initialPriceUsd intentionally excluded: used only as useState seed
+  }, [metal, enabled, load, apply, show]) // initialPriceUsd intentionally excluded: read through buildRef
 
   useEffect(() => {
     autoRef.current?.reschedule()

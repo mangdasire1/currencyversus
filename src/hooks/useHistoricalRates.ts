@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { cacheGet, cacheSet, cacheGetStale, FRESH_TTL } from "@/lib/cache"
 import { isCachedHistory } from "@/lib/cache-schemas"
 import type { CachedHistoryRow } from "@/lib/cache-schemas"
@@ -10,6 +10,7 @@ import { loadPeriodHistory } from "@/lib/history"
 import type { PeriodHistory } from "@/lib/history"
 import { fetchPairSeries } from "@/lib/pair-series"
 import { documentVisibility, whenVisible } from "@/lib/refresh"
+import { newest, historyTime } from "@/lib/newer"
 import type { HistoricalComparison, TimePeriod } from "@/lib/types"
 
 interface UseHistoricalRatesResult {
@@ -63,7 +64,8 @@ function fromCache(rows: CachedHistoryRow[]): PeriodHistory<TimePeriod>[] | null
 
 // initialRows: history embedded at build time (pair pages). It is rendered
 // immediately — in the server HTML and on first paint, no skeleton — and
-// refreshed silently in the background like the current rate.
+// refreshed silently in the background like the current rate. Saved rows
+// replace it only when they are not older (src/lib/newer.ts).
 export function useHistoricalRates(
   base: string,
   target: string,
@@ -75,8 +77,19 @@ export function useHistoricalRates(
     initialRows && initialRows.length > 0 ? { pairKey, rows: initialRows, error: null } : null
   )
 
+  const buildRef = useRef(initialRows)
+  buildRef.current = initialRows
+
   useEffect(() => {
     if (!base || !target) return
+    const buildRows = buildRef.current?.length ? buildRef.current : null
+    // the newest of the rows, this pair's rows on screen and the build's
+    const show = (rows: PeriodHistory<TimePeriod>[]) =>
+      setState((prev) => ({
+        pairKey,
+        rows: newest(rows, [prev?.pairKey === pairKey ? prev.rows : null, buildRows], historyTime),
+        error: null,
+      }))
     const today = new Date()
 
     if (base === target) {
@@ -91,7 +104,7 @@ export function useHistoricalRates(
     const cached = cacheGet(cacheKey, isCachedHistory)
     const cachedRows = cached ? fromCache(cached) : null
     if (cachedRows) {
-      setState({ pairKey, rows: cachedRows, error: null })
+      show(cachedRows)
       return
     }
 
@@ -109,15 +122,16 @@ export function useHistoricalRates(
         .then((rows) => {
           if (cancelled) return
           cacheSet(cacheKey, toCache(rows), FRESH_TTL.shortHistory, "history")
-          setState({ pairKey, rows, error: null })
+          show(rows)
         })
         .catch((err: Error) => {
           if (cancelled) return
           const stale = cacheGetStale(cacheKey, isCachedHistory)
           const staleRows = stale ? fromCache(stale.data) : null
+          if (staleRows) return show(staleRows)
           setState((prev) =>
-            staleRows
-              ? { pairKey, rows: staleRows, error: null }
+            buildRows && prev?.pairKey !== pairKey
+              ? { pairKey, rows: buildRows, error: err.message } // back on the page's own pair
               : prev?.pairKey === pairKey && prev.rows.length > 0
                 ? { ...prev, error: err.message } // keep the embedded/previous rows for this pair
                 : {
