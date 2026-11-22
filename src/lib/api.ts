@@ -6,6 +6,7 @@ import { cacheGet, cacheSet, FRESH_TTL } from "./cache.ts"
 import { isExchangeRateFor, isMetalPriceFor } from "./cache-schemas.ts"
 import { parseGoldApiPrice } from "./gold-api.ts"
 import { sharedRequest } from "./inflight.ts"
+import { getJson } from "./http.ts"
 import { acceptCached, assertMayRequest, tracked } from "./backoff.ts"
 import { eurSymbols, crossRates, crossSeries } from "./ecb.ts"
 
@@ -26,9 +27,7 @@ export async function fetchLatestRates(
   base: string,
   symbols: string[]
 ): Promise<ExchangeRate> {
-  const res = await fetch(`${BASE_URL}/latest?${eurParams(base, symbols)}`)
-  if (!res.ok) throw new Error(`API error: ${res.status}`)
-  const json = (await res.json()) as ExchangeRate
+  const json = await getJson<ExchangeRate>(`${BASE_URL}/latest?${eurParams(base, symbols)}`, "API error")
   assertEuro(json)
   return { base, date: json.date, rates: crossRates(json.rates ?? {}, base, symbols) }
 }
@@ -75,9 +74,7 @@ export async function fetchTimeSeries(
   symbols: string[],
   signal?: AbortSignal
 ): Promise<TimeSeriesRates> {
-  const res = await fetch(`${BASE_URL}/${startDate}..${endDate}?${eurParams(base, symbols)}`, { signal })
-  if (!res.ok) throw new Error(`API error: ${res.status}`)
-  const json = (await res.json()) as TimeSeriesRates
+  const json = await getJson<TimeSeriesRates>(`${BASE_URL}/${startDate}..${endDate}?${eurParams(base, symbols)}`, "API error", signal)
   assertEuro(json)
   return { ...json, base, rates: crossSeries(json.rates ?? {}, base, symbols) }
 }
@@ -110,9 +107,7 @@ export async function fetchMetalPrice(
 
   return sharedRequest(`metal_${metal}`, () =>
     tracked(cacheKey, async () => {
-      const res = await fetch(`${METAL_API_BASE}/price/${metal}`)
-      if (!res.ok) throw new Error(`gold-api error: ${res.status}`)
-      const parsed = parseGoldApiPrice(await res.json())
+      const parsed = parseGoldApiPrice(await getJson<unknown>(`${METAL_API_BASE}/price/${metal}`, "gold-api error"))
       if (!parsed) throw new Error("gold-api: price missing")
       const result: MetalPrice = {
         metal,
@@ -138,9 +133,7 @@ export async function fetchRateOn(
   return sharedRequest(
     `on_${date}_${base}_${target}`,
     async (s) => {
-      const res = await fetch(`${BASE_URL}/${date}?${eurParams(base, [target])}`, { signal: s })
-      if (!res.ok) throw new Error(`API error: ${res.status}`)
-      const json = (await res.json()) as ExchangeRate
+      const json = await getJson<ExchangeRate>(`${BASE_URL}/${date}?${eurParams(base, [target])}`, "API error", s)
       const rate = json.base === "EUR" ? crossRates(json.rates ?? {}, base, [target])[target] : undefined
       if (typeof rate !== "number" || !Number.isFinite(rate) || rate <= 0 || typeof json.date !== "string") {
         throw new Error("rate response does not match the requested pair")
