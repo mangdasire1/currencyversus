@@ -1,5 +1,12 @@
 import { getBuildTimeMetalPrice, getInitialRateData, getBuildTimeHistory, getBuildTimeChart } from "@/lib/build-data"
 import { HomeClient } from "./HomeClient"
+import { alternatesFor } from "@/lib/tr-pages"
+import type { Metadata } from "next"
+
+// hreflang en/tr/x-default with the Turkish home (/tr/). Here, not in
+// SITE_METADATA: that one also reaches the 404 and any page without its own
+// alternates. The canonical is the one the layout gives.
+export const metadata: Metadata = { alternates: alternatesFor("/") }
 
 // The default pair the home page opens with. Its rate and history are fetched
 // at build time and embedded in the HTML, like on the pair pages, so the first

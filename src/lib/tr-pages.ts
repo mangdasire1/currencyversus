@@ -1,12 +1,13 @@
-// Turkish pilot pages (task C3): five Turkish pages, each paired with one
-// English page. Pure — tested in tr-pages.test.ts.
+// Turkish pilot pages (task C3): the Turkish home /tr/ and five pages, each
+// paired with one English page. Pure — tested in tr-pages.test.ts.
 //
 // One list feeds everything that links the two languages, so they cannot
 // drift apart:
 // - hreflang both ways (en ↔ tr) plus x-default → the English page, on these
-//   five pairs only; every other English page has no hreflang;
+//   six pairs only; every other English page has no hreflang;
 // - the visible language link ("Türkçe" / "English"), only where a pair exists;
-// - the Turkish pages' breadcrumb trail and menu section.
+// - the Turkish pages' breadcrumb trail and menu section. Both stay inside
+//   the Turkish pages: only the "English" link leaves them.
 // Addresses use no Turkish letters (ş, ğ, ı): /tr/dolar-tl/, /tr/gram-altin/.
 
 import { SITE } from "./breadcrumbs.ts"
@@ -18,7 +19,7 @@ export interface TrPage {
   tr: string // "/tr/dolar-tl/"
   en: string // "/usd-vs-try/"
   crumb: string // last step of the Turkish trail: "Dolar/TL"
-  section: TrSection // menu entry marked current; the trail's middle step
+  section: TrSection // menu entry marked current
 }
 
 export const TR_PAGES: readonly TrPage[] = [
@@ -29,13 +30,20 @@ export const TR_PAGES: readonly TrPage[] = [
   { tr: "/tr/yontem/", en: "/method/", crumb: "Yöntem", section: "method" },
 ]
 
+// The Turkish home, paired with the English one. Not in TR_PAGES: it lists
+// those five, and has no trail of its own.
+export const TR_HOME = { tr: "/tr/", en: "/" } as const
+
+// Every Turkish page with its English pair.
+export const TR_PAIRS: readonly { tr: string; en: string }[] = [TR_HOME, ...TR_PAGES]
+
 export function trPage(trPath: string): TrPage {
   const p = TR_PAGES.find((x) => x.tr === trPath)
   if (!p) throw new Error(`not a Turkish page: ${trPath}`)
   return p
 }
 
-const pairOf = (path: string) => TR_PAGES.find((p) => p.en === path || p.tr === path) ?? null
+const pairOf = (path: string) => TR_PAIRS.find((p) => p.en === path || p.tr === path) ?? null
 
 // hreflang for a page of either language: both versions and x-default (the
 // English page). null for a page without a Turkish/English pair.
@@ -67,26 +75,21 @@ export function languageLinkFor(path: string): LanguageLink | null {
   return path === p.en ? { href: p.tr, label: "Türkçe", lang: "tr" } : { href: p.en, label: "English", lang: "en" }
 }
 
-// Turkish menu: the site's three sections. The currency and metal indexes
-// exist in English only (pilot), so those two entries lead to the English
-// index pages; the method entry has its Turkish page.
+// Turkish menu. There are no Turkish index pages in the pilot, so Döviz and
+// Altın lead to those two sections of the Turkish home, which lists every
+// page of the section with its value.
 export const TR_NAV = [
-  { key: "currencies", href: "/currencies/", label: "Döviz" },
-  { key: "metals", href: "/metals/", label: "Metaller" },
+  { key: "currencies", href: "/tr/#doviz", label: "Döviz" },
+  { key: "metals", href: "/tr/#altin", label: "Altın" },
   { key: "method", href: "/tr/yontem/", label: "Yöntem" },
 ] as const
 
-// Turkish trail: Ana sayfa › Döviz › Dolar/TL, Ana sayfa › Altın › Gram altın,
-// Ana sayfa › Yöntem. Ana sayfa, Döviz and Altın are the English home and
-// index pages (no Turkish ones in the pilot).
-const TR_HOME: Crumb = { name: "Ana sayfa", path: "/" }
-const TR_SECTION: Record<Exclude<TrSection, "method">, Crumb> = {
-  currencies: { name: "Döviz", path: "/currencies/" },
-  metals: { name: "Altın", path: "/metals/" },
-}
-
+// Turkish trail: Ana sayfa › Dolar/TL. Two steps, since every step of a trail
+// is a real page (breadcrumbs.ts) and a section of /tr/ is not one; the site
+// owner chose this over a middle step linking to /tr/#doviz (2026-11-22).
 export function trCrumbs(trPath: string): Crumb[] {
-  const p = trPage(trPath)
-  const self: Crumb = { name: p.crumb, path: p.tr }
-  return p.section === "method" ? [TR_HOME, self] : [TR_HOME, TR_SECTION[p.section], self]
+  return [
+    { name: "Ana sayfa", path: TR_HOME.tr },
+    { name: trPage(trPath).crumb, path: trPath },
+  ]
 }

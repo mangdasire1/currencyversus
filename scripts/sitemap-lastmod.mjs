@@ -14,7 +14,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { fingerprint, isManifest, nextManifest, sitemapXml } from "../src/lib/lastmod.ts"
 import { routeCatalog } from "../src/lib/routes.ts"
-import { TR_PAGES } from "../src/lib/tr-pages.ts"
+import { TR_PAIRS } from "../src/lib/tr-pages.ts"
 
 const SITE = "https://currencyversus.com"
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -22,8 +22,8 @@ const outDir = path.join(root, "out")
 const manifestUrl = process.env.LASTMOD_MANIFEST_URL || `${SITE}/lastmod-manifest.json`
 const today = new Date().toISOString().slice(0, 10)
 
-// the five Turkish pilot pages (task C3) after the English ones
-const urls = ["/", "/method/", "/metals/", "/currencies/", ...routeCatalog().map((slug) => `/${slug}/`), ...TR_PAGES.map((p) => p.tr)]
+// the Turkish home and the five Turkish pages (task C3) after the English ones
+const urls = ["/", "/method/", "/metals/", "/currencies/", ...routeCatalog().map((slug) => `/${slug}/`), ...TR_PAIRS.map((p) => p.tr)]
 const fingerprints = {}
 for (const url of urls) {
   const file = path.join(outDir, url, "index.html")

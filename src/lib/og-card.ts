@@ -151,6 +151,23 @@ export function trGoldCard(kind: "gram" | "ons", figure: string | null, priceTim
   }
 }
 
+// The Turkish home: the pages it lists, no figure.
+export function trHomeCard(): OgCard {
+  return {
+    eyebrow: "Türkçe",
+    title: "Dolar, euro ve altın",
+    codes: "Dolar/TL · Euro/TL · Gram altın · Ons altın",
+    figure: null,
+    change: null,
+    path: null,
+    range: null,
+    dataLines: ["Banka ya da kuyumcu fiyatı değildir"],
+    source: "Kaynaklar: Avrupa Merkez Bankası, gold-api.com",
+    alt: "Dolar/TL, Euro/TL, gram altın ve ons altın: Türkçe referans kur ve spot fiyat sayfaları. CurrencyVersus",
+    date: null,
+  }
+}
+
 // The method page: no figure, what the page is about.
 export function trMethodCard(): OgCard {
   return {

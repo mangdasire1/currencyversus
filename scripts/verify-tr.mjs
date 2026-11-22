@@ -1,12 +1,16 @@
 // Turkish pilot pages in out/ (task C3-5). Fails the build on any problem.
 //
-// For each of the five pages (src/lib/tr-pages.ts):
+// For the Turkish home /tr/ and each of the five pages (src/lib/tr-pages.ts):
 // - lang="tr", canonical is the page itself;
 // - hreflang en/tr/x-default on the Turkish page AND on its English pair, the
 //   same three links on both sides, each pointing to a page in out/; no other
 //   page carries hreflang;
 // - the visible language link both ways;
-// - breadcrumb trail: BreadcrumbList with the Turkish names, and the visible trail;
+// - breadcrumb trail: BreadcrumbList with the Turkish names, and the visible
+//   trail with the same links ("Ana sayfa" → /tr/); none on /tr/ itself;
+// - logo and menu stay inside the Turkish pages (Döviz, Altın, Yöntem, English),
+//   and the menu's sections exist on /tr/;
+// - /tr/: the five pages listed, four of them with exactly the English page's figure;
 // - its own share.png (1200x630 PNG, complete) in og:image and twitter:image;
 // - links to the other four Turkish pages;
 // - currency pages: the 7 Turkish chart tabs and the line, and the same rate
@@ -15,7 +19,7 @@
 //   figure in Turkish format (per gram in TL; per troy ounce in USD).
 import fs from "node:fs"
 import path from "node:path"
-import { TR_PAGES, hreflangFor, trCrumbs } from "../src/lib/tr-pages.ts"
+import { TR_HOME, TR_PAGES, TR_PAIRS, hreflangFor, trCrumbs } from "../src/lib/tr-pages.ts"
 import { trNumber } from "../src/lib/format-tr.ts"
 import { TR_PERIOD_SHORT } from "../src/lib/pilot-format-tr.ts"
 
@@ -32,7 +36,7 @@ const fileFor = (url) => path.join(outDir, url.replace(SITE, ""), "index.html")
 let checks = 0
 const ok = (cond, page, what) => { checks++; if (!cond) fail(page, what) }
 
-for (const p of TR_PAGES) {
+for (const p of TR_PAIRS) {
   const tr = html(p.tr)
   const en = html(p.en)
   if (!tr) { fail(p.tr, "missing from out/"); continue }
@@ -50,13 +54,23 @@ for (const p of TR_PAGES) {
   ok(tr.includes(`<a href="${p.en}" hrefLang="en" lang="en"`), p.tr, `no "English" link to ${p.en}`)
   ok(en.includes(`<a href="${p.tr}" hrefLang="tr" lang="tr"`), p.en, `no "Türkçe" link to ${p.tr}`)
 
+  // logo and menu: written out here, not imported, so that a wrong TR_NAV fails too
+  const header = tr.match(/<header[\s\S]*?<\/header>/)?.[0] ?? ""
+  const headerLinks = [...header.matchAll(/<a\b[^>]*?href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map((m) => `${text(m[2]).replace(/ /g, "")}→${m[1]}`).join(" ")
+  const menu = `CurrencyVersus→/tr/ Döviz→/tr/#doviz Altın→/tr/#altin Yöntem→/tr/yontem/ English→${p.en}`
+  ok(headerLinks === menu, p.tr, `header links "${headerLinks}" ≠ "${menu}"`)
+
   // breadcrumbs: structured data and the visible trail, Turkish names
-  const crumbs = trCrumbs(p.tr)
   const list = [...tr.matchAll(/<script type="application\/ld\+json">([^<]*)<\/script>/g)].map((m) => JSON.parse(m[1])).find((j) => j["@type"] === "BreadcrumbList")
-  const got = list ? list.itemListElement.map((i) => `${i.position}|${i.name}|${i.item}`).join(" ") : "none"
-  ok(got === crumbs.map((c, i) => `${i + 1}|${c.name}|${SITE}${c.path}`).join(" "), p.tr, `BreadcrumbList ${got}`)
   const trail = tr.match(/<nav aria-label="Sayfa yolu"[\s\S]*?<\/nav>/)?.[0]
-  ok(trail && crumbs.every((c) => text(trail).includes(c.name)), p.tr, "visible trail missing or not Turkish")
+  if (p.tr === TR_HOME.tr) ok(!list && !trail, p.tr, "the Turkish home has a breadcrumb trail")
+  else {
+    const crumbs = trCrumbs(p.tr)
+    const got = list ? list.itemListElement.map((i) => `${i.position}|${i.name}|${i.item}`).join(" ") : "none"
+    ok(got === crumbs.map((c, i) => `${i + 1}|${c.name}|${SITE}${c.path}`).join(" "), p.tr, `BreadcrumbList ${got}`)
+    const links = trail ? [...trail.matchAll(/<a\b[^>]*?href="([^"]+)"[^>]*>([^<]*)<\/a>/g)].map((m) => `${m[2]}→${m[1]}`).join(" ") : "none"
+    ok(links === "Ana sayfa→/tr/" && text(trail).includes(crumbs[1].name), p.tr, `visible trail "${links}"`)
+  }
 
   // share image
   const img = `${SITE}${p.tr}share.png`
@@ -77,6 +91,23 @@ for (const p of TR_PAGES) {
   // data: present in the static HTML, equal to the English page's
   const t = text(tr)
   const e = text(en)
+  if (p.tr === TR_HOME.tr) {
+    for (const id of ["doviz", "altin"]) ok(tr.includes(`<section id="${id}"`), p.tr, `no section #${id} for the menu`)
+    const main = tr.match(/<main[\s\S]*?<\/main>/)?.[0] ?? ""
+    const cards = new Map([...main.matchAll(/<a\b[^>]*?href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map((m) => [m[1], text(m[2]).trim()]))
+    const figure = (page, re) => text(html(page) ?? "").match(re)?.[1]
+    for (const [href, before, n, after] of [
+      ["/tr/dolar-tl/", "Dolar/TL 1 dolar = ", figure("/usd-vs-try/", /1 USD = ([\d,.]+) TRY/), " TL"],
+      ["/tr/euro-tl/", "Euro/TL 1 euro = ", figure("/eur-vs-try/", /1 EUR = ([\d,.]+) TRY/), " TL"],
+      ["/tr/gram-altin/", "Gram altın 1 gram altın = ", figure("/gold-vs-try/", /Price per gram ([\d,.]+) TRY/), " TL"],
+      ["/tr/ons-altin/", "Ons altın 1 troy ons altın = ", figure("/gold-vs-usd/", /1 troy ounce of gold = ([\d,.]+) USD/), " $"],
+    ]) {
+      const card = cards.get(href)?.replace(/ +/g, " ")
+      const wanted = n ? before + trNumber(n) + after : null
+      ok(wanted && card === wanted, p.tr, `value for ${href}: "${card}", English page gives "${wanted}"`)
+    }
+    ok(cards.has("/tr/yontem/"), p.tr, "no link to the method page in the list")
+  }
   if (p.tr === "/tr/dolar-tl/" || p.tr === "/tr/euro-tl/") {
     const base = p.tr === "/tr/dolar-tl/" ? "USD" : "EUR"
     const tabs = [...tr.matchAll(/role="tab"[^>]*>([^<]+)<\/button>/g)].map((m) => m[1])
@@ -96,15 +127,16 @@ for (const p of TR_PAGES) {
   }
 }
 
-// hreflang only on the ten paired pages
-const paired = new Set(TR_PAGES.flatMap((p) => [p.tr, p.en]))
+// hreflang only on the twelve paired pages
+const paired = new Set(TR_PAIRS.flatMap((p) => [p.tr, p.en]))
 const walk = (d, rel = "/") => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (e.isDirectory()) walk(path.join(d, e.name), `${rel}${e.name}/`); else if (e.name === "index.html") {
   checks++
   if (!paired.has(rel) && /<link rel="alternate" hrefLang=/.test(fs.readFileSync(path.join(d, e.name), "utf8"))) fail(rel, "hreflang on a page without a Turkish/English pair")
 } } }
 walk(outDir)
+ok(!/<link rel="alternate" hrefLang=/.test(fs.readFileSync(path.join(outDir, "404.html"), "utf8")), "/404.html", "hreflang on the 404")
 
-console.log(`verify-tr: ${TR_PAGES.length} Turkish pages and their English pairs, ${checks} checks, ${problems.length} problem(s)`)
+console.log(`verify-tr: ${TR_PAIRS.length} Turkish pages and their English pairs, ${checks} checks, ${problems.length} problem(s)`)
 if (problems.length) {
   console.log("  " + problems.slice(0, 20).join("\n  "))
   process.exit(1)

@@ -6,10 +6,10 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { cmapCodePoints, missingGlyphs } from "./glyphs.ts"
-import { trCurrencyCard, trGoldCard, trMethodCard } from "./og-card.ts"
+import { trCurrencyCard, trGoldCard, trHomeCard, trMethodCard } from "./og-card.ts"
 import type { OgCard } from "./og-card.ts"
 import type { ChartPeriod } from "./history.ts"
-import { TR_PAGES } from "./tr-pages.ts"
+import { TR_PAIRS } from "./tr-pages.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const SRC = path.join(ROOT, "src")
@@ -27,6 +27,7 @@ const cards = {
   gram: trGoldCard("gram", "1 gram altın = 5.754,2 TL", "2026-11-21T14:55:00Z", "2026-11-20"),
   ons: trGoldCard("ons", "1 troy ons altın = 3.539,00 $", "2026-11-21T14:55:00Z", null),
   yontem: trMethodCard(),
+  home: trHomeCard(),
 }
 
 test("image font: next/og's Geist draws every Turkish letter; ₺ is missing and never used", () => {
@@ -68,8 +69,8 @@ test("Turkish gold cards: the page's figure, provider time in UTC, conversion da
   assert.doesNotMatch(text(cards.yontem), /\d/)
 })
 
-test("wiring: /tr/<page>/share.png for each of the five pages, in og:image and twitter:image; missing glyph fails the build", () => {
-  for (const p of TR_PAGES) {
+test("wiring: /tr/<page>/share.png for each of the six pages, in og:image and twitter:image; missing glyph fails the build", () => {
+  for (const p of TR_PAIRS) {
     const route = fs.readFileSync(path.join(SRC, "app", "(tr)", ...p.tr.split("/").filter(Boolean), "share.png", "route.tsx"), "utf8")
     assert.ok(route.includes(`return trShareImage("${p.tr}")`), p.tr)
     assert.match(route, /export const dynamic = "force-static"/)

@@ -73,6 +73,7 @@ test("method page: the English page's sections in Turkish, plus why bank and jew
 test("content rules on every Turkish file: no ranking, no advice, no promise; not marked as reviewed", () => {
   const files = [
     ...["dolar-tl", "euro-tl", "gram-altin", "ons-altin", "yontem"].map((s) => page(s)),
+    read("app", "(tr)", "tr", "page.tsx"), read("components", "tr", "TrHomeList.tsx"),
     read("components", "tr", "TrFxPage.tsx"), read("components", "tr", "TrGoldPage.tsx"), read("components", "tr", "TrPageShell.tsx"),
     read("lib", "pilot-format-tr.ts"),
   ]

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { languageLinkFor } from "@/lib/tr-pages"
 import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { HomeHistoryTable } from "@/components/HomeHistoryTable"
 import { PairChart } from "@/components/pilot/PairChart"
@@ -102,7 +103,7 @@ export function HomeClient({
     <>
       {/* Plain surface: no decorative background behind prices and text (Phase 8) */}
       <div className="plain-page relative z-10 min-h-screen flex flex-col">
-        <Header width="max-w-6xl" />
+        <Header width="max-w-6xl" languageLink={languageLinkFor("/")} />
         <main className="flex-1 container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex flex-col gap-6">
             {/* Hero + Converter */}

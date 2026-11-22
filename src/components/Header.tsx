@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { TrendingUp } from "lucide-react"
 import { PV } from "./pilot/palette"
-import { TR_NAV } from "@/lib/tr-pages"
+import { TR_HOME, TR_NAV } from "@/lib/tr-pages"
 import type { LanguageLink } from "@/lib/tr-pages"
 
 // The site header, on every page: the logo (a link home) and the main menu —
@@ -12,7 +12,8 @@ import type { LanguageLink } from "@/lib/tr-pages"
 // - On narrow screens the menu wraps to its own row under the logo; no menu
 //   script, every link at least 44 px tall.
 // - The section the page belongs to is marked with aria-current.
-// - Turkish pages (lang="tr") get the Turkish menu (src/lib/tr-pages.ts).
+// - Turkish pages (lang="tr") get the Turkish menu (src/lib/tr-pages.ts) and
+//   a logo that leads to the Turkish home.
 // - A page with a version in the other language shows a link to it, last in
 //   the menu row, named in that language and marked with its lang.
 //
@@ -43,7 +44,7 @@ export function Header({
   const nav = lang === "tr" ? TR_NAV : NAV
   return (
     <header className={`relative z-10 w-full ${width} mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-x-6`}>
-      <Link href="/" className="flex items-center gap-2 min-h-[44px]">
+      <Link href={lang === "tr" ? TR_HOME.tr : "/"} className="flex items-center gap-2 min-h-[44px]">
         <span className="flex items-center justify-center w-8 h-8 rounded-lg" style={{ background: PV.raised, border: `1px solid ${PV.border}` }}>
           <TrendingUp className="w-4 h-4" style={{ color: PV.accentText }} aria-hidden="true" />
         </span>

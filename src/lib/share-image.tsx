@@ -6,7 +6,7 @@ import { getInitialRateData, getBuildTimeChart, getBuildTimeMetalPrice } from "@
 import { computeConversion, isMetalCode } from "@/lib/conversion"
 import { pairSignificantDigits } from "@/lib/ecb"
 import { formatFxRate } from "@/lib/format"
-import { currencyCard, metalCard, trCurrencyCard, trGoldCard, trMethodCard, OG_SIZE, OG_CHART_BOX } from "@/lib/og-card"
+import { currencyCard, metalCard, trCurrencyCard, trGoldCard, trHomeCard, trMethodCard, OG_SIZE, OG_CHART_BOX } from "@/lib/og-card"
 import { cmapCodePoints, missingGlyphs } from "@/lib/glyphs"
 import { formatSignificant } from "@/lib/metal-units"
 import { trMoney } from "@/lib/format-tr"
@@ -65,6 +65,7 @@ export async function shareImage(pair: string): Promise<ImageResponse> {
 // Turkish pilot pages (task C3-4): /tr/<page>/share.png, the same data as the
 // page (build-time ECB rate and chart; gold-api.com price).
 export async function trCardFor(trPath: string): Promise<OgCard> {
+  if (trPath === "/tr/") return trHomeCard()
   if (trPath === "/tr/yontem/") return trMethodCard()
   if (trPath === "/tr/dolar-tl/" || trPath === "/tr/euro-tl/") {
     const base = trPath === "/tr/dolar-tl/" ? "USD" : "EUR"
