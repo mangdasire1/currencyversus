@@ -129,6 +129,19 @@ test("yearly: significant digits follow that year's euro legs", () => {
   assert.equal(yearlyRows({ "2010-01-04": { CHF: 0.9247 } }, "EUR", "CHF", new Date("2026-11-25T00:00:00Z"))[0].sig, 4)
 })
 
+test("yearly: a dated rate keeps its own day's precision; the average the fewest of the year", () => {
+  // 2022: EUR/USD below 1 for part of the year (0.9632: 4 significant digits), above at year-end (1.0666: 5)
+  const euro: DailyEuroRates = {
+    "2022-01-03": day(1.1355, 13.2), "2022-09-27": day(0.9632, 18.5), "2022-12-30": day(1.0666, 19.9649),
+  }
+  const [row] = yearlyRows(euro, "USD", "TRY", new Date("2026-11-25T00:00:00Z"))
+  assert.equal(row.end.sig, 5)
+  assert.equal(row.low.sig, 5) // 2022-01-03
+  assert.equal(row.high.date, "2022-09-27")
+  assert.equal(row.high.sig, 4)
+  assert.equal(row.sig, 4)
+})
+
 test("Turkish case suffixes after a year", () => {
   const dat = Object.fromEntries([2000, 2005, 2006, 2009, 2010, 2020, 2026, 2030, 2040, 2060, 2070, 2100].map((y) => [y, trDative(y)]))
   assert.deepEqual(dat, { 2000: "e", 2005: "e", 2006: "ya", 2009: "a", 2010: "a", 2020: "ye", 2026: "ya", 2030: "a", 2040: "a", 2060: "a", 2070: "e", 2100: "e" })

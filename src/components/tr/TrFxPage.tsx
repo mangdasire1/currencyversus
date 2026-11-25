@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useId, useState } from "react"
+import Link from "next/link"
+import { yearlyPairByTrPath } from "@/lib/by-year"
 import { ArrowLeftRight } from "lucide-react"
 import { useConversion } from "@/hooks/useConversion"
 import { formatMoney } from "@/lib/format"
@@ -184,6 +186,14 @@ export function TrFxPage({ path, base, target, initialRate, initialDate, chart, 
         initialRows={initialHistory}
         text={trHistoryTableText(base, target)}
       />
+      {/* the pair's by-year page (task C2) */}
+      {yearlyPairByTrPath(`${path}yillara-gore/`) && (
+        <p className="text-[15px] -mt-4">
+          <Link href={`${path}yillara-gore/`} className="inline-flex items-center min-h-[44px] underline underline-offset-4" style={{ color: PV.accentText }}>
+            Yıllara göre {yearlyPairByTrPath(`${path}yillara-gore/`)!.tr!.name}: her yılın yıl sonu kuru, ortalaması, en düşük ve en yüksek kuru
+          </Link>
+        </p>
+      )}
     </>
   )
 }

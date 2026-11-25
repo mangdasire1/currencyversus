@@ -2,7 +2,9 @@ import fs from "node:fs"
 import path from "node:path"
 import { ImageResponse } from "next/og"
 import { parsePairSlug } from "@/lib/routes"
-import { getInitialRateData, getBuildTimeChart, getBuildTimeMetalPrice } from "@/lib/build-data"
+import { getInitialRateData, getBuildTimeChart, getBuildTimeMetalPrice, getBuildTimeYearly } from "@/lib/build-data"
+import { yearEndPoints, yearlyPairByTrPath } from "@/lib/by-year"
+import { yearlyCard, trYearlyCard } from "@/lib/og-card"
 import { computeConversion, isMetalCode } from "@/lib/conversion"
 import { pairSignificantDigits } from "@/lib/ecb"
 import { formatFxRate } from "@/lib/format"
@@ -67,6 +69,8 @@ export async function shareImage(pair: string): Promise<ImageResponse> {
 export async function trCardFor(trPath: string): Promise<OgCard> {
   if (trPath === "/tr/") return trHomeCard()
   if (trPath === "/tr/yontem/") return trMethodCard()
+  const yearly = yearlyPairByTrPath(trPath)
+  if (yearly) return yearlyCardFor(yearly.base, yearly.target, "tr")
   if (trPath === "/tr/dolar-tl/" || trPath === "/tr/euro-tl/") {
     const base = trPath === "/tr/dolar-tl/" ? "USD" : "EUR"
     const [rate, chart] = await Promise.all([getInitialRateData(base, "TRY"), getBuildTimeChart(base, "TRY")])
@@ -97,6 +101,23 @@ export async function trCardFor(trPath: string): Promise<OgCard> {
 
 export async function trShareImage(trPath: string): Promise<ImageResponse> {
   return drawCard(await trCardFor(trPath), trPath)
+}
+
+// By-year pages (task C2): /<pair>/by-year/share.png and the two Turkish ones.
+export async function yearlyCardFor(base: string, target: string, lang: "en" | "tr"): Promise<OgCard> {
+  const rows = await getBuildTimeYearly(base, target)
+  const line = { points: yearEndPoints(rows), firstYear: rows[0].year, lastYear: rows[rows.length - 1].year, latestDate: rows[rows.length - 1].end.date }
+  return lang === "tr" ? trYearlyCard(base, target, line) : yearlyCard(base, target, line)
+}
+
+export async function yearlyShareImage(base: string, target: string, lang: "en" | "tr"): Promise<ImageResponse> {
+  return drawCard(await yearlyCardFor(base, target, lang), `${base}/${target} by year`)
+}
+
+export async function trYearlyShareImage(trPath: string): Promise<ImageResponse> {
+  const p = yearlyPairByTrPath(trPath)
+  if (!p) throw new Error(`no Turkish by-year page: ${trPath}`)
+  return yearlyShareImage(p.base, p.target, "tr")
 }
 
 // next/og's built-in font (see glyphs.ts): the characters it can draw.

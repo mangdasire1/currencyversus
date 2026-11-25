@@ -66,7 +66,8 @@ else {
   const hrefs = new Set([...html.matchAll(/<a\b[^>]*\bhref="([^"#]+)"/g)].map((m) => m[1]))
   const notLinked = targets.filter((t) => !hrefs.has(t))
   const pairLinks = [...hrefs].filter((h) => h.includes("-vs-"))
-  const dead = pairLinks.filter((h) => !generated.has(h.slice(1, -1)))
+  // a pair page or a page under one (/usd-vs-try/by-year/): must be in out/
+  const dead = pairLinks.filter((h) => !h.endsWith("/") || !fs.existsSync(path.join(outDir, h, "index.html")))
   if (notLinked.length) indexProblems.push(`${notLinked.length} pair page(s) not linked: ${notLinked.slice(0, 5).join(", ")}`)
   if (dead.length) indexProblems.push(`${dead.length} link(s) to pages not generated: ${dead.slice(0, 5).join(", ")}`)
   console.log(`verify-routes: /currencies/ index — ${pairLinks.length} pair links, ${targets.length} pair pages to link, ${indexProblems.length} problem(s)`)

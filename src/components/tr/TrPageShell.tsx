@@ -3,7 +3,7 @@ import { Header } from "@/components/Header"
 import type { HeaderWidth } from "@/components/Header"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PV, SANS } from "@/components/pilot/palette"
-import { trPage, trCrumbs, languageLinkFor, TR_HOME, TR_PAGES } from "@/lib/tr-pages"
+import { trSection, trCrumbs, languageLinkFor, TR_HOME, TR_PAGES } from "@/lib/tr-pages"
 
 // Frame of every Turkish pilot page: Turkish menu with the link to the
 // English version, Turkish breadcrumb trail (and its BreadcrumbList), the H1,
@@ -22,7 +22,7 @@ export function TrPageShell({
   width?: HeaderWidth
   children?: React.ReactNode
 }) {
-  const page = path === TR_HOME.tr ? null : trPage(path)
+  const page = path === TR_HOME.tr ? null : { section: trSection(path) }
   return (
     <div className="plain-page min-h-screen flex flex-col" style={{ background: PV.bg, color: PV.text, ...SANS }}>
       <Header width={width} lang="tr" current={page?.section} languageLink={languageLinkFor(path)} />

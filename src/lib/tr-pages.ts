@@ -12,6 +12,7 @@
 
 import { SITE } from "./breadcrumbs.ts"
 import type { Crumb } from "./breadcrumbs.ts"
+import { YEARLY_PAIRS, yearlyPath, yearlyPairByTrPath, yearlyCrumbsTr } from "./by-year.ts"
 
 export type TrSection = "currencies" | "metals" | "method"
 
@@ -37,13 +38,26 @@ export const TR_HOME = { tr: "/tr/", en: "/" } as const
 // Every Turkish page with its English pair.
 export const TR_PAIRS: readonly { tr: string; en: string }[] = [TR_HOME, ...TR_PAGES]
 
+// The Turkish page's menu section; by-year pages belong to Döviz.
+export function trSection(trPath: string): TrSection {
+  return yearlyPairByTrPath(trPath) ? "currencies" : trPage(trPath).section
+}
+
 export function trPage(trPath: string): TrPage {
   const p = TR_PAGES.find((x) => x.tr === trPath)
   if (!p) throw new Error(`not a Turkish page: ${trPath}`)
   return p
 }
 
-const pairOf = (path: string) => TR_PAIRS.find((p) => p.en === path || p.tr === path) ?? null
+// By-year pages (task C2) with a Turkish version: USD/TRY and EUR/TRY. Kept
+// apart from TR_PAIRS (which feeds the Turkish menu pages and their checks);
+// they share its hreflang and language-link rules.
+export const TR_YEARLY_PAIRS: readonly { tr: string; en: string }[] = YEARLY_PAIRS.filter((p) => p.tr).map((p) => ({
+  tr: p.tr!.path,
+  en: yearlyPath(p.base, p.target),
+}))
+
+const pairOf = (path: string) => [...TR_PAIRS, ...TR_YEARLY_PAIRS].find((p) => p.en === path || p.tr === path) ?? null
 
 // hreflang for a page of either language: both versions and x-default (the
 // English page). null for a page without a Turkish/English pair.
@@ -88,6 +102,9 @@ export const TR_NAV = [
 // is a real page (breadcrumbs.ts) and a section of /tr/ is not one; the site
 // owner chose this over a middle step linking to /tr/#doviz (2026-11-22).
 export function trCrumbs(trPath: string): Crumb[] {
+  // a by-year page sits under its pair page: Ana sayfa › Dolar/TL › Yıllara göre
+  const yearly = yearlyPairByTrPath(trPath)
+  if (yearly) return yearlyCrumbsTr(yearly)
   return [
     { name: "Ana sayfa", path: TR_HOME.tr },
     { name: trPage(trPath).crumb, path: trPath },

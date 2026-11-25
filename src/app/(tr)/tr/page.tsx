@@ -5,6 +5,11 @@ import { TrHomeList } from "@/components/tr/TrHomeList"
 import { trPageMetadata } from "@/lib/tr-metadata"
 import { getBuildTimeMetalPrice, getInitialRateData } from "@/lib/build-data"
 import { PV } from "@/components/pilot/palette"
+import { TR_YEARLY_PAIRS } from "@/lib/tr-pages"
+import { yearlyPairByTrPath } from "@/lib/by-year"
+
+// "Yıllara göre dolar/TL: yıl sonu, ortalama, en düşük ve en yüksek"
+const trYearlyLinkText = (path: string) => `Yıllara göre ${yearlyPairByTrPath(path)!.tr!.name}: yıl sonu, ortalama, en düşük ve en yüksek`
 
 // Turkish home (task C3, fix 1), the pair of /: the five Turkish pages, four
 // of them with their current value in the static HTML.
@@ -35,6 +40,19 @@ export default async function Page() {
         eur={eur && { rate: eur.rate, date: eur.date }}
         gold={gold && { price: gold.price, priceTime: gold.priceTime ?? null }}
       />
+      {/* by-year pages (task C2) */}
+      <nav aria-labelledby="yillik-baslik" className="flex flex-col gap-2">
+        <h2 id="yillik-baslik" className="text-lg font-semibold">Yıllara göre</h2>
+        <ul className="flex flex-col">
+          {TR_YEARLY_PAIRS.map((p) => (
+            <li key={p.tr}>
+              <Link href={p.tr} className="inline-flex items-center min-h-[44px] text-sm underline underline-offset-4" style={{ color: PV.accentText }}>
+                {trYearlyLinkText(p.tr)}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
       <Link href="/tr/yontem/" className="self-start inline-flex items-center min-h-[44px] text-sm underline underline-offset-4" style={{ color: PV.accentText }}>
         Yöntem: rakamlar nereden geliyor, nasıl hesaplanıyor
       </Link>

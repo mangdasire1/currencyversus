@@ -102,6 +102,53 @@ function asciiCard(c: OgCard): OgCard {
   }
 }
 
+// By-year pages (task C2): the year-end line, the years it covers, the date of
+// its last point and the source. No figure and no change: the image does not
+// pick one year's number out of the table.
+export interface YearEndLine {
+  points: { date: string; rate: number }[] // one per year, oldest first
+  firstYear: number
+  lastYear: number
+  latestDate: string // the last point: the latest ECB rate
+}
+
+export function yearlyCard(base: string, target: string, line: YearEndLine): OgCard {
+  const title = `${NAME[base]} to ${NAME[target]} by year`
+  const path = line.points.length > 1 ? chartGeometry(line.points, OG_CHART_BOX).path : null
+  const card: OgCard = {
+    eyebrow: "Exchange rate by year",
+    title,
+    codes: `${base} / ${target}`,
+    figure: null,
+    change: null,
+    path,
+    range: `${line.firstYear} to ${line.lastYear}`,
+    dataLines: [`Year-end ECB reference rates; latest rate of ${line.latestDate}`],
+    source: "Source: European Central Bank via Frankfurter API",
+    alt: `${title} (${base}/${target}): year-end ECB reference rates from ${line.firstYear} to ${line.lastYear}, latest rate of ${line.latestDate}. CurrencyVersus`,
+    date: line.latestDate,
+  }
+  return asciiCard(card)
+}
+
+export function trYearlyCard(base: string, target: string, line: YearEndLine): OgCard {
+  const pair = `${trCurrencyName(base)}/${trCurrencyName(target)}`
+  const title = `Yıllara göre ${pair}`
+  return {
+    eyebrow: "Yıllara göre döviz kuru",
+    title,
+    codes: `${base} / ${target}`,
+    figure: null,
+    change: null,
+    path: line.points.length > 1 ? chartGeometry(line.points, OG_CHART_BOX).path : null,
+    range: `${line.firstYear} – ${line.lastYear}`,
+    dataLines: [`Yıl sonu ECB referans kurları; son kur ${trDateShort(line.latestDate)}`],
+    source: "Kaynak: Avrupa Merkez Bankası (Frankfurter API üzerinden)",
+    alt: `${title} (${base}/${target}): ${line.firstYear}–${line.lastYear} yıl sonu ECB referans kurları, son kur ${trDateShort(line.latestDate)}. CurrencyVersus`,
+    date: line.latestDate,
+  }
+}
+
 // ---- Turkish pilot pages (task C3-4) -------------------------------------
 // Same layout and rules as the English cards; Turkish text and formats
 // (format-tr.ts, pilot-format-tr.ts). Not filtered to ASCII: every character

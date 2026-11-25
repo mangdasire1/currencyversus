@@ -21,7 +21,7 @@
 //   figure in Turkish format (per gram in TL; per troy ounce in USD).
 import fs from "node:fs"
 import path from "node:path"
-import { TR_HOME, TR_PAGES, TR_PAIRS, hreflangFor, trCrumbs } from "../src/lib/tr-pages.ts"
+import { TR_HOME, TR_PAGES, TR_PAIRS, TR_YEARLY_PAIRS, hreflangFor, trCrumbs } from "../src/lib/tr-pages.ts"
 import { trNumber } from "../src/lib/format-tr.ts"
 import { TR_PERIOD_SHORT } from "../src/lib/pilot-format-tr.ts"
 
@@ -175,7 +175,7 @@ for (const p of TR_PAIRS) {
 }
 
 // hreflang only on the twelve paired pages
-const paired = new Set(TR_PAIRS.flatMap((p) => [p.tr, p.en]))
+const paired = new Set([...TR_PAIRS, ...TR_YEARLY_PAIRS].flatMap((p) => [p.tr, p.en]))
 const walk = (d, rel = "/") => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (e.isDirectory()) walk(path.join(d, e.name), `${rel}${e.name}/`); else if (e.name === "index.html") {
   checks++
   if (!paired.has(rel) && /<link rel="alternate" hrefLang=/.test(fs.readFileSync(path.join(d, e.name), "utf8"))) fail(rel, "hreflang on a page without a Turkish/English pair")

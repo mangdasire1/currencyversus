@@ -123,7 +123,7 @@ test("Y axis: every line in src is drawn by chartGeometry ([dataMin, dataMax]); 
   const drawing = files.filter((f) => /<path\b[^>]*d=\{/.test(fs.readFileSync(f, "utf8")))
   for (const f of drawing) assert.match(fs.readFileSync(f, "utf8"), /chartGeometry\(/, `${path.basename(f)}: a data line not drawn by chartGeometry`)
   console.log(`    data lines drawn by chartGeometry: ${drawing.map((f) => path.basename(f)).join(", ")}`)
-  assert.deepEqual(drawing.map((f) => path.basename(f)).sort(), ["PairChart.tsx", "Sparkline.tsx"])
+  assert.deepEqual(drawing.map((f) => path.basename(f)).sort(), ["PairChart.tsx", "Sparkline.tsx", "YearlyView.tsx"])
   // the home page's trend line box: a narrow series fills it top to bottom
   const box = { width: 112, height: 40, padTop: 3, padBottom: 3 }
   const g = chartGeometry([{ date: "2026-01-01", rate: 0.85 }, { date: "2026-02-01", rate: 0.9 }, { date: "2026-03-01", rate: 0.87 }], box)

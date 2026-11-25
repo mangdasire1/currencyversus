@@ -4,6 +4,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { Header } from "@/components/Header"
 import Link from "next/link"
 import { currenciesIndex } from "@/lib/currencies-index"
+import { YEARLY_PAIRS, yearlyPath } from "@/lib/by-year"
 import { PV, SANS } from "@/components/pilot/palette"
 
 // Currencies index: one place that links to every currency pair page, grouped
@@ -48,6 +49,27 @@ export default function CurrenciesIndexPage() {
             </ul>
           </nav>
         </div>
+
+        {/* by-year pages (task C2) */}
+        <section id="by-year" aria-labelledby="h-by-year" className="flex flex-col gap-3 scroll-mt-4">
+          <h2 id="h-by-year" className="text-xl font-semibold">Exchange rates by year</h2>
+          <p className="text-[15px] leading-relaxed" style={{ color: PV.dim }}>
+            Year-end rate, yearly average, low and high for every year, from the ECB&apos;s daily reference rates, with a CSV download.
+          </p>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {YEARLY_PAIRS.map((p) => (
+              <li key={`${p.base}${p.target}`}>
+                <Link
+                  href={yearlyPath(p.base, p.target)}
+                  className="flex items-center min-h-[44px] px-4 py-2 rounded-xl text-sm underline-offset-4 hover:underline"
+                  style={{ background: PV.surface, border: `1px solid ${PV.border}`, color: PV.accentText }}
+                >
+                  {p.base} to {p.target} by year
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         {entries.map((entry) => (
           <section key={entry.code} id={entry.code.toLowerCase()} aria-labelledby={`h-${entry.code}`} className="flex flex-col gap-3 scroll-mt-4">

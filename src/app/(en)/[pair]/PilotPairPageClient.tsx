@@ -1,6 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import Link from "next/link"
+import { yearlyPair, yearlyPath } from "@/lib/by-year"
 import { pairCrumbs } from "@/lib/breadcrumbs"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { Header } from "@/components/Header"
@@ -178,6 +180,14 @@ export function PilotPairPageClient({ base, target, initialRate, initialDate, in
           currentDate={fxDate}
           initialRows={initialHistory}
         />
+        {/* the pair's by-year page, where there is one (task C2) */}
+        {yearlyPair(base, target) && (
+          <p className="text-[15px] -mt-4">
+            <Link href={yearlyPath(base, target)} className="inline-flex items-center min-h-[44px] underline underline-offset-4" style={{ color: PV.accentText }}>
+              {base}/{target} by year: year-end rate, average, low and high for every year
+            </Link>
+          </p>
+        )}
 
         {/* 8. About the pair */}
         {baseInfo && targetInfo && (

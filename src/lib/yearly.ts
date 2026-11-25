@@ -86,6 +86,7 @@ export async function loadFullEuroSeries(
 export interface DatedRate {
   date: string
   rate: number
+  sig: number // significant digits the ECB legs of that day carry
 }
 
 export interface YearRow {
@@ -99,7 +100,9 @@ export interface YearRow {
   changePct: number | null // end vs previous year's end; null in the first year
   current: boolean // the year is not over: figures run from 1 January to `end.date`
   partialStart: boolean // the pair's data begins after the year's first ECB publication day
-  sig: number // significant digits the ECB data carries for this row (fewest over its days)
+  // significant digits of the average: the fewest of the year's days (a mean is
+  // no more precise than its least precise term); a dated rate carries its own day's
+  sig: number
 }
 
 // Significant digits of one ECB euro rate: its fixed decimals plus the
@@ -151,10 +154,10 @@ export function yearlyRows(euro: DailyEuroRates, base: string, target: string, t
     rows.push({
       year,
       first: days[0].date,
-      end: { date: last.date, rate: last.rate },
+      end: { date: last.date, rate: last.rate, sig: last.sig },
       average: sum / days.length,
-      low: { date: low.date, rate: low.rate },
-      high: { date: high.date, rate: high.rate },
+      low: { date: low.date, rate: low.rate, sig: low.sig },
+      high: { date: high.date, rate: high.rate, sig: high.sig },
       days: days.length,
       changePct: prev && prev.year === year - 1 ? (last.rate / prev.end.rate - 1) * 100 : null,
       current: year >= thisYear,
