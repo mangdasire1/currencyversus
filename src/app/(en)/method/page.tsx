@@ -152,6 +152,15 @@ export default function MethodPage() {
             A percentage change compares two reference rates. It is not an investment return: it does not account for
             inflation, interest earned or any fee.
           </p>
+          <p id="by-year">
+            The by-year pages give, for every year since a pair&apos;s first ECB rate, the year-end rate (the rate on the
+            year&apos;s last publication day), the yearly average (the arithmetic mean of that year&apos;s daily rates, each
+            day&apos;s rate being the ratio of the two currencies&apos; euro rates) and the year&apos;s lowest and highest daily
+            rates with their dates. The yearly change compares a year-end rate with the previous one. The current year runs
+            from 1 January to the latest publication day and is labelled as such. The Turkish lira series starts with the
+            ECB&apos;s new-lira rate on 3 January 2005. Figures are rounded only for display, to no more significant digits
+            than the ECB published that year; the same figures are offered as a CSV file.
+          </p>
         </Section>
 
         <Section id="report" title="Report an error">

@@ -172,6 +172,27 @@ test("by-year: pages, CSV and images are routes of their own; linked from the pa
   assert.match(read("app", "(tr)", "tr", "page.tsx"), /\{TR_YEARLY_PAIRS\.map\(\(p\) => \(\s*<li key=\{p\.tr\}>\s*<Link href=\{p\.tr\}/)
 })
 
+test("by-year: the eight pages in the sitemap, the CSV files not; checked by verify-by-year in every build", () => {
+  const root = path.join(here, "..", "..")
+  const sitemap = fs.readFileSync(path.join(root, "scripts", "sitemap-lastmod.mjs"), "utf8")
+  assert.match(sitemap, /urls\.push\(\.\.\.YEARLY_PAIRS\.map\(\(p\) => yearlyPath\(p\.base, p\.target\)\), \.\.\.TR_YEARLY_PAIRS\.map\(\(p\) => p\.tr\)\)/)
+  assert.doesNotMatch(sitemap, /yearlyCsvPath|\.csv/)
+  assert.equal(YEARLY_PAIRS.length + TR_YEARLY_PAIRS.length, 8)
+  const build = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts
+  assert.match(build.build, /npm run verify:by-year &&/)
+  assert.equal(build["verify:by-year"], "node scripts/verify-by-year.mjs")
+})
+
+test("by-year: both method pages explain the yearly figures, and the pages link that paragraph", () => {
+  const en = read("app", "(en)", "method", "page.tsx")
+  const tr = read("app", "(tr)", "tr", "yontem", "page.tsx")
+  const enP = en.match(/<p id="by-year">([\s\S]*?)<\/p>/)?.[1].replace(/\s+/g, " ") ?? ""
+  const trP = tr.match(/<p id="yillara-gore">([\s\S]*?)<\/p>/)?.[1].replace(/\s+/g, " ") ?? ""
+  for (const w of ["year-end rate", "arithmetic mean", "lowest and highest daily", "previous one", "latest publication day", "3 January 2005", "significant digits", "CSV"]) assert.ok(enP.includes(w), w)
+  for (const w of ["yıl sonu kurunu", "aritmetik ortalaması", "en düşük ve en yüksek günlük", "önceki yıl sonu", "son yayın gününe", "3 Ocak 2005", "anlamlı basamak", "CSV"]) assert.ok(trP.includes(w), w)
+  assert.match(read("components", "yearly", "YearlyView.tsx"), /<Link href=\{tr \? "\/tr\/yontem\/#yillara-gore" : "\/method\/#by-year"\}/)
+})
+
 test("by-year: table newest first in the static HTML, scrolling inside its own box; chart drawn by chartGeometry", () => {
   const view = read("components", "yearly", "YearlyView.tsx")
   assert.doesNotMatch(view, /"use client"/)

@@ -15,6 +15,8 @@ import { fileURLToPath } from "node:url"
 import { fingerprint, isManifest, nextManifest, sitemapXml } from "../src/lib/lastmod.ts"
 import { routeCatalog } from "../src/lib/routes.ts"
 import { TR_PAIRS } from "../src/lib/tr-pages.ts"
+import { TR_YEARLY_PAIRS } from "../src/lib/tr-pages.ts"
+import { YEARLY_PAIRS, yearlyPath } from "../src/lib/by-year.ts"
 
 const SITE = "https://currencyversus.com"
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -24,6 +26,8 @@ const today = new Date().toISOString().slice(0, 10)
 
 // the Turkish home and the five Turkish pages (task C3) after the English ones
 const urls = ["/", "/method/", "/metals/", "/currencies/", ...routeCatalog().map((slug) => `/${slug}/`), ...TR_PAIRS.map((p) => p.tr)]
+// the by-year pages (task C2): six English, two Turkish; their CSV files are not pages
+urls.push(...YEARLY_PAIRS.map((p) => yearlyPath(p.base, p.target)), ...TR_YEARLY_PAIRS.map((p) => p.tr))
 const fingerprints = {}
 for (const url of urls) {
   const file = path.join(outDir, url, "index.html")

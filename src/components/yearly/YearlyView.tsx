@@ -117,7 +117,7 @@ export function YearlyView({ pair, rows, lang }: { pair: YearlyPair; rows: YearR
         {/* How the figures are made, then what the change is not */}
         <p className="text-sm leading-relaxed" style={{ color: PV.dim }}>
           {t.method}{" "}
-          <Link href={tr ? "/tr/yontem/#gecmis" : "/method/#history"} className="underline underline-offset-4 inline-flex items-center min-h-[44px]" style={{ color: PV.accentText }}>
+          <Link href={tr ? "/tr/yontem/#yillara-gore" : "/method/#by-year"} className="underline underline-offset-4 inline-flex items-center min-h-[44px]" style={{ color: PV.accentText }}>
             {t.methodLink}
           </Link>
         </p>

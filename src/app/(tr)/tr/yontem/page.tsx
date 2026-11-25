@@ -131,6 +131,15 @@ export default function Page() {
           Yüzde değişim iki referans kurunu karşılaştırır. Bir yatırım getirisi değildir: enflasyonu, kazanılan faizi ve hiçbir
           masrafı hesaba katmaz.
         </p>
+        <p id="yillara-gore">
+          Yıllara göre sayfalar, bir çiftin ilk ECB kurundan bu yana her yıl için yıl sonu kurunu (yılın son yayın günündeki
+          kur), yıl ortalamasını (o yılın günlük kurlarının aritmetik ortalaması; her günün kuru, iki para biriminin euro
+          kurlarının oranıdır) ve yıl içindeki en düşük ve en yüksek günlük kuru tarihleriyle verir. Yıllık değişim, yıl sonu
+          kurunu bir önceki yıl sonu kuruyla karşılaştırır. İçinde bulunulan yıl 1 Ocak&apos;tan son yayın gününe kadardır ve
+          böyle etiketlenir. TL serisi, ECB&apos;nin yeni Türk lirası kuruyla 3 Ocak 2005&apos;te başlar. Rakamlar yalnız
+          gösterimde yuvarlanır ve ECB&apos;nin o yıl yayımladığından fazla anlamlı basamakla gösterilmez; aynı rakamlar CSV
+          dosyası olarak da indirilebilir.
+        </p>
       </Section>
 
       <Section id="fark" title="Bankadaki kur ve kuyumcudaki altın fiyatı neden farklı?">

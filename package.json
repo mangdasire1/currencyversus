@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run verify:routes && npm run verify:404 && npm run verify:locale && npm run verify:tr && npm run verify:faq && npm run verify:history && npm run verify:metals && npm run security:txt && npm run sitemap:lastmod",
+    "build": "next build && npm run verify:routes && npm run verify:404 && npm run verify:locale && npm run verify:tr && npm run verify:by-year && npm run verify:faq && npm run verify:history && npm run verify:metals && npm run security:txt && npm run sitemap:lastmod",
     "verify:routes": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-routes.mjs",
     "verify:404": "node scripts/verify-404.mjs",
     "verify:locale": "node scripts/verify-locale.mjs",
     "verify:tr": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-tr.mjs",
+    "verify:by-year": "node scripts/verify-by-year.mjs",
     "verify:faq": "node scripts/verify-faq.mjs",
     "verify:history": "node scripts/verify-history.mjs",
     "verify:metals": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-metals.mjs",
