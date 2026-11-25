@@ -6,6 +6,8 @@ import { METAL_API_BASE } from "./metals"
 import type { MetalCode } from "./metals"
 import { parseGoldApiPrice } from "./gold-api"
 import { eurSymbols, crossRate, crossSeries } from "./ecb"
+import { loadFullEuroSeries, yearlyRows } from "./yearly"
+import type { DailyEuroRates, YearRow } from "./yearly"
 
 const BASE_URL = "https://api.frankfurter.dev/v1"
 const ALL_CODES = CURRENCIES.map((c) => c.code)
@@ -173,6 +175,35 @@ export async function getBuildTimeHistory(
   const series = seriesForTarget(rates, target)
   if (series.length === 0) return null
   return derivePeriodHistory(series, today, TIME_PERIODS)
+}
+
+// ---------------------------------------------------------------------------
+// Yearly figures (by-year pages): the full daily ECB series since 1999, in
+// fixed spans of years (src/lib/yearly.ts), requested once per build for all
+// pairs. Only the computed yearly rows reach a page, never the daily series.
+// A failed or malformed span throws: the build stops rather than publish
+// figures from a partial series. The 10-year request above is separate.
+
+let fullSeriesMemo: Promise<DailyEuroRates> | null = null
+
+function fullEuroSeries(): Promise<DailyEuroRates> {
+  fullSeriesMemo ??= loadFullEuroSeries(new Date(), async (range) => {
+    const t0 = Date.now()
+    const res = await fetchWithRetry(`${BASE_URL}/${range.start}..${range.end}?symbols=${EUR_SYMBOLS}`)
+    const text = await res.text()
+    console.log("[build-data] yearly series OK", `${range.start}..${range.end}`, `${(text.length / 1024).toFixed(0)} KB`, `${Date.now() - t0} ms`)
+    return text
+  }).catch((err) => {
+    fullSeriesMemo = null
+    throw err
+  })
+  return fullSeriesMemo
+}
+
+export async function getBuildTimeYearly(base: string, target: string): Promise<YearRow[]> {
+  const rows = yearlyRows(await fullEuroSeries(), base, target, new Date())
+  if (rows.length === 0) throw new Error(`[build-data] yearly: no ECB rates for ${base}/${target}`)
+  return rows
 }
 
 // New-layout pages (Phase 7): the seven chart periods, from the same
