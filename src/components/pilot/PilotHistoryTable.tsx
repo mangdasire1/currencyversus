@@ -7,6 +7,7 @@ import { directionNote } from "@/lib/pilot-format"
 import type { PeriodHistory } from "@/lib/history"
 import type { TimePeriod } from "@/lib/types"
 import type { HistoryTableText } from "@/lib/history-table-tr"
+import { SavedDataNote } from "@/components/SavedDataNote"
 import { Direction } from "./Direction"
 import { PV, MONO, SANS } from "./palette"
 
@@ -25,7 +26,7 @@ interface PilotHistoryTableProps {
 // Period | Then | Used day | Change. The current rate is stated once above
 // the table instead of repeating it on all seven rows.
 export function PilotHistoryTable({ base, target, currentRate, currentLabel, currentDate, initialRows, text: t }: PilotHistoryTableProps) {
-  const { comparisons } = useHistoricalRates(base, target, currentRate, initialRows)
+  const { comparisons, stale, staleAgeMs } = useHistoricalRates(base, target, currentRate, initialRows)
   const sig = pairSignificantDigits(base, target)
 
   return (
@@ -36,6 +37,15 @@ export function PilotHistoryTable({ base, target, currentRate, currentLabel, cur
       <p className="text-sm" style={{ ...MONO, color: PV.dim }}>
         {t ? t.now(currentLabel, currentDate) : <>Now: {currentLabel ?? "—"}{currentDate ? ` (ECB reference rate of ${currentDate})` : ""}</>}
       </p>
+      {/* the rows below are saved ones: the request for newer ones failed */}
+      {stale &&
+        (t ? (
+          <p role="status" className="text-sm" style={{ color: PV.up }}>{t.saved}</p>
+        ) : (
+          <p className="text-sm">
+            <SavedDataNote ageMs={staleAgeMs} />
+          </p>
+        ))}
       {/* relative: absolutely positioned descendants (sr-only text) stay inside the scroller */}
       <div className="relative overflow-x-auto rounded-xl" style={{ border: `1px solid ${PV.border}` }}>
         <table className="w-full min-w-[480px] text-sm" style={{ background: PV.surface }}>

@@ -25,7 +25,8 @@ test("stale status: either source failing marks the Turkish pages' conversions, 
 
 test("Turkish pages: one saved-data note, under the result on the four detail pages and on /tr/", () => {
   const note = read("components", "tr", "TrStaleNote.tsx")
-  assert.match(note, /<p role="status"[^>]*color: PV\.up[^>]*>\s*Güncel veri alınamadı; kayıtlı değerler gösteriliyor\.\s*<\/p>/)
+  assert.match(note, /<p role="status"[^>]*color: PV\.up[^>]*>\s*\{TR_SAVED_DATA\}\s*<\/p>/)
+  assert.match(read("lib", "pilot-format-tr.ts"), /export const TR_SAVED_DATA = "Güncel veri alınamadı; kayıtlı değerler gösteriliyor\."/)
   const fx = read("components", "tr", "TrFxPage.tsx")
   assert.match(fx, /const stale = forThisPair && conv\.status === "stale"\n/)
   assert.match(fx, /\{trRateLabel\(target, base, 1 \/ rate\)\}\n\s*<\/p>\n\s*\)\}\n\s*<\/div>\n\s*\{stale && <TrStaleNote \/>\}\n\s*<\/section>/)
@@ -58,4 +59,14 @@ test("home: each metal card says so for its own saved price, with the pair pages
   for (const f of [["app", "(en)", "HomeClient.tsx"], ["components", "HomeMetalCard.tsx"], ["components", "pilot", "ProvenanceBadge.tsx"]]) {
     assert.doesNotMatch(read(...f), /Showing saved data/, f.join("/"))
   }
+})
+
+test("history tables: the saved-rows warning next to the rows, in both languages and on the home page", () => {
+  const pilot = read("components", "pilot", "PilotHistoryTable.tsx")
+  assert.match(pilot, /const \{ comparisons, stale, staleAgeMs \} = useHistoricalRates\(/)
+  assert.match(pilot, /\{stale &&\s*\(t \? \(\s*<p role="status" className="text-sm" style=\{\{ color: PV\.up \}\}>\{t\.saved\}<\/p>\s*\) : \(\s*<p className="text-sm">\s*<SavedDataNote ageMs=\{staleAgeMs\} \/>/)
+  assert.match(read("lib", "history-table-tr.ts"), /saved: TR_SAVED_DATA,/)
+  const home = read("components", "HomeHistoryTable.tsx")
+  assert.match(home, /const \{ comparisons, loading, stale, staleAgeMs \} = useHistoricalRates\(/)
+  assert.match(home, /\{stale && \(\s*<p className="text-sm">\s*<SavedDataNote ageMs=\{staleAgeMs\} \/>/)
 })

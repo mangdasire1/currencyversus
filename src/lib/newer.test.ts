@@ -75,8 +75,10 @@ test("hooks: every path that puts data on screen goes through that rule", () => 
   assert.match(metal, /newest\(candidate, \[shownRef\.current, buildRef\.current\], metalTime\)/)
   assert.equal((metal.match(/setPrice\(/g) ?? []).length, 1)
   const history = read("hooks", "useHistoricalRates.ts")
-  assert.match(history, /rows: newest\(rows, \[prev\?\.pairKey === pairKey \? prev\.rows : null, buildRows\], historyTime\)/)
-  for (const call of ["show(cachedRows)", "show(rows)", "return show(staleRows)"]) assert.ok(history.includes(call), call)
+  assert.match(history, /const best = newest\(rows, \[prev\?\.pairKey === pairKey \? prev\.rows : null, buildRows\], historyTime\)/)
+  // fresh cache, an answer, saved rows after a failure: all through show()
+  for (const call of ["show(kept.rows, false)", "show(rows, false)", "return show(fallback.rows, true, fallback.ageMs)"]) assert.ok(history.includes(call), call)
+  assert.match(history, /staleAgeMs: stale && best === rows \? ageMs : null/)
 })
 
 test("home: the build's metal times reach the cards and the converter", () => {

@@ -11,6 +11,10 @@ import type { ChartPeriod, ChartSampling } from "./history.ts"
 import type { TwoDatesPoint } from "./pilot-format.ts"
 import { trNumber, trMoney, trPercent, trDateLong, trMonthYear } from "./format-tr.ts"
 
+// Saved values on screen because a check for newer data failed: the Turkish
+// pages' note (TrStaleNote) and the Turkish history table say it this way.
+export const TR_SAVED_DATA = "Güncel veri alınamadı; kayıtlı değerler gösteriliyor."
+
 // Names in running Turkish text: "100 dolar", "1 euro", "4.962,80 TL".
 const NAME_TR: Record<string, string> = { USD: "dolar", EUR: "euro", TRY: "TL" }
 export function trCurrencyName(code: string): string {

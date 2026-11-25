@@ -55,6 +55,8 @@ export async function tracked<T>(key: string, request: () => Promise<T>): Promis
     failures.delete(key)
     return result
   } catch (err) {
+    // a request dropped because every caller left (a navigation) did not fail
+    if (err instanceof Error && err.name === "AbortError") throw err
     const now = Date.now()
     const before = failures.get(key)
     if (before && now < before.retryAt) before.failedAt = now // a manual try during the wait

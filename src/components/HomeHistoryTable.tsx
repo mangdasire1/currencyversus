@@ -4,6 +4,7 @@ import { useHistoricalRates } from "@/hooks/useHistoricalRates"
 import { Sparkline } from "./Sparkline"
 import { SkeletonTableRow } from "./SkeletonLoaders"
 import { Direction } from "./pilot/Direction"
+import { SavedDataNote } from "./SavedDataNote"
 import { PV } from "./pilot/palette"
 import { formatFxRate, formatPercentChange } from "@/lib/format"
 import { pairSignificantDigits } from "@/lib/ecb"
@@ -28,7 +29,7 @@ interface HomeHistoryTableProps {
 //   judging colours, because a rising rate is good for some readers and bad
 //   for others. A change that rounds to 0.00% has no arrow and no sign.
 export function HomeHistoryTable({ base, target, currentRate, currentLabel, currentDate, initialRows }: HomeHistoryTableProps) {
-  const { comparisons, loading } = useHistoricalRates(base, target, currentRate, initialRows)
+  const { comparisons, loading, stale, staleAgeMs } = useHistoricalRates(base, target, currentRate, initialRows)
   const sig = pairSignificantDigits(base, target)
 
   return (
@@ -46,6 +47,12 @@ export function HomeHistoryTable({ base, target, currentRate, currentLabel, curr
         Now: {currentLabel ?? "—"}
         {currentDate ? <span className="text-slate-500"> (ECB reference rate of {currentDate})</span> : null}
       </p>
+      {/* the rows below are saved ones: the request for newer ones failed */}
+      {stale && (
+        <p className="text-sm">
+          <SavedDataNote ageMs={staleAgeMs} />
+        </p>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

@@ -39,7 +39,7 @@ test("home page: the default pair's rate and history are build-time data seeding
   const hook = fs.readFileSync(path.join(app, "..", "hooks", "useExchangeRate.ts"), "utf8")
   assert.match(hook, /useState<ExchangeRate \| null>\(initialData \?\? null\)/)
   const hist = fs.readFileSync(path.join(app, "..", "hooks", "useHistoricalRates.ts"), "utf8")
-  assert.match(hist, /useState<HistoryState \| null>\(\s*initialRows && initialRows\.length > 0 \? \{ pairKey, rows: initialRows, error: null \} : null/)
+  assert.match(hist, /useState<HistoryState \| null>\(\s*initialRows && initialRows\.length > 0 \? \{ pairKey, rows: initialRows, error: null, stale: false, staleAgeMs: null \} : null/)
 })
 
 test("home chart: reuses the pair pages' PairChart (no copy), seeded from build-time periods, only for currency pairs", async () => {

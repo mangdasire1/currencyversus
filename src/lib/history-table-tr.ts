@@ -5,7 +5,7 @@
 // load it.
 
 import { trNumber, trDateShort } from "./format-tr.ts"
-import { trCurrencyName, TR_PERIOD_SHORT } from "./pilot-format-tr.ts"
+import { trCurrencyName, TR_PERIOD_SHORT, TR_SAVED_DATA } from "./pilot-format-tr.ts"
 
 export interface HistoryTableText {
   heading: string
@@ -18,6 +18,7 @@ export interface HistoryTableText {
   coverage: (iso: string) => string
   direction: string
   footnote: string
+  saved: string // the rows are saved ones: a check for newer ones failed
 }
 
 // "1 doların", "1 euronun"
@@ -39,6 +40,7 @@ export function trHistoryTableText(base: "USD" | "EUR", target: "TRY"): HistoryT
     coverage: (iso) => `veri yalnızca ${day(iso)} tarihinden itibaren`,
     // directionNote (pilot-format.ts): no value judgement, only whom it helps
     direction: `Sayının yükselmesi, 1 ${GENITIVE[base]} daha çok ${to} ettiği anlamına gelir: elinde ${from} olan için iyidir, geliri ${to} olan için değil.`,
+    saved: TR_SAVED_DATA,
     footnote:
       "“O zaman”, dönemin başladığı gün ya da ondan önceki son iş günü yayımlanan günlük ECB referans kurudur (gün içi seviye değildir). " +
       "“istenen”, hafta sonuna ya da tatile denk geldiği için kuru olmayan tarihi gösterir.",

@@ -22,17 +22,23 @@ const ls = new MemoryStorage()
 type Answer = "ok" | "refused" | "500" | "429" | "junk" | "not json"
 let answer: Answer = "ok"
 let sent: { at: number; what: string }[] = []
-globalThis.fetch = (async (input: string | URL) => {
+globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
   const url = String(input)
   const metal = url.includes("gold-api.com")
-  sent.push({ at: Date.now(), what: metal ? url.slice(-3) : url.replace(/.*symbols=/, "") })
+  const series = url.includes("..")
+  sent.push({ at: Date.now(), what: metal ? url.slice(-3) : (series ? "series " : "latest ") + url.replace(/.*symbols=/, "") })
+  // like a real fetch: a request aborted while in flight rejects with AbortError
+  await Promise.resolve()
+  if (init?.signal?.aborted) throw new DOMException("The operation was aborted.", "AbortError")
   if (answer === "refused") throw new TypeError("Failed to fetch")
   if (answer === "500" || answer === "429") return new Response("{}", { status: Number(answer) })
   if (answer === "not json") return new Response("<html>")
   if (answer === "junk") return new Response(JSON.stringify(metal ? {} : { base: "EUR", date: "2026-11-20", rates: {} }))
   return new Response(JSON.stringify(metal
     ? { price: 3500, updatedAt: new Date().toISOString() }
-    : { base: "EUR", date: "2026-11-20", rates: { USD: 1.09, TRY: 55.12 } }))
+    : series
+      ? { base: "EUR", start_date: "2016-11-15", end_date: "2026-11-20", rates: { "2026-11-19": { USD: 1.09, TRY: 55.1 }, "2026-11-20": { USD: 1.09, TRY: 55.12 } } }
+      : { base: "EUR", date: "2026-11-20", rates: { USD: 1.09, TRY: 55.12 } }))
 }) as typeof fetch
 
 const { startAutoRefresh, whenVisible } = await import("./refresh.ts")
@@ -40,6 +46,9 @@ const { fetchMetalPrice, getLatestRate, metalCacheKey, latestCacheKey } = await 
 const { cacheGetStale, cacheSet, FRESH_TTL } = await import("./cache.ts")
 const { isExchangeRateFor, isMetalPriceFor } = await import("./cache-schemas.ts")
 const { retryAt, resetBackoff, RETRY_DELAYS_MS } = await import("./backoff.ts")
+const { fetchPairSeries, historyCacheKey } = await import("./pair-series.ts")
+type Kind = "metal" | "fx" | "series"
+const TTL: Record<Kind, number> = { metal: FRESH_TTL.metal, fx: FRESH_TTL.latest, series: FRESH_TTL.shortHistory }
 
 const S = 1000
 const MIN = 60 * S
@@ -65,23 +74,31 @@ function fakeVisibility(initial = true) {
 }
 type Visibility = ReturnType<typeof fakeVisibility>
 
-// What useMetalRate and useExchangeRate do: refresh through the api; on
-// failure fall back to the retained cache, whose fetch time is the old one.
-function surface(kind: "metal" | "fx", vis: Visibility) {
-  const key = kind === "metal" ? metalCacheKey("XAU") : latestCacheKey("USD", "TRY")
+// What useMetalRate, useExchangeRate and useHistoricalRates do: refresh
+// through the api; on failure fall back to the retained cache, whose fetch
+// time is the old one (the history hook keeps its own rows: none here).
+function surface(kind: Kind, vis: Visibility) {
+  const key = kind === "metal" ? metalCacheKey("XAU") : kind === "fx" ? latestCacheKey("USD", "TRY") : historyCacheKey("USD", "TRY")
   const s = { fetchedAt: null as number | null, stale: false, loads: 0 }
   const auto = startAutoRefresh({
-    freshTtlMs: kind === "metal" ? FRESH_TTL.metal : FRESH_TTL.latest,
+    freshTtlMs: TTL[kind],
     getFetchedAt: () => s.fetchedAt,
     retryAt: () => retryAt(key),
     visibility: vis.source,
     refresh: async ({ force }) => {
       s.loads++
       try {
+        if (kind === "series") {
+          await fetchPairSeries("USD", "TRY", "2016-11-15", "2026-11-20")
+          s.fetchedAt = Date.now()
+          s.stale = false
+          return
+        }
         const r = kind === "metal" ? await fetchMetalPrice("XAU", { force }) : await getLatestRate("USD", "TRY", { force })
         s.fetchedAt = Date.parse(r.fetchedAt!)
         s.stale = false
       } catch {
+        if (kind === "series") return void (s.stale = true)
         const hit = kind === "metal" ? cacheGetStale(key, isMetalPriceFor("XAU")) : cacheGetStale(key, isExchangeRateFor("USD", "TRY"))
         if (hit) s.fetchedAt = Date.parse((hit.data as { fetchedAt: string }).fetchedAt)
         s.stale = true
@@ -93,12 +110,12 @@ function surface(kind: "metal" | "fx", vis: Visibility) {
 }
 
 // A tab left open past the TTL whose provider then fails.
-async function failingTab(kind: "metal" | "fx", how: Answer = "500") {
+async function failingTab(kind: Kind, how: Answer = "500") {
   const vis = fakeVisibility()
   const tab = surface(kind, vis)
   await settle()
   answer = how
-  mock.timers.tick(kind === "metal" ? FRESH_TTL.metal : FRESH_TTL.latest)
+  mock.timers.tick(TTL[kind])
   await settle()
   const failedAt = sent.at(-1)!.at
   sent = sent.filter((r) => r.at >= failedAt)
@@ -121,7 +138,7 @@ test("the waits: 30 s, 1, 2, 5 minutes", () => {
   assert.deepEqual([...RETRY_DELAYS_MS], [30 * S, MIN, 2 * MIN, 5 * MIN])
 })
 
-for (const kind of ["metal", "fx"] as const) {
+for (const kind of ["metal", "fx", "series"] as const) {
   for (const how of ["refused", "500", "429", "junk", "not json"] as const) {
     test(`${kind}, ${how}: at most ${MAX_PER_MINUTE} requests in any minute while it fails; 30 s → 1 → 2 → 5 → 5 min`, async () => {
       const { failedAt, auto, s } = await failingTab(kind, how)
@@ -144,7 +161,7 @@ test("no saved data at all: the first failure is retried after 30 s, not a TTL l
   auto.stop()
 })
 
-for (const kind of ["metal", "fx"] as const) {
+for (const kind of ["metal", "fx", "series"] as const) {
   test(`${kind}: bound holds with five surfaces on one resource and one remounting every second`, async () => {
     const { vis, failedAt, auto } = await failingTab(kind)
     const more = [1, 2, 3, 4].map(() => surface(kind, vis))
@@ -324,7 +341,36 @@ test("hooks: every automatic request goes through the scheduler or whenVisible",
     assert.match(s, /void auto\.check\(\)/, f)
     assert.doesNotMatch(s, /void load\(/, `${f}: a request outside the scheduler`)
   }
-  assert.match(hook("useHistoricalRates.ts"), /whenVisible\(documentVisibility\(\), \(\) => \{\s*loadPeriodHistory\(/)
+  // the history rows: the same scheduler and wait as the rates
+  const history = hook("useHistoricalRates.ts")
+  assert.match(history, /retryAt: \(\) => retryAt\(cacheKey\)/)
+  assert.match(history, /const cacheKey = historyCacheKey\(base, target\)/)
+  assert.match(history, /void auto\.check\(\)/)
+  assert.match(history, /auto\.stop\(\)/)
+  assert.doesNotMatch(history, /whenVisible|void load\(/)
+  // a fresh saved entry stands in for a request only if backoff.ts accepts it
+  assert.match(history, /kept\.ageMs < FRESH_TTL\.shortHistory && acceptCached\(cacheKey, /)
+  // after a failed check, rows on screen are called saved; only "no rows at all" is not
+  const failed = history.slice(history.indexOf("} catch (err) {"), history.indexOf("const auto = startAutoRefresh"))
+  assert.match(failed, /return show\(fallback\.rows, true, fallback\.ageMs\)/)
+  assert.match(failed, /\{ pairKey, rows: buildRows, error: message, stale: true, staleAgeMs: null \}/)
+  assert.match(failed, /\{ \.\.\.prev, error: message, stale: true \}/)
+  assert.deepEqual(failed.match(/stale: false/g), ["stale: false"], "only the empty-rows branch is not stale")
+  assert.match(failed, /rows: emptyRows\(today\), error: message, stale: false/)
+  // the home chart: a one-off load, not from a hidden tab
   assert.match(hook("usePairChart.ts"), /whenVisible\(documentVisibility\(\), \(\) => \{\s*fetchPairSeries\(/)
-  for (const f of ["useHistoricalRates.ts", "usePairChart.ts"]) assert.match(hook(f), /cancelWait\(\)/, f)
+  assert.match(hook("usePairChart.ts"), /cancelWait\(\)/)
+})
+
+test("series: a navigation that drops the request is not a failure; an answer without the pair is", async () => {
+  const leave = new AbortController()
+  const p = fetchPairSeries("USD", "TRY", "2016-11-15", "2026-11-21", leave.signal)
+  leave.abort()
+  await assert.rejects(p, { name: "AbortError" })
+  await settle()
+  assert.equal(retryAt(historyCacheKey("USD", "TRY")), null)
+  answer = "junk"
+  await assert.rejects(fetchPairSeries("USD", "TRY", "2016-11-15", "2026-11-22"), /no observation/)
+  assert.notEqual(retryAt(historyCacheKey("USD", "TRY")), null)
+  await assert.rejects(fetchPairSeries("USD", "TRY", "2016-11-15", "2026-11-22"), { name: "RetryWaitError" })
 })
